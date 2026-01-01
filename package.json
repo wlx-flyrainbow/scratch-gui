@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/scratchfoundation/scratch-gui.git"
   },
-  "main": "./dist/scratch-gui.js",
+  "main": "electron-main.js",
   "scripts": {
     "build": "npm run clean && webpack",
     "clean": "rimraf ./build ./dist",
@@ -19,12 +19,55 @@
     "i18n:push": "tx-push-src scratch-editor interface translations/en.json",
     "i18n:src": "rimraf ./translations/messages/src && babel src > tmp.js && rimraf tmp.js && build-i18n-src ./translations/messages/src ./translations/",
     "start": "webpack serve",
+    "electron": "electron .",
+    "electron-dev": "npm run build && electron .",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux",
     "test": "npm run test:lint && npm run test:unit && npm run build && npm run test:integration",
     "test:integration": "jest --maxWorkers=4 test[\\\\/]integration",
     "test:lint": "eslint . --ext .js,.jsx",
     "test:unit": "jest test[\\\\/]unit",
     "test:smoke": "jest --runInBand test[\\\\/]smoke",
     "watch": "webpack --watch"
+  },
+  "build": {
+    "appId": "org.scratch.desktop",
+    "productName": "Scratch Desktop",
+    "npmRebuild": false,
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "electron-main.js",
+      "build/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/static/favicon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Education",
+      "icon": "build/static/favicon.ico"
+    }
   },
   "config": {
     "commitizen": {
@@ -115,6 +158,8 @@
     "babel-core": "7.0.0-bridge.0",
     "babel-loader": "9.2.1",
     "cheerio": "1.0.0-rc.3",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
     "enzyme": "3.11.0",
     "enzyme-adapter-react-16": "1.15.8",
     "eslint": "8.57.1",
