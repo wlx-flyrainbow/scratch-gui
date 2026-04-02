@@ -5,6 +5,9 @@
 if (!process.env.ZHIMENG_MYSQL_DATABASE) {
     process.env.ZHIMENG_MYSQL_DATABASE = 'zhimeng_test';
 }
+if (!process.env.ZHIMENG_MYSQL_CONNECT_TIMEOUT) {
+    process.env.ZHIMENG_MYSQL_CONNECT_TIMEOUT = '3000';
+}
 
 const {inject} = require('../helpers/http-inject');
 const db = require('../../backend/db');
