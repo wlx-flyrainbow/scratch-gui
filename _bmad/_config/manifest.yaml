@@ -1,0 +1,24 @@
+installation:
+  version: 6.2.2
+  installDate: 2026-04-02T14:37:29.058Z
+  lastUpdated: 2026-04-02T14:37:29.058Z
+modules:
+  - name: core
+    version: 6.2.2
+    installDate: 2026-04-02T14:37:29.058Z
+    lastUpdated: 2026-04-02T14:37:29.058Z
+    source: built-in
+    npmPackage: null
+    repoUrl: null
+  - name: bmm
+    version: 6.2.2
+    installDate: 2026-04-02T14:37:28.381Z
+    lastUpdated: 2026-04-02T14:37:29.058Z
+    source: built-in
+    npmPackage: null
+    repoUrl: null
+ides:
+  - claude-code
+  - cursor
+  - trae
+  - opencode

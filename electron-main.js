@@ -1,21 +1,67 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const {app, BrowserWindow, Menu, ipcMain, safeStorage} = require('electron');
+const fs = require('fs');
 const path = require('path');
 
-let mainWindow;
+const windowIconPath = () => {
+    const base = path.join(__dirname, 'build/static');
+    if (process.platform === 'win32') {
+        return path.join(base, 'favicon.ico');
+    }
+    return path.join(base, 'app-icon.png');
+};
 
-function createWindow() {
+let mainWindow;
+let isQuitting = false;
+const authFilePath = path.join(app.getPath('userData'), 'zhimeng-auth.json');
+
+const readAuthBundle = () => {
+    try {
+        if (!fs.existsSync(authFilePath)) return null;
+        const payload = fs.readFileSync(authFilePath, 'utf8');
+        if (!payload) return null;
+        if (safeStorage.isEncryptionAvailable()) {
+            const decrypted = safeStorage.decryptString(Buffer.from(payload, 'base64'));
+            return JSON.parse(decrypted);
+        }
+        return JSON.parse(payload);
+    } catch (error) {
+        return null;
+    }
+};
+
+const writeAuthBundle = bundle => {
+    const serialized = JSON.stringify(bundle || {});
+    if (safeStorage.isEncryptionAvailable()) {
+        const encrypted = safeStorage.encryptString(serialized).toString('base64');
+        fs.writeFileSync(authFilePath, encrypted, 'utf8');
+        return;
+    }
+    fs.writeFileSync(authFilePath, serialized, 'utf8');
+};
+
+const clearAuthBundle = () => {
+    if (fs.existsSync(authFilePath)) {
+        fs.unlinkSync(authFilePath);
+    }
+};
+
+/**
+ * Create and initialize the desktop main window.
+ */
+const createWindow = function () {
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 800,
         minWidth: 1024,
         minHeight: 640,
-        title: 'Scratch Desktop',
-        icon: path.join(__dirname, 'build/static/favicon.ico'),
+        title: '知萌',
+        icon: windowIconPath(),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
             enableRemoteModule: false,
-            webSecurity: true
+            webSecurity: true,
+            preload: path.join(__dirname, 'electron-preload.js')
         }
     });
 
@@ -31,6 +77,7 @@ function createWindow() {
                     label: '退出',
                     accelerator: 'CmdOrCtrl+Q',
                     click: () => {
+                        isQuitting = true;
                         app.quit();
                     }
                 }
@@ -39,34 +86,34 @@ function createWindow() {
         {
             label: '编辑',
             submenu: [
-                { label: '撤销', accelerator: 'CmdOrCtrl+Z', role: 'undo' },
-                { label: '重做', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
-                { type: 'separator' },
-                { label: '剪切', accelerator: 'CmdOrCtrl+X', role: 'cut' },
-                { label: '复制', accelerator: 'CmdOrCtrl+C', role: 'copy' },
-                { label: '粘贴', accelerator: 'CmdOrCtrl+V', role: 'paste' },
-                { label: '全选', accelerator: 'CmdOrCtrl+A', role: 'selectAll' }
+                {label: '撤销', accelerator: 'CmdOrCtrl+Z', role: 'undo'},
+                {label: '重做', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo'},
+                {type: 'separator'},
+                {label: '剪切', accelerator: 'CmdOrCtrl+X', role: 'cut'},
+                {label: '复制', accelerator: 'CmdOrCtrl+C', role: 'copy'},
+                {label: '粘贴', accelerator: 'CmdOrCtrl+V', role: 'paste'},
+                {label: '全选', accelerator: 'CmdOrCtrl+A', role: 'selectAll'}
             ]
         },
         {
             label: '视图',
             submenu: [
-                { label: '重新加载', accelerator: 'CmdOrCtrl+R', role: 'reload' },
-                { label: '强制重新加载', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
-                { label: '开发者工具', accelerator: 'CmdOrCtrl+Shift+I', role: 'toggleDevTools' },
-                { type: 'separator' },
-                { label: '实际大小', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
-                { label: '放大', accelerator: 'CmdOrCtrl+Plus', role: 'zoomIn' },
-                { label: '缩小', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
-                { type: 'separator' },
-                { label: '全屏', accelerator: 'F11', role: 'togglefullscreen' }
+                {label: '重新加载', accelerator: 'CmdOrCtrl+R', role: 'reload'},
+                {label: '强制重新加载', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload'},
+                {label: '开发者工具', accelerator: 'CmdOrCtrl+Shift+I', role: 'toggleDevTools'},
+                {type: 'separator'},
+                {label: '实际大小', accelerator: 'CmdOrCtrl+0', role: 'resetZoom'},
+                {label: '放大', accelerator: 'CmdOrCtrl+Plus', role: 'zoomIn'},
+                {label: '缩小', accelerator: 'CmdOrCtrl+-', role: 'zoomOut'},
+                {type: 'separator'},
+                {label: '全屏', accelerator: 'F11', role: 'togglefullscreen'}
             ]
         },
         {
             label: '窗口',
             submenu: [
-                { label: '最小化', accelerator: 'CmdOrCtrl+M', role: 'minimize' },
-                { label: '关闭', accelerator: 'CmdOrCtrl+W', role: 'close' }
+                {label: '最小化', accelerator: 'CmdOrCtrl+M', role: 'minimize'},
+                {label: '关闭', accelerator: 'CmdOrCtrl+W', role: 'close'}
             ]
         }
     ];
@@ -74,22 +121,43 @@ function createWindow() {
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
 
-    mainWindow.on('closed', function () {
+    mainWindow.webContents.on('will-prevent-unload', event => {
+        // The renderer can block unload via window.onbeforeunload.
+        // When user explicitly quits the app, allow force quit.
+        if (isQuitting) {
+            event.preventDefault();
+        }
+    });
+
+    mainWindow.on('closed', () => {
         mainWindow = null;
     });
-}
+};
 
 app.on('ready', createWindow);
 
-app.on('window-all-closed', function () {
+ipcMain.handle('zhimeng-auth:load', () => readAuthBundle());
+ipcMain.handle('zhimeng-auth:save', (event, bundle) => {
+    writeAuthBundle(bundle);
+    return true;
+});
+ipcMain.handle('zhimeng-auth:clear', () => {
+    clearAuthBundle();
+    return true;
+});
+
+app.on('before-quit', () => {
+    isQuitting = true;
+});
+
+app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
     }
 });
 
-app.on('activate', function () {
+app.on('activate', () => {
     if (mainWindow === null) {
         createWindow();
     }
 });
-

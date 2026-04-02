@@ -1,0 +1,16 @@
+{
+  "channel": "stable",
+  "version": "5.2.16",
+  "releasedAt": "2026-04-02",
+  "windows": {
+    "nsis": {
+      "label": "Windows 安装版",
+      "url": "https://YOUR-CDN.example/zhimeng-setup.exe"
+    },
+    "portable": {
+      "label": "Windows 便携版",
+      "url": "https://YOUR-CDN.example/zhimeng-portable.exe"
+    }
+  },
+  "beta": null
+}

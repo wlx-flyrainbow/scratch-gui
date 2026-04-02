@@ -212,6 +212,20 @@ const alerts = [
         ),
         iconSpinner: true,
         level: AlertLevels.SUCCESS
+    },
+    {
+        alertId: 'importingAssetError',
+        alertType: AlertTypes.STANDARD,
+        clearList: ['importingAsset', 'importingAssetError'],
+        closeButton: true,
+        content: (
+            <FormattedMessage
+                defaultMessage="Could not import the sprite. Please check your network and try again."
+                description="Message indicating that sprite import failed"
+                id="gui.alerts.importingAssetError"
+            />
+        ),
+        level: AlertLevels.WARN
     }
 ];
 

@@ -62,6 +62,7 @@ const GUIComponent = props => {
         authorId,
         authorThumbnailUrl,
         authorUsername,
+        authNotice,
         basePath,
         backdropLibraryVisible,
         backpackHost,
@@ -251,6 +252,11 @@ const GUIComponent = props => {
                     onStartSelectingFileUpload={onStartSelectingFileUpload}
                     onToggleLoginOpen={onToggleLoginOpen}
                 />
+                {authNotice ? (
+                    <div className={styles.authNotice}>
+                        {authNotice}
+                    </div>
+                ) : null}
                 <Box className={styles.bodyWrapper}>
                     <Box className={styles.flexWrapper}>
                         <Box className={styles.editorWrapper}>
@@ -384,6 +390,7 @@ GUIComponent.propTypes = {
     authorId: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
     authorThumbnailUrl: PropTypes.string,
     authorUsername: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
+    authNotice: PropTypes.string,
     backdropLibraryVisible: PropTypes.bool,
     backpackHost: PropTypes.string,
     backpackVisible: PropTypes.bool,
@@ -454,6 +461,7 @@ GUIComponent.defaultProps = {
     blocksId: 'original',
     canChangeLanguage: true,
     canChangeTheme: true,
+    authNotice: '',
     canCreateNew: false,
     canEditTitle: false,
     canManageFiles: true,

@@ -33,6 +33,7 @@ import ProjectFetcherHOC from '../lib/project-fetcher-hoc.jsx';
 import TitledHOC from '../lib/titled-hoc.jsx';
 import ProjectSaverHOC from '../lib/project-saver-hoc.jsx';
 import QueryParserHOC from '../lib/query-parser-hoc.jsx';
+import AuthHOC from '../lib/auth-hoc.jsx';
 import storage from '../lib/storage';
 import vmListenerHOC from '../lib/vm-listener-hoc.jsx';
 import vmManagerHOC from '../lib/vm-manager-hoc.jsx';
@@ -142,7 +143,13 @@ GUI.propTypes = {
 GUI.defaultProps = {
     isScratchDesktop: false,
     isTotallyNormal: false,
-    onStorageInit: storageInstance => storageInstance.addOfficialScratchWebStores(),
+    onStorageInit: storageInstance => {
+        const projectHost = process.env.ZHIMENG_PROJECT_HOST || 'https://projects.scratch.mit.edu';
+        const assetHost = process.env.ZHIMENG_ASSET_HOST || 'https://cdn.assets.scratch.mit.edu';
+        storageInstance.setProjectHost(projectHost);
+        storageInstance.setAssetHost(assetHost);
+        storageInstance.addOfficialScratchWebStores();
+    },
     onProjectLoaded: () => {},
     onUpdateProjectId: () => {},
     onVmInit: (/* vm */) => {}
@@ -203,6 +210,7 @@ const WrappedGui = compose(
     ErrorBoundaryHOC('Top Level App'),
     FontLoaderHOC,
     QueryParserHOC,
+    AuthHOC,
     ProjectFetcherHOC,
     TitledHOC,
     ProjectSaverHOC,

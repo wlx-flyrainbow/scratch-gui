@@ -111,8 +111,15 @@ class TargetPane extends React.Component {
         );
         const item = surpriseSprites[Math.floor(Math.random() * surpriseSprites.length)];
         randomizeSpritePosition(item);
+        this.props.onShowImporting();
         this.props.vm.addSprite(JSON.stringify(item))
-            .then(this.handleActivateBlocksTab);
+            .then(this.handleActivateBlocksTab)
+            .catch(() => {
+                this.props.onShowImportingError();
+            })
+            .finally(() => {
+                this.props.onCloseImporting();
+            });
     }
     handlePaintSpriteClick () {
         const formatMessage = this.props.intl.formatMessage;

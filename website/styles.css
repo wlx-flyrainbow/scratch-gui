@@ -1,0 +1,279 @@
+/* 知萌下载页 — 静态站，无构建 */
+
+:root {
+  --bg: #f7f5ff;
+  --surface: #ffffff;
+  --text: #1a1530;
+  --muted: #5c5670;
+  --accent: #6b4dff;
+  --accent-hover: #5438e0;
+  --border: #e4dff5;
+  --radius: 14px;
+  --shadow: 0 12px 40px rgba(26, 21, 48, 0.08);
+  --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  color: var(--text);
+  background: linear-gradient(165deg, #f0ebff 0%, var(--bg) 45%, #fff 100%);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+header.hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+/* 资源图常带内边留白：用裁切容器 + 轻微放大，让主体填满圆角区域 */
+.logo-wrap {
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 1.25rem;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+}
+
+.logo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  /* 放大画面，裁掉 PNG 四周多余留白（按实际资源可微调 1.15–1.35） */
+  transform: scale(1.28);
+  transform-origin: center center;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 34em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem 1.5rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1.5rem;
+}
+
+.version-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.version-line strong {
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-stable {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge-beta {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.cta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.25rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--accent);
+  border: 2px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.note {
+  margin: 1.25rem 0 0;
+  padding: 1rem 1rem;
+  background: #faf8ff;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  border-left: 4px solid var(--accent);
+}
+
+.note p {
+  margin: 0 0 0.5rem;
+}
+
+.note p:last-child {
+  margin-bottom: 0;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+ul.req {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+section.beta {
+  display: none;
+}
+
+section.beta.is-visible {
+  display: block;
+}
+
+.beta-title {
+  display: none;
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+section.beta.is-visible .beta-title {
+  display: block;
+}
+
+.beta .card {
+  border-style: dashed;
+}
+
+footer.site-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+footer.site-footer p {
+  margin: 0 0 0.75rem;
+}
+
+footer.site-footer a {
+  word-break: break-all;
+}
+
+.err-banner {
+  display: none;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #ffebee;
+  color: #b71c1c;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.err-banner.is-visible {
+  display: block;
+}
+
+@media (min-width: 520px) {
+  .cta-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    flex: 1;
+    min-width: 200px;
+  }
+}

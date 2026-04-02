@@ -26,3 +26,8 @@ npm-*
 
 # for act
 .secrets
+
+# BMAD: IDE skill mirrors (canonical copy under _bmad/; run npm run bmad:sync)
+/.cursor/skills/bmad-*/
+/.opencode/skills/bmad-*/
+/.trae/skills/bmad-*/

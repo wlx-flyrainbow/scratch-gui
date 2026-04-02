@@ -1,0 +1,16 @@
+# Local MySQL for 知萌 auth backend (dev + integration tests).
+# Usage: docker compose up -d
+# Then: ZHIMENG_MYSQL_PASSWORD=root npm run auth-server
+# Tests: ZHIMENG_MYSQL_PASSWORD=root ZHIMENG_MYSQL_DATABASE=zhimeng_test npm run test:backend
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: zhimeng
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d

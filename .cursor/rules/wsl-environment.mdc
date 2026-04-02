@@ -1,0 +1,28 @@
+---
+description: Always assume development and runtime environment is WSL (Ubuntu-20.04)
+alwaysApply: true
+---
+
+## 环境约定：统一使用 WSL
+
+- 默认操作系统环境：**Windows 下的 WSL（Ubuntu-20.04）**
+- 当需要运行命令行、安装依赖、启动服务时：
+  - 优先使用 `WSL` 终端
+  - 假设当前 shell 为 `bash`，位于 WSL 的 Linux 文件系统中
+- 当有 Windows / WSL 两种路径选择时：
+  - **优先使用 WSL 路径与命令**
+  - 例如：使用 `wsl` 里的 `node`/`npm`/`pnpm`/`python` 等
+
+## 终端与命令规则
+
+- 说明命令时，默认语境为：
+  - 在 **WSL Ubuntu-20.04** 中执行
+  - 使用 `bash` 语法，而不是 PowerShell
+- 如果必须在 Windows 侧执行，需明确说明：
+  - 例如 “在 Windows PowerShell 中运行：...”
+
+## 路径与文件系统
+
+- 默认假设项目位于 WSL 可访问的挂载点或 Linux 文件系统中
+- 涉及路径示例时，优先给出 Linux 风格路径（例如 `/home/...` 或 `/mnt/...`）
+

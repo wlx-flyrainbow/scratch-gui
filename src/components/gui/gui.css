@@ -298,6 +298,15 @@ $fade-out-distance: 15px;
     position: relative;
     z-index: $z-index-menu-bar;
 }
+
+.auth-notice {
+    font-size: 0.75rem;
+    color: $text-primary;
+    background: #fff8e1;
+    border-top: 1px solid #ffe082;
+    border-bottom: 1px solid #ffe082;
+    padding: 0.4rem 0.8rem;
+}
 /* Alerts */
 
 .alerts-container {

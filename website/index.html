@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>知萌 — 下载</title>
+  <meta name="description" content="知萌少儿创意编程启蒙桌面客户端，支持 Windows。安装后登录并订阅即可解锁云保存、分享与社区能力。" />
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="logo-wrap">
+        <img class="logo" src="assets/logo.png" width="256" height="256" alt="知萌" />
+      </div>
+      <h1>知萌</h1>
+      <p class="subtitle">知萌｜少儿创意编程启蒙｜用积木编程讲故事、做动画</p>
+    </header>
+
+    <div id="load-error" class="err-banner" role="alert"></div>
+
+    <section class="card" aria-labelledby="download-heading">
+      <div class="version-line">
+        <span id="channel-badge" class="badge badge-stable">stable</span>
+        <span>当前版本 <strong id="version-display">—</strong></span>
+        <span id="released-line">发布日期 <span id="released-at">—</span></span>
+      </div>
+      <h2 id="download-heading">下载 Windows 客户端</h2>
+      <div class="cta-row">
+        <a id="btn-nsis" class="btn btn-primary" href="#">Windows 安装版</a>
+        <a id="btn-portable" class="btn btn-secondary" href="#">Windows 便携版</a>
+      </div>
+      <div class="note">
+        <p>安装并打开应用后，请使用账号登录。未订阅用户可在应用内前往「订阅解锁」，开通后可使用云保存、作品分享与社区等完整能力。</p>
+        <p>支付在网页完成；支付成功后回到客户端重新登录或点击「刷新授权」即可。</p>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="req-heading">
+      <h2 id="req-heading">系统要求</h2>
+      <ul class="req">
+        <li>Windows 10 或更高版本（64 位）</li>
+        <li>安装版需管理员权限完成安装；便携版无需安装，解压即可运行</li>
+      </ul>
+    </section>
+
+    <section id="beta-section" class="beta" aria-labelledby="beta-heading">
+      <div class="card">
+        <h2 id="beta-heading" class="beta-title">内测渠道</h2>
+        <div class="version-line">
+          <span class="badge badge-beta">beta</span>
+          <span>内测版 <strong id="beta-version">—</strong></span>
+        </div>
+        <div class="cta-row">
+          <a id="btn-beta-nsis" class="btn btn-secondary" href="#">内测安装版</a>
+          <a id="btn-beta-portable" class="btn btn-secondary" href="#">内测便携版</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <p>
+        本服务基于 AGPLv3 许可的软件提供。该服务当前运行版本的完整对应源代码（含修改）可在此获取：
+        <a href="https://github.com/wlx-flyrainbow/scratch-gui" rel="noopener noreferrer">https://github.com/wlx-flyrainbow/scratch-gui</a>
+      </p>
+      <p>
+        问题反馈：<a href="https://github.com/wlx-flyrainbow/scratch-gui/issues" rel="noopener noreferrer">GitHub Issues</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+(function () {
+  var errEl = document.getElementById('load-error');
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('is-visible');
+  }
+
+  function setHref(id, url) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (url && url.indexOf('YOUR-CDN') === -1 && url.indexOf('example') === -1) {
+      el.href = url;
+      el.removeAttribute('download');
+    } else {
+      el.href = '#';
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        showErr('请先在 releases.json 中配置有效的安装包下载地址，并重新部署。');
+      });
+    }
+  }
+
+  fetch('releases.json', { cache: 'no-store' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('无法加载版本信息');
+      return r.json();
+    })
+    .then(function (data) {
+      document.getElementById('version-display').textContent = data.version || '—';
+      var released = data.releasedAt;
+      document.getElementById('released-at').textContent = released || '—';
+      var ch = (data.channel || 'stable').toLowerCase();
+      var badge = document.getElementById('channel-badge');
+      badge.textContent = ch;
+      badge.className = 'badge ' + (ch === 'beta' ? 'badge-beta' : 'badge-stable');
+
+      var win = data.windows || {};
+      var nsis = win.nsis || {};
+      var portable = win.portable || {};
+      document.getElementById('btn-nsis').textContent = nsis.label || 'Windows 安装版';
+      document.getElementById('btn-portable').textContent = portable.label || 'Windows 便携版';
+      setHref('btn-nsis', nsis.url);
+      setHref('btn-portable', portable.url);
+
+      var beta = data.beta;
+      if (beta && beta.windows) {
+        document.getElementById('beta-section').classList.add('is-visible');
+        document.getElementById('beta-version').textContent = beta.version || '—';
+        var bw = beta.windows;
+        setHref('btn-beta-nsis', bw.nsis && bw.nsis.url);
+        setHref('btn-beta-portable', bw.portable && bw.portable.url);
+        if (bw.nsis && bw.nsis.label) {
+          document.getElementById('btn-beta-nsis').textContent = bw.nsis.label;
+        }
+        if (bw.portable && bw.portable.label) {
+          document.getElementById('btn-beta-portable').textContent = bw.portable.label;
+        }
+      }
+    })
+    .catch(function () {
+      showErr('无法加载 releases.json，请检查文件是否已部署且路径正确。');
+    });
+})();
+  </script>
+</body>
+</html>
