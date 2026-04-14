@@ -18,7 +18,9 @@ const request = async (path, options = {}) => {
         } catch (e) {
             // Keep plain text message.
         }
-        throw new Error(message || `Request failed: ${response.status}`);
+        const err = new Error(message || `Request failed: ${response.status}`);
+        err.status = response.status;
+        throw err;
     }
     return response.status === 204 ? null : response.json();
 };
@@ -43,9 +45,29 @@ const logout = refreshToken => request('/auth/logout', {
     body: JSON.stringify({refresh_token: refreshToken})
 });
 
+const createOrder = (accessToken, payload) => request('/order/create', {
+    method: 'POST',
+    headers: {Authorization: `Bearer ${accessToken}`},
+    body: JSON.stringify(payload)
+});
+
+const getOrderStatus = (accessToken, orderId) => request(`/order/${orderId}/status`, {
+    method: 'GET',
+    headers: {Authorization: `Bearer ${accessToken}`}
+});
+
+// Local-dev helper: simulates payment callback and entitlement activation.
+const mockOrderPaid = (accessToken, orderId) => request(`/order/${orderId}/mock-paid`, {
+    method: 'POST',
+    headers: {Authorization: `Bearer ${accessToken}`}
+});
+
 export {
     login,
     refresh,
     fetchEntitlement,
-    logout
+    logout,
+    createOrder,
+    getOrderStatus,
+    mockOrderPaid
 };

@@ -4,7 +4,7 @@ import {connect} from 'react-redux';
 
 import ZhimengLoginForm from '../components/menu-bar/zhimeng-login-form.jsx';
 import authConfig from './auth/config';
-import {login, refresh, fetchEntitlement, logout} from './auth/api';
+import {login, refresh, fetchEntitlement, logout, createOrder, getOrderStatus, mockOrderPaid} from './auth/api';
 import {buildLease, isLeaseValid} from './auth/lease';
 import {loadAuthBundle, saveAuthBundle, clearAuthBundle} from './auth/storage';
 import {setEntitlement, setPermissions, setSession, clearSession} from '../reducers/session';
@@ -24,6 +24,8 @@ const AuthHOC = WrappedComponent => {
             this.handleLogin = this.handleLogin.bind(this);
             this.handleLogout = this.handleLogout.bind(this);
             this.handleOpenRegistration = this.handleOpenRegistration.bind(this);
+            this.handleOpenBilling = this.handleOpenBilling.bind(this);
+            this.handleRefreshEntitlement = this.handleRefreshEntitlement.bind(this);
             this.renderLogin = this.renderLogin.bind(this);
         }
 
@@ -45,11 +47,22 @@ const AuthHOC = WrappedComponent => {
                 const refreshToken = bundle.tokens && bundle.tokens.refresh_token;
                 let entitlement = bundle.entitlement || null;
 
-                if (!entitlement || !isLeaseValid(entitlement)) {
-                    if (refreshToken) {
+                const leaseNeedsRefresh = !entitlement || !isLeaseValid(entitlement);
+                if (leaseNeedsRefresh && refreshToken) {
+                    try {
                         const refreshed = await refresh(refreshToken);
                         accessToken = refreshed.access_token;
                         entitlement = await fetchEntitlement(accessToken);
+                    } catch (err) {
+                        if (err.status === 401) {
+                            await clearAuthBundle();
+                            this.props.onClearSession();
+                            this.setState({isReady: true});
+                            return;
+                        }
+                        // Network or 5xx: keep last-known session; cloud stays off until lease is valid again.
+                        entitlement = bundle.entitlement;
+                        accessToken = bundle.session.user.token;
                     }
                 }
 
@@ -120,6 +133,54 @@ const AuthHOC = WrappedComponent => {
             }
         }
 
+        async handleRefreshEntitlement () {
+            const bundle = await loadAuthBundle();
+            const refreshToken = bundle && bundle.tokens && bundle.tokens.refresh_token;
+            if (!refreshToken) throw new Error('当前会话缺少 refresh token，请重新登录');
+            const refreshed = await refresh(refreshToken);
+            const accessToken = refreshed.access_token;
+            const entitlement = await fetchEntitlement(accessToken);
+            const leasedEntitlement = buildLease(entitlement, authConfig.leaseDays);
+            const session = {
+                user: {
+                    ...(bundle.session && bundle.session.user ? bundle.session.user : {}),
+                    token: accessToken
+                }
+            };
+            await saveAuthBundle({
+                tokens: {
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                },
+                session,
+                entitlement: leasedEntitlement,
+                permissions: bundle.permissions || {}
+            });
+            this.props.onSetSession(session);
+            this.props.onSetEntitlement(leasedEntitlement);
+            return leasedEntitlement;
+        }
+
+        async handleOpenBilling () {
+            const user = this.props.session && this.props.session.user;
+            if (!user || !user.token) throw new Error('请先登录后再购买');
+            const created = await createOrder(user.token, {
+                plan: 'family_yearly',
+                channel: 'wechat',
+                return_url: authConfig.billingUrl
+            });
+            if (typeof window !== 'undefined' && created && created.pay_url) {
+                window.open(created.pay_url, '_blank', 'noopener,noreferrer');
+            }
+            if (typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname)) {
+                await mockOrderPaid(user.token, created.order_id);
+            }
+            if (created && created.order_id) {
+                await getOrderStatus(user.token, created.order_id);
+            }
+            await this.handleRefreshEntitlement();
+        }
+
         renderLogin ({onClose}) {
             return (
                 <ZhimengLoginForm
@@ -134,10 +195,23 @@ const AuthHOC = WrappedComponent => {
             const entitlement = this.props.entitlement;
             const hasSession = Boolean(user);
             const active = Boolean(entitlement && entitlement.status === 'active');
-            const cloudEnabled = hasSession && active;
+            const leaseValid = isLeaseValid(entitlement);
+            // Cloud features need active entitlement + valid offline lease; see zhimeng-auth-entitlement-design.md.
+            const cloudEnabled =
+                hasSession && active && leaseValid && hasFeature(entitlement, 'cloud_save');
             const communityEnabled = cloudEnabled && hasFeature(entitlement, 'community');
             const shareEnabled = cloudEnabled && hasFeature(entitlement, 'share');
-            const leaseValid = isLeaseValid(entitlement);
+            const backpackAllowed =
+                hasSession && active && leaseValid && hasFeature(entitlement, 'backpack');
+            const mergedBackpackHost =
+                authConfig.backpackHost || this.props.backpackHost || null;
+            const urlBackpackSelfTest =
+                typeof window !== 'undefined' &&
+                /[?&]token=/.test(window.location.search) &&
+                /[?&]username=/.test(window.location.search) &&
+                /[?&]backpack_host=/.test(window.location.search);
+            const backpackVisibleResolved =
+                Boolean(mergedBackpackHost) && (urlBackpackSelfTest || backpackAllowed);
             let authNotice = '';
             if (!hasSession) {
                 authNotice = '登录知萌账号后可解锁云保存、分享与社区能力';
@@ -152,14 +226,17 @@ const AuthHOC = WrappedComponent => {
             return (
                 <WrappedComponent
                     {...this.props}
+                    backpackHost={mergedBackpackHost}
+                    backpackVisible={backpackVisibleResolved}
                     canSave={cloudEnabled}
                     canShare={shareEnabled}
                     enableCommunity={communityEnabled}
                     showComingSoon={!cloudEnabled}
                     onLogOut={this.handleLogout}
                     onOpenRegistration={this.handleOpenRegistration}
+                    onOpenBilling={this.handleOpenBilling}
+                    onRefreshEntitlement={this.handleRefreshEntitlement}
                     renderLogin={this.renderLogin}
-                    sessionExists
                     authNotice={authNotice}
                 />
             );
@@ -167,6 +244,7 @@ const AuthHOC = WrappedComponent => {
     }
 
     AuthComponent.propTypes = {
+        backpackHost: PropTypes.string,
         entitlement: PropTypes.object,
         onClearSession: PropTypes.func.isRequired,
         onSetEntitlement: PropTypes.func.isRequired,

@@ -19,7 +19,8 @@ for (const b of nodeBuiltins) {
 module.exports = {
     testEnvironment: 'node',
     setupFiles: [
-        'raf/polyfill'
+        'raf/polyfill',
+        '<rootDir>/test/backend/jest-env.js'
     ],
     testMatch: [
         '<rootDir>/test/backend/**/*.test.js'

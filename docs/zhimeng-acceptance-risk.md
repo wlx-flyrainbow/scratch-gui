@@ -46,6 +46,14 @@
 - 下载页可下载安装包
 - 用户支付后 entitlement 自动开通
 
+### 当前状态（2026-04-13）
+
+- 已实现后端最小订单链路：`POST /order/create`、`GET /order/:id/status`
+- 已实现本地回调模拟：`POST /order/:id/mock-paid`（用于本地联调验收）
+- 已实现客户端动作：授权提示条支持“前往购买”“刷新授权”
+- 已补充自动化回归：`test/backend/order-flow.unit.test.js`（mock DB）
+- 待完成：真实支付网关回调签名校验、回调幂等与对账任务
+
 ### 风险与应对
 
 - 风险：支付回调丢失或延迟

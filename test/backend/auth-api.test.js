@@ -25,6 +25,7 @@ describe('backend auth API (MySQL)', () => {
     beforeEach(async () => {
         accessTokens.clear();
         const pool = db.getPool();
+        await pool.query('DELETE FROM orders');
         await pool.query('DELETE FROM refresh_tokens');
         await pool.query('DELETE FROM user_devices');
     });
@@ -182,5 +183,48 @@ describe('backend auth API (MySQL)', () => {
             body: {device_id: 'd', device_name: 'd'}
         });
         expect(fourth.status).toBe(409);
+    });
+
+    it('order payment flow updates entitlement', async () => {
+        const login = await inject(app, {
+            path: '/auth/login',
+            method: 'POST',
+            body: {username: 'demo', password: '123456'}
+        });
+        const token = login.body.access_token;
+        const h = {Authorization: `Bearer ${token}`};
+
+        const create = await inject(app, {
+            path: '/order/create',
+            method: 'POST',
+            headers: h,
+            body: {plan: 'family_yearly', channel: 'wechat', return_url: 'https://billing.example.com/result'}
+        });
+        expect(create.status).toBe(200);
+        expect(create.body.order_id).toMatch(/^o_/);
+
+        const statusBefore = await inject(app, {
+            path: `/order/${create.body.order_id}/status`,
+            method: 'GET',
+            headers: h
+        });
+        expect(statusBefore.status).toBe(200);
+        expect(statusBefore.body.status).toBe('created');
+
+        const mockPaid = await inject(app, {
+            path: `/order/${create.body.order_id}/mock-paid`,
+            method: 'POST',
+            headers: h
+        });
+        expect(mockPaid.status).toBe(200);
+        expect(mockPaid.body.status).toBe('paid');
+
+        const statusAfter = await inject(app, {
+            path: `/order/${create.body.order_id}/status`,
+            method: 'GET',
+            headers: h
+        });
+        expect(statusAfter.status).toBe(200);
+        expect(statusAfter.body.status).toBe('paid');
     });
 });

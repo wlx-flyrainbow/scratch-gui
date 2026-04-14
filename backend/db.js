@@ -82,6 +82,22 @@ const initSchema = async () => {
             CONSTRAINT fk_rt_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    await p.query(`
+        CREATE TABLE IF NOT EXISTS orders (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            plan VARCHAR(64) NOT NULL,
+            channel VARCHAR(32) NOT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'created',
+            return_url VARCHAR(1024) NULL,
+            paid_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_orders_user (user_id),
+            KEY idx_orders_status (status),
+            CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
 };
 
 const seedDemoUser = async () => {
@@ -215,6 +231,52 @@ const unbindDevice = async (userId, deviceId) => {
     );
 };
 
+const createOrder = async ({userId, plan, channel, returnUrl}) => {
+    const p = getPool();
+    const [result] = await p.query(
+        `INSERT INTO orders (user_id, plan, channel, status, return_url)
+         VALUES (?, ?, ?, 'created', ?)`,
+        [userId, plan, channel, returnUrl || null]
+    );
+    return result.insertId;
+};
+
+const findOrderById = async orderId => {
+    const p = getPool();
+    const [rows] = await p.query(
+        `SELECT id, user_id, plan, channel, status, return_url, paid_at
+         FROM orders WHERE id = ? LIMIT 1`,
+        [orderId]
+    );
+    return rows[0] || null;
+};
+
+const markOrderPaid = async orderId => {
+    const p = getPool();
+    await p.query(
+        `UPDATE orders
+         SET status = 'paid', paid_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [orderId]
+    );
+};
+
+const activateEntitlementFromOrder = async (userId, plan) => {
+    const p = getPool();
+    const features = JSON.stringify(['cloud_save', 'share', 'community', 'backpack']);
+    const subExpires = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000));
+    await p.query(
+        `INSERT INTO entitlements (user_id, status, plan, features_json, device_limit, subscription_expires_at)
+         VALUES (?, 'active', ?, ?, 3, ?)
+         ON DUPLICATE KEY UPDATE
+            status = VALUES(status),
+            plan = VALUES(plan),
+            features_json = VALUES(features_json),
+            subscription_expires_at = VALUES(subscription_expires_at)`,
+        [userId, plan, features, subExpires]
+    );
+};
+
 module.exports = {
     getPool,
     closePool,
@@ -228,5 +290,9 @@ module.exports = {
     deleteRefreshToken,
     bindDevice,
     unbindDevice,
+    createOrder,
+    findOrderById,
+    markOrderPaid,
+    activateEntitlementFromOrder,
     bcrypt
 };

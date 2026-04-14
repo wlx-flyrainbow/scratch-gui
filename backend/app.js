@@ -1,3 +1,5 @@
+require('./load-local-env');
+
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -224,6 +226,73 @@ const createApp = async () => {
             if (!deviceId) return res.status(400).json({message: 'device_id is required'});
             await db.unbindDevice(req.userNumericId, deviceId);
             return res.json({ok: true});
+        } catch (err) {
+            return res.status(500).json({message: err.message || 'Server error'});
+        }
+    });
+
+    app.post('/order/create', requireAuth, async (req, res) => {
+        try {
+            const {plan, channel, return_url: returnUrl} = req.body || {};
+            if (!plan || !channel) {
+                return res.status(400).json({message: 'plan and channel are required'});
+            }
+            const orderId = await db.createOrder({
+                userId: req.userNumericId,
+                plan,
+                channel,
+                returnUrl
+            });
+            return res.json({
+                order_id: `o_${orderId}`,
+                pay_url: `${process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com'}/pay/${orderId}`,
+                qr_code_url: `${process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com'}/qr/${orderId}`
+            });
+        } catch (err) {
+            return res.status(500).json({message: err.message || 'Server error'});
+        }
+    });
+
+    app.get('/order/:id/status', requireAuth, async (req, res) => {
+        try {
+            const rawId = String(req.params.id || '');
+            const numericId = Number(rawId.replace(/^o_/, ''));
+            if (!Number.isFinite(numericId) || numericId <= 0) {
+                return res.status(400).json({message: 'Invalid order id'});
+            }
+            const order = await db.findOrderById(numericId);
+            if (!order || Number(order.user_id) !== Number(req.userNumericId)) {
+                return res.status(404).json({message: 'Order not found'});
+            }
+            return res.json({
+                order_id: `o_${order.id}`,
+                status: order.status,
+                paid_at: order.paid_at instanceof Date ? order.paid_at.toISOString() : order.paid_at
+            });
+        } catch (err) {
+            return res.status(500).json({message: err.message || 'Server error'});
+        }
+    });
+
+    app.post('/order/:id/mock-paid', requireAuth, async (req, res) => {
+        try {
+            const rawId = String(req.params.id || '');
+            const numericId = Number(rawId.replace(/^o_/, ''));
+            if (!Number.isFinite(numericId) || numericId <= 0) {
+                return res.status(400).json({message: 'Invalid order id'});
+            }
+            const order = await db.findOrderById(numericId);
+            if (!order || Number(order.user_id) !== Number(req.userNumericId)) {
+                return res.status(404).json({message: 'Order not found'});
+            }
+            await db.markOrderPaid(numericId);
+            await db.activateEntitlementFromOrder(req.userNumericId, order.plan || 'family_yearly');
+            const refreshed = await db.findOrderById(numericId);
+            return res.json({
+                ok: true,
+                order_id: `o_${numericId}`,
+                status: refreshed.status
+            });
         } catch (err) {
             return res.status(500).json({message: err.message || 'Server error'});
         }

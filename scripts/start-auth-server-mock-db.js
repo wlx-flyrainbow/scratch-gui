@@ -1,0 +1,163 @@
+const path = require('path');
+
+const users = new Map();
+const entitlements = new Map();
+const refreshTokens = new Map();
+const userDevices = new Map();
+const orders = new Map();
+let nextOrderId = 1;
+
+const nowPlusDays = days => new Date(Date.now() + (days * 24 * 60 * 60 * 1000));
+
+const ensureSeed = () => {
+    if (users.has(1)) return;
+    users.set(1, {
+        id: 1,
+        username: 'demo',
+        password_hash: '123456',
+        nickname: '知萌体验账号',
+        permission_student: 1,
+        permission_educator: 0
+    });
+    entitlements.set(1, {
+        user_id: 1,
+        status: 'inactive',
+        plan: '',
+        features_json: JSON.stringify([]),
+        device_limit: 3,
+        subscription_expires_at: null
+    });
+    userDevices.set(1, []);
+};
+
+const mergeUserRow = userId => {
+    const user = users.get(userId);
+    if (!user) return null;
+    const ent = entitlements.get(userId) || {};
+    return {
+        ...user,
+        ...ent
+    };
+};
+
+const mockDb = {
+    initSchema: async () => {},
+    seedDemoUser: async () => {
+        ensureSeed();
+    },
+    findUserByUsername: async username => {
+        ensureSeed();
+        for (const user of users.values()) {
+            if (user.username === username) {
+                return mergeUserRow(user.id);
+            }
+        }
+        return null;
+    },
+    findUserById: async id => {
+        ensureSeed();
+        return mergeUserRow(Number(id));
+    },
+    listDevices: async userId => {
+        const list = userDevices.get(Number(userId)) || [];
+        return list.slice().reverse();
+    },
+    insertRefreshToken: async (userId, tokenHash, expiresAt) => {
+        refreshTokens.set(tokenHash, {
+            user_id: Number(userId),
+            expires_at: expiresAt
+        });
+    },
+    findRefreshToken: async tokenHash => refreshTokens.get(tokenHash) || null,
+    deleteRefreshToken: async tokenHash => {
+        refreshTokens.delete(tokenHash);
+    },
+    bindDevice: async (userId, deviceId, deviceName) => {
+        const uid = Number(userId);
+        const row = entitlements.get(uid);
+        const limit = row && row.device_limit ? row.device_limit : 3;
+        const list = userDevices.get(uid) || [];
+        const existing = list.find(d => d.device_id === deviceId);
+        if (existing) {
+            existing.device_name = deviceName || 'unknown-device';
+            existing.last_seen_at = new Date().toISOString();
+            userDevices.set(uid, list);
+            return list.length;
+        }
+        if (list.length >= limit) {
+            const err = new Error('Device limit exceeded');
+            err.statusCode = 409;
+            throw err;
+        }
+        list.push({
+            device_id: deviceId,
+            device_name: deviceName || 'unknown-device',
+            last_seen_at: new Date().toISOString()
+        });
+        userDevices.set(uid, list);
+        return list.length;
+    },
+    unbindDevice: async (userId, deviceId) => {
+        const uid = Number(userId);
+        const list = userDevices.get(uid) || [];
+        userDevices.set(uid, list.filter(d => d.device_id !== deviceId));
+    },
+    createOrder: async ({userId, plan, channel, returnUrl}) => {
+        const id = nextOrderId++;
+        orders.set(id, {
+            id,
+            user_id: Number(userId),
+            plan,
+            channel,
+            status: 'created',
+            return_url: returnUrl || null,
+            paid_at: null
+        });
+        return id;
+    },
+    findOrderById: async orderId => orders.get(Number(orderId)) || null,
+    markOrderPaid: async orderId => {
+        const row = orders.get(Number(orderId));
+        if (!row) return;
+        row.status = 'paid';
+        row.paid_at = new Date();
+    },
+    activateEntitlementFromOrder: async (userId, plan) => {
+        const uid = Number(userId);
+        entitlements.set(uid, {
+            user_id: uid,
+            status: 'active',
+            plan: plan || 'family_yearly',
+            features_json: JSON.stringify(['cloud_save', 'share', 'community', 'backpack']),
+            device_limit: 3,
+            subscription_expires_at: nowPlusDays(365)
+        });
+    },
+    bcrypt: {
+        compareSync: (password, stored) => password === stored
+    }
+};
+
+const dbPath = path.resolve(__dirname, '../backend/db.js');
+require.cache[dbPath] = {
+    id: dbPath,
+    filename: dbPath,
+    loaded: true,
+    exports: mockDb
+};
+
+const {createApp} = require('../backend/app');
+const PORT = Number(process.env.ZHIMENG_AUTH_PORT || 3001);
+
+createApp()
+    .then(app => {
+        app.listen(PORT, () => {
+            // eslint-disable-next-line no-console
+            console.log(`Zhimeng auth mock server listening on http://localhost:${PORT}`);
+        });
+    })
+    .catch(err => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to start auth mock server:', err.message || err);
+        process.exit(1);
+    });

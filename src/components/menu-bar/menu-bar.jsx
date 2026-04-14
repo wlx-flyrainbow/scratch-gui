@@ -110,6 +110,7 @@ const ariaMessages = defineMessages({
 const MenuBarItemTooltip = ({
     children,
     className,
+    comingSoonContent,
     enable,
     id,
     place = 'bottom'
@@ -126,6 +127,7 @@ const MenuBarItemTooltip = ({
             className={classNames(styles.comingSoon, className)}
             place={place}
             tooltipClassName={styles.comingSoonTooltip}
+            tooltipContent={comingSoonContent}
             tooltipId={id}
         >
             {children}
@@ -137,6 +139,7 @@ const MenuBarItemTooltip = ({
 MenuBarItemTooltip.propTypes = {
     children: PropTypes.node,
     className: PropTypes.string,
+    comingSoonContent: PropTypes.node,
     enable: PropTypes.bool,
     id: PropTypes.string,
     place: PropTypes.oneOf(['top', 'bottom', 'left', 'right'])
@@ -661,7 +664,10 @@ class MenuBar extends React.Component {
                             )
                         ) : (
                             this.props.showComingSoon ? (
-                                <MenuBarItemTooltip id="share-button">
+                                <MenuBarItemTooltip
+                                    comingSoonContent={this.props.comingSoonHint}
+                                    id="share-button"
+                                >
                                     <ShareButton className={styles.menuBarButton} />
                                 </MenuBarItemTooltip>
                             ) : []
@@ -687,7 +693,10 @@ class MenuBar extends React.Component {
                                 </ProjectWatcher>
                             )
                         ) : (this.props.showComingSoon ? (
-                            <MenuBarItemTooltip id="community-button">
+                            <MenuBarItemTooltip
+                                comingSoonContent={this.props.comingSoonHint}
+                                id="community-button"
+                            >
                                 <CommunityButton className={styles.menuBarButton} />
                             </MenuBarItemTooltip>
                         ) : [])}
@@ -811,7 +820,10 @@ class MenuBar extends React.Component {
                         <React.Fragment>
                             {this.props.showComingSoon ? (
                                 <React.Fragment>
-                                    <MenuBarItemTooltip id="mystuff">
+                                    <MenuBarItemTooltip
+                                        comingSoonContent={this.props.comingSoonHint}
+                                        id="mystuff"
+                                    >
                                         <div
                                             className={classNames(
                                                 styles.menuBarItem,
@@ -826,6 +838,7 @@ class MenuBar extends React.Component {
                                         </div>
                                     </MenuBarItemTooltip>
                                     <MenuBarItemTooltip
+                                        comingSoonContent={this.props.comingSoonHint}
                                         id="account-nav"
                                         place={this.props.isRtl ? 'right' : 'left'}
                                     >
@@ -878,6 +891,7 @@ MenuBar.propTypes = {
     canSave: PropTypes.bool,
     canShare: PropTypes.bool,
     className: PropTypes.string,
+    comingSoonHint: PropTypes.node,
     confirmReadyToReplaceProject: PropTypes.func,
     currentLocale: PropTypes.string.isRequired,
     editMenuOpen: PropTypes.bool,

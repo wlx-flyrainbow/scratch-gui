@@ -300,12 +300,34 @@ $fade-out-distance: 15px;
 }
 
 .auth-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     font-size: 0.75rem;
     color: $text-primary;
     background: #fff8e1;
     border-top: 1px solid #ffe082;
     border-bottom: 1px solid #ffe082;
     padding: 0.4rem 0.8rem;
+}
+
+.auth-notice-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.auth-notice-button {
+    border: 1px solid #f9a825;
+    background: #fff;
+    color: #7c4d00;
+    border-radius: 6px;
+    padding: 0.1rem 0.5rem;
+    cursor: pointer;
+}
+
+.auth-notice-button:hover {
+    background: #fffde7;
 }
 /* Alerts */
 

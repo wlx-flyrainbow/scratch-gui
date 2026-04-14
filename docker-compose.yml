@@ -1,7 +1,9 @@
 # Local MySQL for 知萌 auth backend (dev + integration tests).
+# Host port 3307 avoids clashing with a local MySQL on 3306 (common on dev machines).
 # Usage: docker compose up -d
-# Then: ZHIMENG_MYSQL_PASSWORD=root npm run auth-server
-# Tests: ZHIMENG_MYSQL_PASSWORD=root ZHIMENG_MYSQL_DATABASE=zhimeng_test npm run test:backend
+# Then: export ZHIMENG_MYSQL_PASSWORD=root ZHIMENG_MYSQL_PORT=3307
+#       npm run auth-server
+# Tests: ZHIMENG_MYSQL_PASSWORD=root ZHIMENG_MYSQL_PORT=3307 ZHIMENG_MYSQL_DATABASE=zhimeng_test npm run test:backend
 
 services:
   mysql:
@@ -10,7 +12,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: zhimeng
     ports:
-      - "3306:3306"
+      - "3307:3306"
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - ./docker/mysql-init:/docker-entrypoint-initdb.d

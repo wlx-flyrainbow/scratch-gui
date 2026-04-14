@@ -34,7 +34,8 @@ class ComingSoonContent extends React.Component {
         bindAll(this, [
             'setHide',
             'setShow',
-            'getRandomMessage'
+            'getRandomMessage',
+            'getTooltipContent'
         ]);
         this.state = {
             isShowing: false
@@ -66,6 +67,13 @@ class ComingSoonContent extends React.Component {
             />
         );
     }
+    getTooltipContent () {
+        const tc = this.props.tooltipContent;
+        if (typeof tc !== 'undefined' && tc !== null && tc !== '') {
+            return typeof tc === 'string' ? <span>{tc}</span> : tc;
+        }
+        return this.getRandomMessage();
+    }
     render () {
         return (
             <ReactTooltip
@@ -82,7 +90,7 @@ class ComingSoonContent extends React.Component {
                         [styles.bottom]: (this.props.place === 'bottom')
                     }
                 )}
-                getContent={this.getRandomMessage}
+                getContent={this.getTooltipContent}
                 id={this.props.tooltipId}
             />
         );
@@ -93,6 +101,7 @@ ComingSoonContent.propTypes = {
     className: PropTypes.string,
     intl: intlShape,
     place: PropTypes.oneOf(['top', 'right', 'bottom', 'left']),
+    tooltipContent: PropTypes.node,
     tooltipId: PropTypes.string.isRequired
 };
 
@@ -117,6 +126,7 @@ const ComingSoonTooltip = props => (
         <ComingSoon
             className={props.tooltipClassName}
             place={props.place}
+            tooltipContent={props.tooltipContent}
             tooltipId={props.tooltipId}
         />
     </div>
@@ -129,6 +139,7 @@ ComingSoonTooltip.propTypes = {
     delayShow: PropTypes.number,
     place: PropTypes.oneOf(['top', 'right', 'bottom', 'left']),
     tooltipClassName: PropTypes.string,
+    tooltipContent: PropTypes.node,
     tooltipId: PropTypes.string.isRequired
 };
 

@@ -101,7 +101,9 @@ const GUIComponent = props => {
         onClickAccountNav,
         onCloseAccountNav,
         onLogOut,
+        onOpenBilling,
         onOpenRegistration,
+        onRefreshEntitlement,
         onToggleLoginOpen,
         onActivateCostumesTab,
         onActivateSoundsTab,
@@ -234,6 +236,7 @@ const GUIComponent = props => {
                     canSave={canSave}
                     canShare={canShare}
                     className={styles.menuBarPosition}
+                    comingSoonHint={authNotice}
                     enableCommunity={enableCommunity}
                     isShared={isShared}
                     isTotallyNormal={isTotallyNormal}
@@ -254,7 +257,25 @@ const GUIComponent = props => {
                 />
                 {authNotice ? (
                     <div className={styles.authNotice}>
-                        {authNotice}
+                        <span>{authNotice}</span>
+                        <div className={styles.authNoticeActions}>
+                            {onOpenBilling ? (
+                                <button
+                                    className={styles.authNoticeButton}
+                                    onClick={onOpenBilling}
+                                >
+                                    {'前往购买'}
+                                </button>
+                            ) : null}
+                            {onRefreshEntitlement ? (
+                                <button
+                                    className={styles.authNoticeButton}
+                                    onClick={onRefreshEntitlement}
+                                >
+                                    {'刷新授权'}
+                                </button>
+                            ) : null}
+                        </div>
                     </div>
                 ) : null}
                 <Box className={styles.bodyWrapper}>
@@ -430,7 +451,9 @@ GUIComponent.propTypes = {
     onCloseAccountNav: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
     onLogOut: PropTypes.func,
+    onOpenBilling: PropTypes.func,
     onOpenRegistration: PropTypes.func,
+    onRefreshEntitlement: PropTypes.func,
     onRequestCloseBackdropLibrary: PropTypes.func,
     onRequestCloseCostumeLibrary: PropTypes.func,
     onRequestCloseDebugModal: PropTypes.func,

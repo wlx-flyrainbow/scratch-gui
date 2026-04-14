@@ -1,0 +1,67 @@
+name: Zhimeng Goal Check
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "src/**"
+      - "scripts/**"
+      - "docs/zhimeng-*.md"
+      - ".github/workflows/zhimeng-goal-check.yml"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  goal-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace # v4
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start backend mock + frontend
+        run: |
+          nohup node scripts/start-auth-server-mock-db.js > backend.log 2>&1 &
+          nohup npm start > frontend.log 2>&1 &
+
+      - name: Wait for services
+        run: |
+          for i in {1..40}; do
+            HB=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/health || true)
+            HF=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8601/ || true)
+            if [ "$HB" = "200" ] && [ "$HF" = "200" ]; then
+              echo "Services ready"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Service readiness timed out"
+          echo "--- backend.log ---"
+          sed -n '1,200p' backend.log || true
+          echo "--- frontend.log ---"
+          sed -n '1,200p' frontend.log || true
+          exit 1
+
+      - name: Run goal check
+        run: npm run test:zhimeng-goal
+
+      - name: Upload goal check reports
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        with:
+          name: zhimeng-goal-check-reports
+          path: |
+            _bmad-output/test-reports/*.json
+            _bmad-output/test-reports/*.md
+            backend.log
+            frontend.log

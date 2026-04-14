@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-04-14T14:30:08.901Z",
+  "backendBase": "http://127.0.0.1:3001",
+  "frontendBase": "http://127.0.0.1:8601",
+  "pass": false,
+  "steps": [
+    {
+      "id": "frontend_http",
+      "pass": false,
+      "detail": "请求失败: fetch failed"
+    },
+    {
+      "id": "backend_health",
+      "pass": false,
+      "detail": "请求失败: fetch failed"
+    }
+  ],
+  "responses": {}
+}

@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-04-14T15:14:38.792Z",
+  "backendBase": "http://zhimeng-real-backend:3003",
+  "frontendBase": "http://zhimeng-frontend-static",
+  "pass": false,
+  "steps": [
+    {
+      "id": "frontend_http",
+      "pass": false,
+      "detail": "GET http://zhimeng-frontend-static -> 403"
+    },
+    {
+      "id": "backend_health",
+      "pass": true,
+      "detail": "GET /health -> 200"
+    }
+  ],
+  "responses": {
+    "frontendHead": {
+      "url": "http://zhimeng-frontend-static",
+      "method": "GET",
+      "status": 403,
+      "ok": false,
+      "json": null,
+      "text": "<html>\r\n<head><title>403 Forbidden</title></head>\r\n<body>\r\n<center><h1>403 Forbidden</h1></center>\r\n<hr><center>nginx/1.29.8</center>\r\n</body>\r\n</html>\r\n"
+    },
+    "health": {
+      "url": "http://zhimeng-real-backend:3003/health",
+      "method": "GET",
+      "status": 200,
+      "ok": true,
+      "json": {
+        "ok": true,
+        "now": "2026-04-14T15:14:38.842Z",
+        "storage": "mysql"
+      },
+      "text": "{\"ok\":true,\"now\":\"2026-04-14T15:14:38.842Z\",\"storage\":\"mysql\"}"
+    }
+  }
+}
