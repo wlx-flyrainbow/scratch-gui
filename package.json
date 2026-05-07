@@ -4,10 +4,10 @@
   "description": "知萌 - 少儿创意编程启蒙桌面应用",
   "author": "Massachusetts Institute of Technology",
   "license": "AGPL-3.0-only",
-  "homepage": "https://github.com/scratchfoundation/scratch-gui#readme",
+  "homepage": "https://github.com/wlx-flyrainbow/scratch-gui#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/scratchfoundation/scratch-gui.git"
+    "url": "https://github.com/wlx-flyrainbow/scratch-gui.git"
   },
   "main": "electron-main.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "electron": "electron .",
     "electron-dev": "npm run build && electron .",
     "auth-server": "node backend/server.js",
+    "db:migrate": "node scripts/migrate-zhimeng-db.js",
     "docker:mysql": "docker compose up -d",
     "env:init": "node scripts/init-env.js",
     "pack": "npm run build && electron-builder --dir",
@@ -31,6 +32,7 @@
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",
+    "release:check": "node scripts/validate-zhimeng-release.js",
     "test": "npm run test:lint && npm run test:unit && npm run build && npm run test:integration",
     "test:integration": "jest --maxWorkers=4 test[\\\\/]integration",
     "test:lint": "eslint . --ext .js,.jsx",
@@ -56,7 +58,9 @@
       "electron-preload.js",
       "build/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE",
+      "docs/agpl-source-disclosure.md"
     ],
     "mac": {
       "category": "public.app-category.education",

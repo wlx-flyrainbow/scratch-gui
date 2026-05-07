@@ -32,6 +32,14 @@ npm run dev:full
 npm run auth-server
 ```
 
+生产环境默认不在服务启动时隐式建表。部署或升级前先运行：
+
+```bash
+npm run db:migrate
+```
+
+本地开发环境仍默认自动初始化 schema；若生产确需启动时自动初始化，可显式设置 `ZHIMENG_AUTO_INIT_SCHEMA=1`。
+
 仅前端 + 后端联调见上 `dev:full`。
 
 浏览器打开开发地址（默认 `http://localhost:8601/`，以终端输出为准）。

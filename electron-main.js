@@ -1,4 +1,4 @@
-const {app, BrowserWindow, Menu, ipcMain, safeStorage} = require('electron');
+const {app, BrowserWindow, Menu, ipcMain, safeStorage, shell} = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -13,6 +13,7 @@ const windowIconPath = () => {
 let mainWindow;
 let isQuitting = false;
 const authFilePath = path.join(app.getPath('userData'), 'zhimeng-auth.json');
+const sourceUrl = 'https://github.com/wlx-flyrainbow/scratch-gui';
 
 const readAuthBundle = () => {
     try {
@@ -114,6 +115,15 @@ const createWindow = function () {
             submenu: [
                 {label: '最小化', accelerator: 'CmdOrCtrl+M', role: 'minimize'},
                 {label: '关闭', accelerator: 'CmdOrCtrl+W', role: 'close'}
+            ]
+        },
+        {
+            label: '帮助',
+            submenu: [
+                {
+                    label: '查看源码与 AGPL 许可',
+                    click: () => shell.openExternal(sourceUrl)
+                }
             ]
         }
     ];
