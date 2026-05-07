@@ -217,7 +217,7 @@ describe('backend auth API (MySQL)', () => {
             headers: h
         });
         expect(mockPaid.status).toBe(200);
-        expect(mockPaid.body.status).toBe('paid');
+        expect(mockPaid.body.status).toBe('fulfilled');
 
         const statusAfter = await inject(app, {
             path: `/order/${create.body.order_id}/status`,
@@ -225,6 +225,6 @@ describe('backend auth API (MySQL)', () => {
             headers: h
         });
         expect(statusAfter.status).toBe(200);
-        expect(statusAfter.body.status).toBe('paid');
+        expect(statusAfter.body.status).toBe('fulfilled');
     });
 });

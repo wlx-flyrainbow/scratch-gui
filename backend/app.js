@@ -14,6 +14,22 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** @type {Map<string, {userId: number, expiresAt: number}>} */
 const accessTokens = new Map();
 
+const isProduction = () => process.env.NODE_ENV === 'production';
+
+const isTruthyEnv = value => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase());
+
+const shouldSeedDemoUser = () => !isProduction() || isTruthyEnv(process.env.ZHIMENG_SEED_DEMO_USER);
+
+const shouldAutoInitSchema = () => !isProduction() || isTruthyEnv(process.env.ZHIMENG_AUTO_INIT_SCHEMA);
+
+const shouldEnableMockPayment = () => !isProduction() || isTruthyEnv(process.env.ZHIMENG_ENABLE_MOCK_PAYMENT);
+
+const safeCompare = (a, b) => {
+    const left = Buffer.from(String(a || ''), 'utf8');
+    const right = Buffer.from(String(b || ''), 'utf8');
+    return left.length === right.length && crypto.timingSafeEqual(left, right);
+};
+
 const issueToken = prefix => `${prefix}_${crypto.randomUUID().replace(/-/g, '')}`;
 
 const hashRefreshToken = token =>
@@ -83,13 +99,85 @@ const getAccessToken = req => {
     return header.slice('Bearer '.length);
 };
 
+const parseOrderId = rawId => {
+    const numericId = Number(String(rawId || '').replace(/^o_/, ''));
+    return Number.isFinite(numericId) && numericId > 0 ? numericId : null;
+};
+
+const toIso = value => (value instanceof Date ? value.toISOString() : value);
+
+const toOrderPayload = order => ({
+    order_id: `o_${order.id}`,
+    user_id: String(order.user_id),
+    plan: order.plan,
+    channel: order.channel,
+    provider: order.provider || order.channel,
+    provider_trade_no: order.provider_trade_no || null,
+    amount_cents: order.amount_cents,
+    currency: order.currency,
+    status: order.status,
+    paid_at: toIso(order.paid_at),
+    fulfilled_at: toIso(order.fulfilled_at),
+    expires_at: toIso(order.expires_at)
+});
+
+const sendServerError = (res, err) => {
+    const message = isProduction() ? 'Server error' : (err.message || 'Server error');
+    return res.status(500).json({message});
+};
+
+const buildCorsOptions = () => {
+    const origins = String(process.env.ZHIMENG_CORS_ORIGINS || '')
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean);
+    if (origins.length === 0) {
+        return isProduction() ? {origin: false} : {};
+    }
+    return {
+        origin: (origin, cb) => {
+            if (!origin || origins.includes(origin)) {
+                cb(null, true);
+                return;
+            }
+            cb(new Error('Not allowed by CORS'));
+        }
+    };
+};
+
+const createRateLimiter = () => {
+    const windowMs = Number(process.env.ZHIMENG_RATE_LIMIT_WINDOW_MS || 60000);
+    const max = Number(process.env.ZHIMENG_RATE_LIMIT_MAX || (isProduction() ? 600 : 0));
+    const hits = new Map();
+    return (req, res, next) => {
+        if (!max || max <= 0) return next();
+        const now = Date.now();
+        const key = req.ip || req.connection.remoteAddress || 'unknown';
+        const rec = hits.get(key);
+        if (!rec || now > rec.resetAt) {
+            hits.set(key, {count: 1, resetAt: now + windowMs});
+            return next();
+        }
+        rec.count++;
+        if (rec.count > max) {
+            return res.status(429).json({message: 'Too many requests'});
+        }
+        return next();
+    };
+};
+
 const createApp = async () => {
-    await db.initSchema();
-    await db.seedDemoUser();
+    if (shouldAutoInitSchema()) {
+        await db.initSchema();
+    }
+    if (shouldSeedDemoUser()) {
+        await db.seedDemoUser();
+    }
 
     const app = express();
-    app.use(cors());
-    app.use(express.json());
+    app.use(cors(buildCorsOptions()));
+    app.use(express.json({limit: process.env.ZHIMENG_JSON_LIMIT || '1mb'}));
+    app.use(createRateLimiter());
 
     const requireAuth = async (req, res, next) => {
         try {
@@ -114,12 +202,29 @@ const createApp = async () => {
             /* eslint-enable require-atomic-updates */
             return next();
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     };
 
-    app.get('/health', (req, res) => {
-        res.json({ok: true, now: nowIso(), storage: 'mysql'});
+    const requireAdmin = (req, res, next) => {
+        const configured = process.env.ZHIMENG_ADMIN_TOKEN;
+        if (!configured) {
+            return res.status(503).json({message: 'Admin operations are not configured'});
+        }
+        const provided = req.headers['x-zhimeng-admin-token'];
+        if (!provided || !safeCompare(provided, configured)) {
+            return res.status(401).json({message: 'Unauthorized'});
+        }
+        return next();
+    };
+
+    app.get('/health', async (req, res) => {
+        try {
+            await db.ping();
+            return res.json({ok: true, now: nowIso(), storage: 'mysql'});
+        } catch (err) {
+            return res.status(503).json({ok: false, now: nowIso(), storage: 'mysql'});
+        }
     });
 
     app.post('/auth/login', async (req, res) => {
@@ -128,6 +233,7 @@ const createApp = async () => {
             if (!username || !password) {
                 return res.status(400).json({message: 'username and password are required'});
             }
+            await db.deleteExpiredRefreshTokens();
             const row = await db.findUserByUsername(username);
             if (!row || !db.bcrypt.compareSync(password, row.password_hash)) {
                 return res.status(401).json({message: 'Invalid username or password'});
@@ -155,7 +261,7 @@ const createApp = async () => {
                 entitlement: buildEntitlementResponse(userPayload)
             });
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     });
 
@@ -181,7 +287,7 @@ const createApp = async () => {
             });
             return res.json({access_token: accessToken});
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     });
 
@@ -194,7 +300,7 @@ const createApp = async () => {
             }
             return res.status(204).send();
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     });
 
@@ -216,7 +322,7 @@ const createApp = async () => {
             if (err.statusCode === 409) {
                 return res.status(409).json({message: err.message});
             }
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     });
 
@@ -227,7 +333,7 @@ const createApp = async () => {
             await db.unbindDevice(req.userNumericId, deviceId);
             return res.json({ok: true});
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     });
 
@@ -249,15 +355,15 @@ const createApp = async () => {
                 qr_code_url: `${process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com'}/qr/${orderId}`
             });
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     });
 
     app.get('/order/:id/status', requireAuth, async (req, res) => {
         try {
             const rawId = String(req.params.id || '');
-            const numericId = Number(rawId.replace(/^o_/, ''));
-            if (!Number.isFinite(numericId) || numericId <= 0) {
+            const numericId = parseOrderId(rawId);
+            if (!numericId) {
                 return res.status(400).json({message: 'Invalid order id'});
             }
             const order = await db.findOrderById(numericId);
@@ -265,38 +371,122 @@ const createApp = async () => {
                 return res.status(404).json({message: 'Order not found'});
             }
             return res.json({
-                order_id: `o_${order.id}`,
-                status: order.status,
-                paid_at: order.paid_at instanceof Date ? order.paid_at.toISOString() : order.paid_at
+                ...toOrderPayload(order)
             });
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            return sendServerError(res, err);
         }
     });
 
-    app.post('/order/:id/mock-paid', requireAuth, async (req, res) => {
+    app.post('/admin/order/:id/manual-confirm', requireAdmin, async (req, res) => {
         try {
-            const rawId = String(req.params.id || '');
-            const numericId = Number(rawId.replace(/^o_/, ''));
-            if (!Number.isFinite(numericId) || numericId <= 0) {
+            const numericId = parseOrderId(req.params.id);
+            if (!numericId) {
                 return res.status(400).json({message: 'Invalid order id'});
             }
-            const order = await db.findOrderById(numericId);
-            if (!order || Number(order.user_id) !== Number(req.userNumericId)) {
-                return res.status(404).json({message: 'Order not found'});
-            }
-            await db.markOrderPaid(numericId);
-            await db.activateEntitlementFromOrder(req.userNumericId, order.plan || 'family_yearly');
-            const refreshed = await db.findOrderById(numericId);
+            const {
+                operator,
+                provider_trade_no: providerTradeNo,
+                amount_cents: amountCents,
+                currency,
+                note
+            } = req.body || {};
+            const result = await db.fulfillOrderFromPayment({
+                orderId: numericId,
+                actor: operator || 'manual-admin',
+                provider: 'manual',
+                providerTradeNo,
+                amountCents: typeof amountCents === 'number' ? amountCents : null,
+                currency,
+                rawPayload: {
+                    note: note || '',
+                    source: 'manual-confirm'
+                }
+            });
             return res.json({
                 ok: true,
                 order_id: `o_${numericId}`,
-                status: refreshed.status
+                status: result.order.status,
+                idempotent: result.idempotent
             });
         } catch (err) {
-            return res.status(500).json({message: err.message || 'Server error'});
+            if (err.statusCode) {
+                return res.status(err.statusCode).json({message: err.message});
+            }
+            return sendServerError(res, err);
         }
     });
+
+    app.get('/admin/order/:id', requireAdmin, async (req, res) => {
+        try {
+            const numericId = parseOrderId(req.params.id);
+            if (!numericId) {
+                return res.status(400).json({message: 'Invalid order id'});
+            }
+            const order = await db.findOrderById(numericId);
+            if (!order) {
+                return res.status(404).json({message: 'Order not found'});
+            }
+            return res.json(toOrderPayload(order));
+        } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.get('/admin/user/:username', requireAdmin, async (req, res) => {
+        try {
+            const row = await db.findUserByUsername(req.params.username);
+            if (!row) {
+                return res.status(404).json({message: 'User not found'});
+            }
+            const devices = await db.listDevices(row.id);
+            const userPayload = toUserPayload(row, devices);
+            const orders = await db.listOrdersByUser(row.id);
+            return res.json({
+                user: {
+                    id: userPayload.id,
+                    username: userPayload.username,
+                    nickname: userPayload.nickname
+                },
+                permissions: userPayload.permissions,
+                entitlement: userPayload.entitlement,
+                orders: orders.map(toOrderPayload)
+            });
+        } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    if (shouldEnableMockPayment()) {
+        app.post('/order/:id/mock-paid', requireAuth, async (req, res) => {
+            try {
+                const numericId = parseOrderId(req.params.id);
+                if (!numericId) {
+                    return res.status(400).json({message: 'Invalid order id'});
+                }
+                const order = await db.findOrderById(numericId);
+                if (!order || Number(order.user_id) !== Number(req.userNumericId)) {
+                    return res.status(404).json({message: 'Order not found'});
+                }
+                const result = await db.fulfillOrderFromPayment({
+                    orderId: numericId,
+                    actor: 'mock-paid',
+                    provider: 'mock',
+                    rawPayload: {
+                        source: 'mock-paid'
+                    }
+                });
+                return res.json({
+                    ok: true,
+                    order_id: `o_${numericId}`,
+                    status: result.order.status,
+                    idempotent: result.idempotent
+                });
+            } catch (err) {
+                return sendServerError(res, err);
+            }
+        });
+    }
 
     return app;
 };
@@ -304,5 +494,8 @@ const createApp = async () => {
 module.exports = {
     createApp,
     accessTokens,
-    hashRefreshToken
+    hashRefreshToken,
+    shouldAutoInitSchema,
+    shouldEnableMockPayment,
+    shouldSeedDemoUser
 };

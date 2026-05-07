@@ -3,6 +3,14 @@ const bcrypt = require('bcryptjs');
 
 let pool;
 
+const ORDER_STATUS = {
+    CREATED: 'created',
+    PAID: 'paid',
+    FULFILLED: 'fulfilled'
+};
+
+const ENTITLEMENT_FEATURES = ['cloud_save', 'share', 'community', 'backpack'];
+
 const getPool = () => {
     /* eslint-disable require-atomic-updates -- lazy singleton pool */
     if (!pool) {
@@ -33,6 +41,26 @@ const closePool = async () => {
     await current.end();
     /* eslint-disable-next-line require-atomic-updates -- clear singleton after close */
     pool = null;
+};
+
+const ping = async () => {
+    const p = getPool();
+    await p.query('SELECT 1');
+};
+
+const ensureColumn = async (p, tableName, columnName, columnSql) => {
+    const [rows] = await p.query(
+        `SELECT COLUMN_NAME
+         FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = ?
+           AND COLUMN_NAME = ?
+         LIMIT 1`,
+        [tableName, columnName]
+    );
+    if (rows.length === 0) {
+        await p.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnSql}`);
+    }
 };
 
 const initSchema = async () => {
@@ -89,8 +117,15 @@ const initSchema = async () => {
             plan VARCHAR(64) NOT NULL,
             channel VARCHAR(32) NOT NULL,
             status VARCHAR(32) NOT NULL DEFAULT 'created',
+            provider VARCHAR(32) NULL,
+            provider_trade_no VARCHAR(128) NULL,
+            amount_cents INT NULL,
+            currency VARCHAR(8) NULL,
             return_url VARCHAR(1024) NULL,
             paid_at DATETIME NULL,
+            fulfilled_at DATETIME NULL,
+            expires_at DATETIME NULL,
+            audit_json JSON NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             KEY idx_orders_user (user_id),
@@ -98,6 +133,13 @@ const initSchema = async () => {
             CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    await ensureColumn(p, 'orders', 'provider', 'provider VARCHAR(32) NULL');
+    await ensureColumn(p, 'orders', 'provider_trade_no', 'provider_trade_no VARCHAR(128) NULL');
+    await ensureColumn(p, 'orders', 'amount_cents', 'amount_cents INT NULL');
+    await ensureColumn(p, 'orders', 'currency', 'currency VARCHAR(8) NULL');
+    await ensureColumn(p, 'orders', 'fulfilled_at', 'fulfilled_at DATETIME NULL');
+    await ensureColumn(p, 'orders', 'expires_at', 'expires_at DATETIME NULL');
+    await ensureColumn(p, 'orders', 'audit_json', 'audit_json JSON NULL');
 };
 
 const seedDemoUser = async () => {
@@ -110,7 +152,7 @@ const seedDemoUser = async () => {
         return;
     }
     const hash = bcrypt.hashSync('123456', 10);
-    const features = JSON.stringify(['cloud_save', 'share', 'community', 'backpack']);
+    const features = JSON.stringify(ENTITLEMENT_FEATURES);
     const subExpires = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000));
     const [result] = await p.query(
         `INSERT INTO users (username, password_hash, nickname, permission_student, permission_educator)
@@ -190,6 +232,11 @@ const deleteRefreshToken = async tokenHash => {
     await p.query('DELETE FROM refresh_tokens WHERE token_hash = ?', [tokenHash]);
 };
 
+const deleteExpiredRefreshTokens = async () => {
+    const p = getPool();
+    await p.query('DELETE FROM refresh_tokens WHERE expires_at < CURRENT_TIMESTAMP');
+};
+
 const bindDevice = async (userId, deviceId, deviceName) => {
     const p = getPool();
     const row = await findUserById(userId);
@@ -234,9 +281,9 @@ const unbindDevice = async (userId, deviceId) => {
 const createOrder = async ({userId, plan, channel, returnUrl}) => {
     const p = getPool();
     const [result] = await p.query(
-        `INSERT INTO orders (user_id, plan, channel, status, return_url)
-         VALUES (?, ?, ?, 'created', ?)`,
-        [userId, plan, channel, returnUrl || null]
+        `INSERT INTO orders (user_id, plan, channel, provider, status, return_url)
+         VALUES (?, ?, ?, ?, 'created', ?)`,
+        [userId, plan, channel, channel, returnUrl || null]
     );
     return result.insertId;
 };
@@ -244,11 +291,23 @@ const createOrder = async ({userId, plan, channel, returnUrl}) => {
 const findOrderById = async orderId => {
     const p = getPool();
     const [rows] = await p.query(
-        `SELECT id, user_id, plan, channel, status, return_url, paid_at
+        `SELECT id, user_id, plan, channel, provider, provider_trade_no, amount_cents, currency,
+                status, return_url, paid_at, fulfilled_at, expires_at, audit_json
          FROM orders WHERE id = ? LIMIT 1`,
         [orderId]
     );
     return rows[0] || null;
+};
+
+const listOrdersByUser = async userId => {
+    const p = getPool();
+    const [rows] = await p.query(
+        `SELECT id, user_id, plan, channel, provider, provider_trade_no, amount_cents, currency,
+                status, return_url, paid_at, fulfilled_at, expires_at, audit_json
+         FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`,
+        [userId]
+    );
+    return rows;
 };
 
 const markOrderPaid = async orderId => {
@@ -261,11 +320,10 @@ const markOrderPaid = async orderId => {
     );
 };
 
-const activateEntitlementFromOrder = async (userId, plan) => {
-    const p = getPool();
-    const features = JSON.stringify(['cloud_save', 'share', 'community', 'backpack']);
+const activateEntitlementWithConnection = async (conn, userId, plan) => {
+    const features = JSON.stringify(ENTITLEMENT_FEATURES);
     const subExpires = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000));
-    await p.query(
+    await conn.query(
         `INSERT INTO entitlements (user_id, status, plan, features_json, device_limit, subscription_expires_at)
          VALUES (?, 'active', ?, ?, 3, ?)
          ON DUPLICATE KEY UPDATE
@@ -277,9 +335,109 @@ const activateEntitlementFromOrder = async (userId, plan) => {
     );
 };
 
+const activateEntitlementFromOrder = async (userId, plan) => {
+    const p = getPool();
+    await activateEntitlementWithConnection(p, userId, plan);
+};
+
+const fulfillOrderFromPayment = async ({
+    orderId,
+    actor,
+    provider,
+    providerTradeNo,
+    amountCents,
+    currency,
+    rawPayload
+}) => {
+    const p = getPool();
+    const conn = await p.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [rows] = await conn.query(
+            `SELECT id, user_id, plan, channel, provider, provider_trade_no, amount_cents, currency,
+                    status, return_url, paid_at, fulfilled_at, expires_at, audit_json
+             FROM orders WHERE id = ? LIMIT 1 FOR UPDATE`,
+            [orderId]
+        );
+        const order = rows[0] || null;
+        if (!order) {
+            const err = new Error('Order not found');
+            err.statusCode = 404;
+            throw err;
+        }
+        if (providerTradeNo) {
+            const [conflicts] = await conn.query(
+                `SELECT id FROM orders
+                 WHERE provider = ? AND provider_trade_no = ? AND id <> ?
+                 LIMIT 1`,
+                [provider || order.provider || order.channel, providerTradeNo, orderId]
+            );
+            if (conflicts.length > 0) {
+                const err = new Error('Provider trade number already used');
+                err.statusCode = 409;
+                throw err;
+            }
+        }
+        if (order.status === ORDER_STATUS.FULFILLED) {
+            await conn.commit();
+            return {
+                order,
+                idempotent: true
+            };
+        }
+        const audit = {
+            actor: actor || 'system',
+            provider: provider || order.provider || order.channel,
+            providerTradeNo: providerTradeNo || order.provider_trade_no || null,
+            confirmedAt: new Date().toISOString(),
+            rawPayload: rawPayload || null
+        };
+        await conn.query(
+            `UPDATE orders
+             SET status = ?,
+                 provider = ?,
+                 provider_trade_no = COALESCE(?, provider_trade_no),
+                 amount_cents = COALESCE(?, amount_cents),
+                 currency = COALESCE(?, currency),
+                 paid_at = COALESCE(paid_at, CURRENT_TIMESTAMP),
+                 audit_json = ?
+             WHERE id = ?`,
+            [
+                ORDER_STATUS.PAID,
+                audit.provider,
+                providerTradeNo || null,
+                typeof amountCents === 'number' ? amountCents : null,
+                currency || null,
+                JSON.stringify(audit),
+                orderId
+            ]
+        );
+        await activateEntitlementWithConnection(conn, order.user_id, order.plan || 'family_yearly');
+        await conn.query(
+            `UPDATE orders
+             SET status = ?,
+                 fulfilled_at = COALESCE(fulfilled_at, CURRENT_TIMESTAMP)
+             WHERE id = ?`,
+            [ORDER_STATUS.FULFILLED, orderId]
+        );
+        await conn.commit();
+        return {
+            order: await findOrderById(orderId),
+            idempotent: false
+        };
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+};
+
 module.exports = {
+    ORDER_STATUS,
     getPool,
     closePool,
+    ping,
     initSchema,
     seedDemoUser,
     findUserByUsername,
@@ -288,11 +446,14 @@ module.exports = {
     insertRefreshToken,
     findRefreshToken,
     deleteRefreshToken,
+    deleteExpiredRefreshTokens,
     bindDevice,
     unbindDevice,
     createOrder,
     findOrderById,
+    listOrdersByUser,
     markOrderPaid,
     activateEntitlementFromOrder,
+    fulfillOrderFromPayment,
     bcrypt
 };

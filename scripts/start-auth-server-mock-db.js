@@ -41,11 +41,12 @@ const mergeUserRow = userId => {
 };
 
 const mockDb = {
-    initSchema: async () => {},
-    seedDemoUser: async () => {
+    initSchema: () => {},
+    ping: () => {},
+    seedDemoUser: () => {
         ensureSeed();
     },
-    findUserByUsername: async username => {
+    findUserByUsername: username => {
         ensureSeed();
         for (const user of users.values()) {
             if (user.username === username) {
@@ -54,25 +55,33 @@ const mockDb = {
         }
         return null;
     },
-    findUserById: async id => {
+    findUserById: id => {
         ensureSeed();
         return mergeUserRow(Number(id));
     },
-    listDevices: async userId => {
+    listDevices: userId => {
         const list = userDevices.get(Number(userId)) || [];
         return list.slice().reverse();
     },
-    insertRefreshToken: async (userId, tokenHash, expiresAt) => {
+    insertRefreshToken: (userId, tokenHash, expiresAt) => {
         refreshTokens.set(tokenHash, {
             user_id: Number(userId),
             expires_at: expiresAt
         });
     },
-    findRefreshToken: async tokenHash => refreshTokens.get(tokenHash) || null,
-    deleteRefreshToken: async tokenHash => {
+    findRefreshToken: tokenHash => refreshTokens.get(tokenHash) || null,
+    deleteRefreshToken: tokenHash => {
         refreshTokens.delete(tokenHash);
     },
-    bindDevice: async (userId, deviceId, deviceName) => {
+    deleteExpiredRefreshTokens: () => {
+        const now = Date.now();
+        for (const [tokenHash, rec] of refreshTokens.entries()) {
+            if (new Date(rec.expires_at).getTime() < now) {
+                refreshTokens.delete(tokenHash);
+            }
+        }
+    },
+    bindDevice: (userId, deviceId, deviceName) => {
         const uid = Number(userId);
         const row = entitlements.get(uid);
         const limit = row && row.device_limit ? row.device_limit : 3;
@@ -97,12 +106,12 @@ const mockDb = {
         userDevices.set(uid, list);
         return list.length;
     },
-    unbindDevice: async (userId, deviceId) => {
+    unbindDevice: (userId, deviceId) => {
         const uid = Number(userId);
         const list = userDevices.get(uid) || [];
         userDevices.set(uid, list.filter(d => d.device_id !== deviceId));
     },
-    createOrder: async ({userId, plan, channel, returnUrl}) => {
+    createOrder: ({userId, plan, channel, returnUrl}) => {
         const id = nextOrderId++;
         orders.set(id, {
             id,
@@ -111,18 +120,43 @@ const mockDb = {
             channel,
             status: 'created',
             return_url: returnUrl || null,
-            paid_at: null
+            paid_at: null,
+            fulfilled_at: null,
+            provider: channel,
+            provider_trade_no: null
         });
         return id;
     },
-    findOrderById: async orderId => orders.get(Number(orderId)) || null,
-    markOrderPaid: async orderId => {
+    findOrderById: orderId => orders.get(Number(orderId)) || null,
+    listOrdersByUser: userId => Array.from(orders.values())
+        .filter(order => Number(order.user_id) === Number(userId))
+        .reverse(),
+    markOrderPaid: orderId => {
         const row = orders.get(Number(orderId));
         if (!row) return;
         row.status = 'paid';
         row.paid_at = new Date();
     },
-    activateEntitlementFromOrder: async (userId, plan) => {
+    fulfillOrderFromPayment: async ({orderId, provider, providerTradeNo}) => {
+        const row = orders.get(Number(orderId));
+        if (!row) {
+            const err = new Error('Order not found');
+            err.statusCode = 404;
+            throw err;
+        }
+        const idempotent = row.status === 'fulfilled';
+        row.status = 'fulfilled';
+        row.provider = provider || row.provider;
+        row.provider_trade_no = providerTradeNo || row.provider_trade_no;
+        row.paid_at = row.paid_at || new Date();
+        row.fulfilled_at = row.fulfilled_at || new Date();
+        await mockDb.activateEntitlementFromOrder(row.user_id, row.plan || 'family_yearly');
+        return {
+            order: row,
+            idempotent
+        };
+    },
+    activateEntitlementFromOrder: (userId, plan) => {
         const uid = Number(userId);
         entitlements.set(uid, {
             user_id: uid,

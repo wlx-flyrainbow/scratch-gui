@@ -23,7 +23,8 @@ module.exports = {
         '<rootDir>/test/backend/jest-env.js'
     ],
     testMatch: [
-        '<rootDir>/test/backend/**/*.test.js'
+        '<rootDir>/test/backend/**/*.test.js',
+        '<rootDir>/test/backend/**/*.unit.test.js'
     ],
     testPathIgnorePatterns: [
         'src/test.js'
