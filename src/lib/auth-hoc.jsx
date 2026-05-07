@@ -191,6 +191,13 @@ const AuthHOC = WrappedComponent => {
         }
 
         render () {
+            const {
+                onClearSession, // eslint-disable-line no-unused-vars
+                onSetEntitlement, // eslint-disable-line no-unused-vars
+                onSetPermissions, // eslint-disable-line no-unused-vars
+                onSetSession, // eslint-disable-line no-unused-vars
+                ...componentProps
+            } = this.props;
             const user = this.props.session && this.props.session.user;
             const entitlement = this.props.entitlement;
             const hasSession = Boolean(user);
@@ -226,9 +233,10 @@ const AuthHOC = WrappedComponent => {
 
             return (
                 <WrappedComponent
-                    {...this.props}
+                    {...componentProps}
                     backpackHost={mergedBackpackHost}
                     backpackVisible={backpackVisibleResolved}
+                    canCreateNew={cloudEnabled}
                     canSave={cloudEnabled}
                     canShare={shareEnabled}
                     cloudHost={cloudHostResolved}

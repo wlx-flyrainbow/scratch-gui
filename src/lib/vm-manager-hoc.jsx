@@ -38,6 +38,9 @@ const vmManagerHOC = function (WrappedComponent) {
             if (!this.props.isPlayerOnly && !this.props.isStarted) {
                 this.props.vm.start();
             }
+            if (this.props.isLoadingWithId && this.props.fontsLoaded) {
+                this.loadProject();
+            }
         }
         componentDidUpdate (prevProps) {
             // if project is in loading state, AND fonts are loaded,

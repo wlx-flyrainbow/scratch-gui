@@ -51,6 +51,11 @@ const ProjectFetcherHOC = function (WrappedComponent) {
                 this.props.setProjectId(props.projectId.toString());
             }
         }
+        componentDidMount () {
+            if (this.props.isFetchingWithId) {
+                this.fetchProject(this.props.reduxProjectId, this.props.loadingState);
+            }
+        }
         componentDidUpdate (prevProps) {
             if (prevProps.projectHost !== this.props.projectHost) {
                 storage.setProjectHost(this.props.projectHost);

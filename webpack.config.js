@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const packageJson = require('./package.json');
 
 // Plugins
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -61,7 +62,8 @@ const baseConfig = new ScratchWebpackConfigBuilder(
         'process.env.ZHIMENG_CLOUD_HOST': `"${process.env.ZHIMENG_CLOUD_HOST || ''}"`,
         'process.env.ZHIMENG_PROJECT_HOST': `"${process.env.ZHIMENG_PROJECT_HOST || ''}"`,
         'process.env.ZHIMENG_ASSET_HOST': `"${process.env.ZHIMENG_ASSET_HOST || ''}"`,
-        'process.env.ZHIMENG_BACKPACK_HOST': `"${process.env.ZHIMENG_BACKPACK_HOST || ''}"`
+        'process.env.ZHIMENG_BACKPACK_HOST': `"${process.env.ZHIMENG_BACKPACK_HOST || ''}"`,
+        'process.env.npm_package_version': `"${process.env.npm_package_version || packageJson.version}"`
     }))
     .addPlugin(new CopyWebpackPlugin({
         patterns: [
