@@ -58,6 +58,7 @@ const baseConfig = new ScratchWebpackConfigBuilder(
         'process.env.ZHIMENG_BILLING_URL': `"${process.env.ZHIMENG_BILLING_URL || ''}"`,
         'process.env.ZHIMENG_REGISTER_URL': `"${process.env.ZHIMENG_REGISTER_URL || ''}"`,
         'process.env.ZHIMENG_LEASE_DAYS': `"${process.env.ZHIMENG_LEASE_DAYS || ''}"`,
+        'process.env.ZHIMENG_CLOUD_HOST': `"${process.env.ZHIMENG_CLOUD_HOST || ''}"`,
         'process.env.ZHIMENG_PROJECT_HOST': `"${process.env.ZHIMENG_PROJECT_HOST || ''}"`,
         'process.env.ZHIMENG_ASSET_HOST': `"${process.env.ZHIMENG_ASSET_HOST || ''}"`,
         'process.env.ZHIMENG_BACKPACK_HOST': `"${process.env.ZHIMENG_BACKPACK_HOST || ''}"`

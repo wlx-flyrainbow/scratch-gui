@@ -10,6 +10,9 @@ BACKEND_C="${ZHIMENG_REAL_BACKEND_CONTAINER:-zhimeng-real-backend}"
 FRONTEND_C="${ZHIMENG_REAL_FRONTEND_CONTAINER:-zhimeng-frontend-static}"
 NODE_IMAGE="${ZHIMENG_NODE_IMAGE:-node:20-bullseye}"
 AUTH_PORT="${ZHIMENG_AUTH_PORT:-3003}"
+CHECK_USERNAME="${ZHIMENG_CHECK_USERNAME:-zhimeng_goal_inactive}"
+CHECK_PASSWORD="${ZHIMENG_CHECK_PASSWORD:-123456}"
+ADMIN_TOKEN="${ZHIMENG_CHECK_ADMIN_TOKEN:-zhimeng-goal-admin-token}"
 
 docker rm -f "$BACKEND_C" "$FRONTEND_C" "$MYSQL_C" >/dev/null 2>&1 || true
 docker network rm "$NET" >/dev/null 2>&1 || true
@@ -32,6 +35,8 @@ done
 docker run -d --name "$FRONTEND_C" --network "$NET" nginx:alpine
 
 docker run -d --name "$BACKEND_C" --network "$NET" \
+  -e NODE_ENV=production \
+  -e "ZHIMENG_ADMIN_TOKEN=$ADMIN_TOKEN" \
   -e "ZHIMENG_AUTH_PORT=$AUTH_PORT" \
   -e ZHIMENG_MYSQL_HOST="$MYSQL_C" \
   -e ZHIMENG_MYSQL_PORT=3306 \
@@ -62,8 +67,26 @@ if [ "$READY" != "1" ]; then
 fi
 
 docker run --rm --network "$NET" \
+  -e ZHIMENG_MYSQL_HOST="$MYSQL_C" \
+  -e ZHIMENG_MYSQL_PORT=3306 \
+  -e ZHIMENG_MYSQL_USER=root \
+  -e ZHIMENG_MYSQL_PASSWORD=root \
+  -e ZHIMENG_MYSQL_DATABASE=zhimeng \
+  -e "ZHIMENG_CHECK_USERNAME=$CHECK_USERNAME" \
+  -e "ZHIMENG_CHECK_PASSWORD=$CHECK_PASSWORD" \
+  -v "$ROOT:/app" \
+  -w /app \
+  "$NODE_IMAGE" \
+  bash -lc 'node scripts/seed-zhimeng-goal-user.js'
+
+docker run --rm --network "$NET" \
   -e "ZHIMENG_CHECK_BACKEND_BASE=http://$BACKEND_C:$AUTH_PORT" \
   -e "ZHIMENG_CHECK_FRONTEND_BASE=http://$FRONTEND_C" \
+  -e "ZHIMENG_CHECK_USERNAME=$CHECK_USERNAME" \
+  -e "ZHIMENG_CHECK_PASSWORD=$CHECK_PASSWORD" \
+  -e "ZHIMENG_CHECK_ADMIN_TOKEN=$ADMIN_TOKEN" \
+  -e ZHIMENG_CHECK_INITIAL_ENTITLEMENT_STATUS=inactive \
+  -e ZHIMENG_CHECK_PAYMENT_MODE=manual-confirm \
   -v "$ROOT:/app" \
   -w /app \
   "$NODE_IMAGE" \

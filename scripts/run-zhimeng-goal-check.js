@@ -5,13 +5,17 @@ const backendBase = process.env.ZHIMENG_CHECK_BACKEND_BASE || 'http://127.0.0.1:
 const frontendBase = process.env.ZHIMENG_CHECK_FRONTEND_BASE || 'http://127.0.0.1:8601';
 const username = process.env.ZHIMENG_CHECK_USERNAME || 'demo';
 const password = process.env.ZHIMENG_CHECK_PASSWORD || '123456';
+const paymentMode = process.env.ZHIMENG_CHECK_PAYMENT_MODE || 'mock-paid';
+const expectedInitialEntitlementStatus = process.env.ZHIMENG_CHECK_INITIAL_ENTITLEMENT_STATUS || 'inactive';
+const adminToken = process.env.ZHIMENG_CHECK_ADMIN_TOKEN || '';
 
 const nowStamp = () => new Date().toISOString();
 const reportDir = path.resolve(__dirname, '../_bmad-output/test-reports');
 
-const requestJson = async ({method, url, body, token}) => {
+const requestJson = async ({method, url, body, token, adminToken: requestAdminToken}) => {
     const headers = {'Content-Type': 'application/json'};
     if (token) headers.Authorization = `Bearer ${token}`;
+    if (requestAdminToken) headers['X-Zhimeng-Admin-Token'] = requestAdminToken;
     const payload = body ? JSON.stringify(body) : null;
     const response = await fetch(url, {
         method,
@@ -52,6 +56,8 @@ const toMarkdown = result => {
     lines.push(`- 时间: ${result.timestamp}`);
     lines.push(`- 前端地址: ${result.frontendBase}`);
     lines.push(`- 后端地址: ${result.backendBase}`);
+    lines.push(`- 支付确认模式: ${result.paymentMode}`);
+    lines.push(`- 预期初始授权状态: ${result.expectedInitialEntitlementStatus}`);
     lines.push(`- 总体结果: ${result.pass ? 'PASS' : 'FAIL'}`);
     lines.push('');
     lines.push('## 步骤结果');
@@ -130,6 +136,25 @@ const main = async () => {
     }
 
     if (pass) {
+        responses.entitlementBefore = await requestJson({
+            method: 'GET',
+            url: `${backendBase}/entitlement`,
+            token
+        });
+        const beforeEntitlementPass = responses.entitlementBefore.status === 200 &&
+            responses.entitlementBefore.json &&
+            responses.entitlementBefore.json.status === expectedInitialEntitlementStatus;
+        pushStep(
+            steps,
+            'entitlement_initial',
+            Boolean(beforeEntitlementPass),
+            `GET /entitlement -> ${responses.entitlementBefore.status}, ` +
+                `status=${responses.entitlementBefore.json && responses.entitlementBefore.json.status}`
+        );
+        if (!beforeEntitlementPass) pass = false;
+    }
+
+    if (pass) {
         responses.createOrder = await requestJson({
             method: 'POST',
             url: `${backendBase}/order/create`,
@@ -171,7 +196,7 @@ const main = async () => {
         if (!beforePass) pass = false;
     }
 
-    if (pass) {
+    if (pass && paymentMode === 'mock-paid') {
         responses.mockPaid = await requestJson({
             method: 'POST',
             url: `${backendBase}/order/${orderId}/mock-paid`,
@@ -186,6 +211,35 @@ const main = async () => {
             `POST /order/:id/mock-paid -> ${responses.mockPaid.status}`
         );
         if (!paidPass) pass = false;
+    } else if (pass && paymentMode === 'manual-confirm') {
+        responses.manualConfirm = await requestJson({
+            method: 'POST',
+            url: `${backendBase}/admin/order/${orderId}/manual-confirm`,
+            adminToken,
+            body: {
+                operator: 'goal-check',
+                provider_trade_no: `goal-${timestamp.replace(/[:.]/g, '-')}`,
+                note: 'automated goal check'
+            }
+        });
+        const confirmPass = responses.manualConfirm.status === 200 &&
+            responses.manualConfirm.json &&
+            responses.manualConfirm.json.status === 'fulfilled';
+        pushStep(
+            steps,
+            'order_manual_confirm',
+            Boolean(confirmPass),
+            `POST /admin/order/:id/manual-confirm -> ${responses.manualConfirm.status}`
+        );
+        if (!confirmPass) pass = false;
+    } else if (pass) {
+        pushStep(
+            steps,
+            'payment_confirm',
+            false,
+            `不支持的支付确认模式: ${paymentMode}`
+        );
+        pass = false;
     }
 
     if (pass) {
@@ -196,7 +250,7 @@ const main = async () => {
         });
         const afterPass = responses.orderAfter.status === 200 &&
             responses.orderAfter.json &&
-            responses.orderAfter.json.status === 'paid';
+            ['paid', 'fulfilled'].includes(responses.orderAfter.json.status);
         pushStep(
             steps,
             'order_status_after',
@@ -237,6 +291,8 @@ const main = async () => {
         timestamp,
         backendBase,
         frontendBase,
+        paymentMode,
+        expectedInitialEntitlementStatus,
         pass,
         steps,
         responses

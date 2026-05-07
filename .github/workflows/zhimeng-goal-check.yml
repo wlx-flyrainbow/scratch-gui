@@ -9,6 +9,11 @@ on:
       - "scripts/**"
       - "docs/zhimeng-*.md"
       - ".github/workflows/zhimeng-goal-check.yml"
+      - "electron-main.js"
+      - "electron-preload.js"
+      - "webpack.config.js"
+      - "docker-compose.yml"
+      - "website/**"
       - "package.json"
       - "package-lock.json"
 
@@ -65,3 +70,32 @@ jobs:
             _bmad-output/test-reports/*.md
             backend.log
             frontend.log
+
+  real-db-goal-check:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@26961cf329f22f6837d5f54c3efd76b480300ace # v4
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run real-db goal check
+        run: npm run test:zhimeng-goal:realdb
+
+      - name: Upload real-db goal check reports
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        with:
+          name: zhimeng-real-db-goal-check-reports
+          path: |
+            _bmad-output/test-reports/*.json
+            _bmad-output/test-reports/*.md

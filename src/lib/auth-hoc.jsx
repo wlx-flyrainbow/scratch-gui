@@ -203,6 +203,7 @@ const AuthHOC = WrappedComponent => {
             const shareEnabled = cloudEnabled && hasFeature(entitlement, 'share');
             const backpackAllowed =
                 hasSession && active && leaseValid && hasFeature(entitlement, 'backpack');
+            const cloudHostResolved = authConfig.cloudHost || this.props.cloudHost || null;
             const mergedBackpackHost =
                 authConfig.backpackHost || this.props.backpackHost || null;
             const urlBackpackSelfTest =
@@ -230,7 +231,9 @@ const AuthHOC = WrappedComponent => {
                     backpackVisible={backpackVisibleResolved}
                     canSave={cloudEnabled}
                     canShare={shareEnabled}
+                    cloudHost={cloudHostResolved}
                     enableCommunity={communityEnabled}
+                    hasCloudPermission={cloudEnabled}
                     showComingSoon={!cloudEnabled}
                     onLogOut={this.handleLogout}
                     onOpenRegistration={this.handleOpenRegistration}
@@ -245,6 +248,7 @@ const AuthHOC = WrappedComponent => {
 
     AuthComponent.propTypes = {
         backpackHost: PropTypes.string,
+        cloudHost: PropTypes.string,
         entitlement: PropTypes.object,
         onClearSession: PropTypes.func.isRequired,
         onSetEntitlement: PropTypes.func.isRequired,

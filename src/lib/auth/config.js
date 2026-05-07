@@ -1,6 +1,9 @@
 const asNumber = (value, fallback) => {
+    if (value === null || typeof value === 'undefined' || value === '') {
+        return fallback;
+    }
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
 const authConfig = {
@@ -8,6 +11,7 @@ const authConfig = {
     billingUrl: process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com',
     registerUrl: process.env.ZHIMENG_REGISTER_URL || 'https://accounts.zhimeng.example.com/register',
     leaseDays: asNumber(process.env.ZHIMENG_LEASE_DAYS, 7),
+    cloudHost: (process.env.ZHIMENG_CLOUD_HOST || '').trim(),
     /** Backpack API root (no trailing slash); optional — URL ?backpack_host= still works in playground */
     backpackHost: (process.env.ZHIMENG_BACKPACK_HOST || '').trim(),
     appVersion: process.env.npm_package_version || 'dev'
