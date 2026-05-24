@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>知萌 — 下载</title>
-  <meta name="description" content="知萌少儿创意编程启蒙桌面客户端，支持 Windows。安装后登录并订阅即可解锁云保存、分享与社区能力。" />
+  <meta name="description" content="知萌少儿创意编程启蒙桌面客户端，支持 macOS 与 Windows。安装后登录并订阅即可解锁云保存、分享与社区能力。" />
   <link rel="icon" href="assets/logo.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -26,22 +26,38 @@
         <span>当前版本 <strong id="version-display">—</strong></span>
         <span id="released-line">发布日期 <span id="released-at">—</span></span>
       </div>
-      <h2 id="download-heading">下载 Windows 客户端</h2>
-      <div class="cta-row">
-        <a id="btn-nsis" class="btn btn-primary" href="#">Windows 安装版</a>
-        <a id="btn-portable" class="btn btn-secondary" href="#">Windows 便携版</a>
+      <h2 id="download-heading">下载桌面客户端</h2>
+      <div class="download-grid">
+        <div class="download-platform">
+          <h3>macOS</h3>
+          <div class="cta-row">
+            <a id="btn-mac-arm64" class="btn btn-primary" href="#">macOS Apple 芯片版</a>
+            <a id="btn-mac-x64" class="btn btn-secondary" href="#">macOS Intel 芯片版</a>
+          </div>
+          <p class="download-hint">M1/M2/M3/M4 请选择 Apple 芯片版；较早的 Intel Mac 请选择 Intel 芯片版。</p>
+        </div>
+        <div class="download-platform">
+          <h3>Windows</h3>
+          <div class="cta-row">
+            <a id="btn-nsis" class="btn btn-primary" href="#">Windows 安装版</a>
+            <a id="btn-portable" class="btn btn-secondary" href="#">Windows 便携版</a>
+          </div>
+          <p class="download-hint">安装版适合长期使用；便携版无需安装，解压即可运行。</p>
+        </div>
       </div>
+      <p id="download-status" class="download-status" role="status"></p>
       <div class="note">
         <p>安装并打开应用后，请使用账号登录。未订阅用户可在应用内前往「订阅解锁」，开通后可使用云保存、作品分享与社区等完整能力。</p>
-        <p>支付在网页完成；支付成功后回到客户端重新登录或点击「刷新授权」即可。</p>
+        <p>订单创建、扫码付款、付款凭证提交都在客户端订阅中心完成；通过人工确认后，回到客户端点击「刷新授权」即可。</p>
       </div>
     </section>
 
     <section class="card" aria-labelledby="req-heading">
       <h2 id="req-heading">系统要求</h2>
       <ul class="req">
+        <li>macOS 12 或更高版本；Apple 芯片与 Intel 芯片分别下载对应安装包</li>
         <li>Windows 10 或更高版本（64 位）</li>
-        <li>安装版需管理员权限完成安装；便携版无需安装，解压即可运行</li>
+        <li>Windows 安装版需管理员权限完成安装；便携版无需安装，解压即可运行</li>
       </ul>
     </section>
 
@@ -78,25 +94,57 @@
     errEl.classList.add('is-visible');
   }
 
+  function isUsableDownloadUrl(url) {
+    return Boolean(url) &&
+      url.indexOf('YOUR-CDN') === -1 &&
+      url.indexOf('example') === -1 &&
+      url.indexOf('localhost') === -1 &&
+      url.indexOf('127.0.0.1') === -1;
+  }
+
+  function disableDownload(el) {
+    el.href = '#';
+    el.setAttribute('aria-disabled', 'true');
+    el.classList.add('is-disabled');
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      showErr('桌面客户端安装包尚未发布，请等待上传真实下载地址后再下载。');
+    });
+  }
+
   function setHref(id, url) {
     var el = document.getElementById(id);
     if (!el) return;
-    if (url && url.indexOf('YOUR-CDN') === -1 && url.indexOf('example') === -1) {
+    if (isUsableDownloadUrl(url)) {
       el.href = url;
       el.removeAttribute('download');
+      el.removeAttribute('aria-disabled');
+      el.classList.remove('is-disabled');
+      return true;
     } else {
-      el.href = '#';
-      el.addEventListener('click', function (e) {
-        e.preventDefault();
-        showErr('请先在 releases.json 中配置有效的安装包下载地址，并重新部署。');
-      });
+      disableDownload(el);
+      return false;
     }
   }
 
-  fetch('releases.json', { cache: 'no-store' })
+  function loadReleases() {
+    return fetch('releases.local.json', { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('no local release file');
+        return r.json();
+      })
+      .catch(function () {
+        return fetch('releases.json', { cache: 'no-store' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('无法加载版本信息');
+            return r.json();
+          });
+      });
+  }
+
+  loadReleases()
     .then(function (r) {
-      if (!r.ok) throw new Error('无法加载版本信息');
-      return r.json();
+      return r;
     })
     .then(function (data) {
       document.getElementById('version-display').textContent = data.version || '—';
@@ -110,10 +158,25 @@
       var win = data.windows || {};
       var nsis = win.nsis || {};
       var portable = win.portable || {};
+      var mac = data.macos || {};
+      var macArm = mac.appleSilicon || {};
+      var macIntel = mac.intel || {};
+      document.getElementById('btn-mac-arm64').textContent = macArm.label || 'macOS Apple 芯片版';
+      document.getElementById('btn-mac-x64').textContent = macIntel.label || 'macOS Intel 芯片版';
       document.getElementById('btn-nsis').textContent = nsis.label || 'Windows 安装版';
       document.getElementById('btn-portable').textContent = portable.label || 'Windows 便携版';
-      setHref('btn-nsis', nsis.url);
-      setHref('btn-portable', portable.url);
+      var macArmReady = setHref('btn-mac-arm64', macArm.url);
+      var macIntelReady = setHref('btn-mac-x64', macIntel.url);
+      var nsisReady = setHref('btn-nsis', nsis.url);
+      var portableReady = setHref('btn-portable', portable.url);
+      var statusEl = document.getElementById('download-status');
+      if (!macArmReady || !macIntelReady || !nsisReady || !portableReady) {
+        statusEl.textContent = '安装包待上传：当前页面仅展示版本信息，正式下载需配置 macOS 与 Windows 的真实 CDN 地址。';
+        statusEl.classList.add('is-visible');
+      } else {
+        statusEl.textContent = '';
+        statusEl.classList.remove('is-visible');
+      }
 
       var beta = data.beta;
       if (beta && beta.windows) {

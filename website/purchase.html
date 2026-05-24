@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>知萌 — 本地订单验收工具</title>
+  <meta name="description" content="知萌本地验收与客服辅助订单创建工具，正式购买请在客户端订阅中心完成。" />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero hero-compact">
+      <div class="logo-wrap logo-wrap-small">
+        <img class="logo" src="assets/logo.png" width="256" height="256" alt="知萌" />
+      </div>
+      <h1>本地订单验收工具</h1>
+      <p class="subtitle">仅供本地验收与客服辅助。正式购买请在知萌客户端的「订阅解锁」中完成。</p>
+    </header>
+
+    <div id="load-error" class="err-banner" role="alert"></div>
+
+    <section class="card" aria-labelledby="purchase-heading">
+      <h2 id="purchase-heading">客服辅助创建订单</h2>
+      <div class="note">
+        <p>本页不是官网购买入口，不面向普通用户售卖。正式产品主路径是：打开客户端、登录账号、进入订阅中心、创建订单并提交付款凭证。</p>
+        <p>只有在客服协助、内测排障或本地端到端验收时，才应使用此页面创建订单。</p>
+      </div>
+      <form id="purchase-form" class="proof-form">
+        <label>
+          API 地址
+          <input id="api-base" type="url" required />
+        </label>
+        <label>
+          用户名
+          <input id="username" type="text" value="local_buyer" autocomplete="username" required />
+        </label>
+        <label>
+          密码
+          <input id="password" type="password" value="123456" autocomplete="current-password" required />
+        </label>
+        <label>
+          套餐
+          <select id="plan" required>
+            <option value="family_yearly">家庭年卡</option>
+          </select>
+        </label>
+        <label>
+          付款渠道
+          <select id="channel" required>
+            <option value="wechat">微信</option>
+            <option value="alipay">支付宝</option>
+          </select>
+        </label>
+        <button id="create-order" class="btn btn-primary" type="submit">创建验收订单并打开付款页</button>
+      </form>
+      <div id="success" class="success-banner" role="status"></div>
+    </section>
+
+    <footer class="site-footer">
+      <p>本页用于本地完整流程验收与客服辅助；正式购买主入口为客户端“订阅解锁”。</p>
+    </footer>
+  </div>
+
+  <script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var apiInput = document.getElementById('api-base');
+  var form = document.getElementById('purchase-form');
+  var button = document.getElementById('create-order');
+  var errEl = document.getElementById('load-error');
+  var successEl = document.getElementById('success');
+
+  function defaultApiBase() {
+    var configured = params.get('api_base');
+    if (configured) return configured.replace(/\/$/, '');
+    if (window.location.protocol.indexOf('http') === 0) return window.location.origin;
+    return 'http://localhost:3001';
+  }
+
+  function getApiBase() {
+    return apiInput.value.replace(/\/$/, '');
+  }
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('is-visible');
+    successEl.classList.remove('is-visible');
+  }
+
+  function showSuccess(msg) {
+    successEl.textContent = msg;
+    successEl.classList.add('is-visible');
+    errEl.classList.remove('is-visible');
+  }
+
+  function normalizePayUrl(payUrl) {
+    var url = new URL(payUrl);
+    if (url.hostname.indexOf('example.com') !== -1 || window.location.hostname === 'localhost') {
+      url.protocol = window.location.protocol === 'file:' ? 'http:' : window.location.protocol;
+      url.host = window.location.protocol === 'file:' ? 'localhost:8787' : window.location.host;
+    }
+    url.searchParams.set('api_base', getApiBase());
+    return url.toString();
+  }
+
+  function request(path, options) {
+    return fetch(getApiBase() + path, Object.assign({
+      headers: {'Content-Type': 'application/json'}
+    }, options || {})).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () {
+          return {};
+        }).then(function (body) {
+          throw new Error(body.message || '请求失败');
+        });
+      }
+      return res.json();
+    });
+  }
+
+  apiInput.value = localStorage.getItem('zhimengPurchaseApiBase') || defaultApiBase();
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    button.disabled = true;
+    localStorage.setItem('zhimengPurchaseApiBase', getApiBase());
+    request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value
+      })
+    })
+      .then(function (login) {
+        return request('/order/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + login.access_token
+          },
+          body: JSON.stringify({
+            plan: document.getElementById('plan').value,
+            channel: document.getElementById('channel').value
+          })
+        });
+      })
+      .then(function (order) {
+        showSuccess('订单已创建：' + order.order_id + '，正在前往付款页。');
+        window.location.href = normalizePayUrl(order.pay_url);
+      })
+      .catch(function (err) {
+        button.disabled = false;
+        showErr(err.message || '创建订单失败');
+      });
+  });
+})();
+  </script>
+</body>
+</html>

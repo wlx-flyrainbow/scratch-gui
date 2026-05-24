@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>知萌 — 订单确认</title>
+  <meta name="description" content="知萌运营订单确认工作台。" />
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap wrap-wide">
+    <header class="ops-hero">
+      <div class="ops-hero-brand">
+        <div class="logo-wrap logo-wrap-small">
+          <img class="logo" src="assets/logo.png" width="256" height="256" alt="知萌" />
+        </div>
+        <div>
+          <div class="eyebrow">知萌运营工作台</div>
+          <h1>订单确认</h1>
+          <p class="subtitle">核对到账后，一键为用户开通完整编辑器。</p>
+        </div>
+      </div>
+      <div class="ops-hero-actions">
+        <button id="refresh" class="btn btn-primary compact-btn" type="button">刷新待确认订单</button>
+        <button id="toggle-settings" class="btn btn-secondary compact-btn" type="button">工作台设置</button>
+      </div>
+    </header>
+
+    <div id="load-error" class="err-banner" role="alert"></div>
+    <div id="success" class="success-banner" role="status"></div>
+
+    <section id="setup-card" class="card ops-setup-card" aria-labelledby="ops-config-heading">
+      <div class="ops-setup-copy">
+        <h2 id="ops-config-heading">首次使用需要绑定运营口令</h2>
+        <p>口令只保存在本机浏览器，用于保护订单确认操作。日常处理订单时不用再看到技术连接信息。</p>
+      </div>
+      <form id="config-form" class="ops-setup-form">
+        <label class="ops-token-field">
+          <span>运营口令</span>
+          <input id="admin-token" type="password" autocomplete="off" required placeholder="输入运营口令" />
+        </label>
+        <details id="advanced-settings" class="ops-advanced">
+          <summary>高级设置</summary>
+          <label>
+            <span>服务地址</span>
+            <input id="api-base" type="url" required />
+          </label>
+        </details>
+        <button class="btn btn-primary" type="submit">进入工作台</button>
+      </form>
+    </section>
+
+    <section class="card ops-dashboard" aria-labelledby="orders-heading">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">待处理</div>
+          <h2 id="orders-heading">待确认订单</h2>
+        </div>
+        <div id="connection-state" class="ops-state-pill">未连接</div>
+      </div>
+      <div id="orders-empty" class="empty-state">暂无已提交付款凭证的订单。</div>
+      <div id="orders-list" class="ops-list"></div>
+    </section>
+
+    <footer class="site-footer">
+      <p>确认前请核对实际到账记录。确认后用户会获得完整编辑器授权。</p>
+    </footer>
+  </div>
+
+  <div id="ops-confirm-dialog" class="ops-dialog-backdrop" hidden>
+    <section class="ops-dialog" role="dialog" aria-modal="true" aria-labelledby="ops-confirm-title">
+      <div class="ops-dialog-brand">
+        <img src="assets/logo.png" width="48" height="48" alt="知萌" />
+        <div>
+          <div class="eyebrow">到账确认</div>
+          <h2 id="ops-confirm-title">确认开通授权？</h2>
+        </div>
+      </div>
+      <p id="ops-confirm-message" class="ops-dialog-message"></p>
+      <div id="ops-confirm-summary" class="ops-dialog-summary"></div>
+      <div class="ops-dialog-actions">
+        <button id="ops-confirm-cancel" class="btn btn-secondary compact-btn" type="button">再核对一下</button>
+        <button id="ops-confirm-ok" class="btn btn-primary compact-btn" type="button">确认到账，开通授权</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+(function () {
+  var apiInput = document.getElementById('api-base');
+  var tokenInput = document.getElementById('admin-token');
+  var form = document.getElementById('config-form');
+  var refreshBtn = document.getElementById('refresh');
+  var listEl = document.getElementById('orders-list');
+  var emptyEl = document.getElementById('orders-empty');
+  var errEl = document.getElementById('load-error');
+  var successEl = document.getElementById('success');
+  var setupCard = document.getElementById('setup-card');
+  var toggleSettingsBtn = document.getElementById('toggle-settings');
+  var connectionStateEl = document.getElementById('connection-state');
+  var confirmDialog = document.getElementById('ops-confirm-dialog');
+  var confirmMessageEl = document.getElementById('ops-confirm-message');
+  var confirmSummaryEl = document.getElementById('ops-confirm-summary');
+  var confirmOkBtn = document.getElementById('ops-confirm-ok');
+  var confirmCancelBtn = document.getElementById('ops-confirm-cancel');
+
+  function defaultApiBase() {
+    var params = new URLSearchParams(window.location.search);
+    var configured = params.get('api_base');
+    if (configured) return configured.replace(/\/$/, '');
+    if (window.location.protocol.indexOf('http') === 0) {
+      var port = window.location.port;
+      if (!port || port === '3001') return window.location.origin;
+    }
+    return 'http://localhost:3001';
+  }
+
+  function getApiBase() {
+    return apiInput.value.replace(/\/$/, '');
+  }
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('is-visible');
+    successEl.classList.remove('is-visible');
+    connectionStateEl.textContent = '需要处理';
+    connectionStateEl.classList.remove('is-ok');
+  }
+
+  function showSuccess(msg) {
+    successEl.textContent = msg;
+    successEl.classList.add('is-visible');
+    errEl.classList.remove('is-visible');
+    connectionStateEl.textContent = '已连接';
+    connectionStateEl.classList.add('is-ok');
+  }
+
+  function clearMessages() {
+    errEl.classList.remove('is-visible');
+    successEl.classList.remove('is-visible');
+  }
+
+  function formatAmount(cents, currency) {
+    var value = Number(cents || 0) / 100;
+    try {
+      return new Intl.NumberFormat('zh-CN', {
+        style: 'currency',
+        currency: currency || 'CNY'
+      }).format(value);
+    } catch (e) {
+      return (currency || 'CNY') + ' ' + value.toFixed(2);
+    }
+  }
+
+  function formatDateTime(value) {
+    if (!value) return '-';
+    var date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  }
+
+  function methodLabel(method) {
+    return {
+      wechat: '微信',
+      alipay: '支付宝',
+      bank: '银行转账',
+      other: '其他'
+    }[method] || method || '-';
+  }
+
+  function adminFetch(path, options) {
+    return fetch(getApiBase() + path, Object.assign({
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Zhimeng-Admin-Token': tokenInput.value
+      }
+    }, options || {})).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () {
+          return {};
+        }).then(function (body) {
+          throw new Error(body.message || '请求失败');
+        });
+      }
+      return res.json();
+    });
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (ch) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[ch];
+    });
+  }
+
+  function requestConfirm(order, details) {
+    confirmMessageEl.textContent = '请最后确认该订单已经真实到账。确认后，用户会立即获得完整编辑器授权。';
+    confirmSummaryEl.innerHTML = [
+      '<div><span>订单</span><strong>' + escapeHtml(order.order_id) + '</strong></div>',
+      '<div><span>用户</span><strong>' + escapeHtml(order.username || order.user_id || '-') + '</strong></div>',
+      '<div><span>到账金额</span><strong>' +
+        escapeHtml(formatAmount(details.amountCents, order.currency)) + '</strong></div>',
+      '<div><span>到账交易号</span><strong>' + escapeHtml(details.tradeNo) + '</strong></div>'
+    ].join('');
+    confirmDialog.hidden = false;
+    confirmCancelBtn.focus();
+    return new Promise(function (resolve) {
+      function close(value) {
+        confirmDialog.hidden = true;
+        confirmOkBtn.removeEventListener('click', onOk);
+        confirmCancelBtn.removeEventListener('click', onCancel);
+        confirmDialog.removeEventListener('click', onBackdrop);
+        document.removeEventListener('keydown', onKeydown);
+        resolve(value);
+      }
+      function onOk() {
+        close(true);
+      }
+      function onCancel() {
+        close(false);
+      }
+      function onBackdrop(event) {
+        if (event.target === confirmDialog) close(false);
+      }
+      function onKeydown(event) {
+        if (event.key === 'Escape') close(false);
+      }
+      confirmOkBtn.addEventListener('click', onOk);
+      confirmCancelBtn.addEventListener('click', onCancel);
+      confirmDialog.addEventListener('click', onBackdrop);
+      document.addEventListener('keydown', onKeydown);
+    });
+  }
+
+  function renderProof(proof) {
+    if (!proof) return '<span class="muted-text">未提交</span>';
+    var attachment = proof.attachment;
+    var attachmentLine = attachment ?
+      '<button class="btn btn-secondary compact-btn" type="button" data-action="view-attachment">查看付款截图</button>' :
+      '<span class="muted-text">未上传截图</span>';
+    return [
+      '<div class="ops-proof-title">用户填写的付款信息</div>',
+      '<div class="ops-proof-grid">',
+        '<div><span>付款方式</span><strong>' + escapeHtml(methodLabel(proof.method)) + '</strong></div>',
+        '<div><span>实付金额</span><strong>' +
+          escapeHtml(proof.amountCents ? formatAmount(proof.amountCents, proof.currency) : '-') + '</strong></div>',
+        '<div><span>付款时间</span><strong>' + escapeHtml(formatDateTime(proof.paidAt)) + '</strong></div>',
+        '<div><span>平台订单号</span><strong>' + escapeHtml(proof.transferNo || '-') + '</strong></div>',
+        '<div><span>商家订单号</span><strong>' + escapeHtml(proof.merchantOrderNo || '-') + '</strong></div>',
+        '<div><span>交易尾号</span><strong>' + escapeHtml(proof.tradeNoTail || '-') + '</strong></div>',
+      '</div>',
+      '<div class="ops-proof-note"><span>用户备注</span><strong>' + escapeHtml(proof.payerNote || '-') + '</strong></div>',
+      '<div class="ops-proof-footer">' + attachmentLine +
+        '<span>提交时间：' + escapeHtml(formatDateTime(proof.submittedAt)) + '</span></div>'
+    ].join('');
+  }
+
+  function renderOrders(orders) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = orders.length ? 'none' : 'block';
+    orders.forEach(function (order) {
+      var item = document.createElement('article');
+      item.className = 'ops-order';
+      item.innerHTML = [
+        '<div class="ops-order-main">',
+          '<div>',
+            '<div class="ops-order-id">订单 ' + escapeHtml(order.order_id) + '</div>',
+            '<div class="muted-text">用户：' + escapeHtml(order.username || order.user_id || '-') + '</div>',
+          '</div>',
+          '<div class="ops-amount">' + escapeHtml(formatAmount(order.amount_cents, order.currency)) + '</div>',
+        '</div>',
+        '<div class="ops-grid">',
+          '<div><span>套餐</span><strong>' + escapeHtml(order.plan || '-') + '</strong></div>',
+          '<div><span>付款渠道</span><strong>' + escapeHtml(methodLabel(order.channel)) + '</strong></div>',
+          '<div><span>当前状态</span><strong>待核对到账</strong></div>',
+        '</div>',
+        '<div class="ops-order-workflow">',
+          '<div class="ops-proof">' + renderProof(order.payment_proof) + '</div>',
+          '<form class="ops-confirm-form">',
+            '<div class="ops-checklist">',
+              '<strong>确认前请核对</strong>',
+              '<label><input name="checkReceived" type="checkbox" required /> 商户/银行账单已真实到账</label>',
+              '<label><input name="checkAmount" type="checkbox" required /> 金额和订单一致</label>',
+              '<label><input name="checkUnique" type="checkbox" required /> 交易号没有确认过其他订单</label>',
+            '</div>',
+            '<label>确认人<input name="operator" type="text" required placeholder="例如：王老师" /></label>',
+            '<label>到账交易号<input name="tradeNo" type="text" required placeholder="粘贴账单里的交易号" /></label>',
+            '<label>确认金额<input name="amountYuan" type="text" inputmode="decimal" required /></label>',
+            '<label class="ops-note-field">确认备注<textarea name="note" rows="2" placeholder="例如：微信商家账单已核对"></textarea></label>',
+            '<button class="btn btn-primary compact-btn" type="submit">确认到账，开通授权</button>',
+          '</form>',
+        '</div>'
+      ].join('');
+      var proof = order.payment_proof || {};
+      var tradeInput = item.querySelector('[name="tradeNo"]');
+      if (proof.transferNo || proof.merchantOrderNo) {
+        tradeInput.value = proof.transferNo || proof.merchantOrderNo;
+      }
+      item.querySelector('[name="operator"]').value = localStorage.getItem('zhimengOpsOperator') || '';
+      item.querySelector('[name="amountYuan"]').value = (Number(order.amount_cents || 0) / 100).toFixed(2);
+      var attachmentBtn = item.querySelector('[data-action="view-attachment"]');
+      if (attachmentBtn) {
+        attachmentBtn.addEventListener('click', function () {
+          viewAttachment(order);
+        });
+      }
+      item.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        confirmOrder(order, item);
+      });
+      listEl.appendChild(item);
+    });
+  }
+
+  function loadOrders() {
+    clearMessages();
+    if (!getApiBase() || !tokenInput.value.trim()) {
+      setupCard.classList.remove('is-collapsed');
+      showErr('请先输入运营口令，再进入工作台。');
+      return Promise.resolve();
+    }
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '正在刷新...';
+    return adminFetch('/admin/orders?status=created&has_payment_proof=1')
+      .then(function (body) {
+        var orders = body.orders || [];
+        renderOrders(orders);
+        setupCard.classList.add('is-collapsed');
+        showSuccess(orders.length ? '已加载待确认订单，请逐笔核对到账记录。' : '暂无待确认订单。');
+      })
+      .catch(function (err) {
+        setupCard.classList.remove('is-collapsed');
+        showErr(err.message || '加载失败');
+      })
+      .finally(function () {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = '刷新待确认订单';
+      });
+  }
+
+  function viewAttachment(order) {
+    var proof = order.payment_proof || {};
+    var attachment = proof.attachment;
+    if (!attachment || !attachment.id) {
+      showErr('该订单没有付款截图。');
+      return;
+    }
+    clearMessages();
+    fetch(
+      getApiBase() + '/admin/order/' + encodeURIComponent(order.order_id) +
+        '/payment-proof-attachment/' + encodeURIComponent(attachment.id),
+      {
+        headers: {'X-Zhimeng-Admin-Token': tokenInput.value}
+      }
+    )
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().catch(function () {
+            return {};
+          }).then(function (body) {
+            throw new Error(body.message || '付款截图读取失败');
+          });
+        }
+        return res.blob();
+      })
+      .then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener');
+        window.setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 60000);
+      })
+      .catch(function (err) {
+        showErr(err.message || '付款截图读取失败');
+      });
+  }
+
+  function confirmOrder(order, item) {
+    var operator = item.querySelector('[name="operator"]').value.trim();
+    var tradeNo = item.querySelector('[name="tradeNo"]').value.trim();
+    var amountText = item.querySelector('[name="amountYuan"]').value.trim();
+    var amountCents = Math.round(Number(amountText) * 100);
+    var currency = String(order.currency || 'CNY').toUpperCase();
+    var note = item.querySelector('[name="note"]').value.trim();
+    if (!operator) {
+      showErr('请填写确认人。');
+      return;
+    }
+    if (!tradeNo) {
+      showErr('请填写到账交易号。');
+      return;
+    }
+    if (!Number.isInteger(amountCents) || amountCents <= 0) {
+      showErr('请填写有效的确认金额。');
+      return;
+    }
+    if (amountCents !== Number(order.amount_cents)) {
+      showErr('确认金额与订单应付金额不一致，请核对后再提交。');
+      return;
+    }
+    requestConfirm(order, {
+      amountCents: amountCents,
+      tradeNo: tradeNo
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      localStorage.setItem('zhimengOpsOperator', operator);
+      item.querySelector('button[type="submit"]').disabled = true;
+      adminFetch('/admin/order/' + encodeURIComponent(order.order_id) + '/manual-confirm', {
+        method: 'POST',
+        body: JSON.stringify({
+          operator: operator,
+          provider_trade_no: tradeNo,
+          amount_cents: amountCents,
+          currency: currency,
+          note: note || 'manual qr confirmed'
+        })
+      })
+        .then(function () {
+          showSuccess(order.order_id + ' 已确认到账并开通授权。');
+          return loadOrders();
+        })
+        .catch(function (err) {
+          item.querySelector('button[type="submit"]').disabled = false;
+          showErr(err.message || '确认失败');
+        });
+    });
+  }
+
+  apiInput.value = localStorage.getItem('zhimengOpsApiBase') || defaultApiBase();
+  tokenInput.value = localStorage.getItem('zhimengOpsAdminToken') ||
+    new URLSearchParams(window.location.search).get('ops_token') || '';
+  if (tokenInput.value) {
+    setupCard.classList.add('is-collapsed');
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    localStorage.setItem('zhimengOpsApiBase', getApiBase());
+    localStorage.setItem('zhimengOpsAdminToken', tokenInput.value);
+    loadOrders();
+  });
+
+  refreshBtn.addEventListener('click', function () {
+    loadOrders();
+  });
+
+  toggleSettingsBtn.addEventListener('click', function () {
+    setupCard.classList.toggle('is-collapsed');
+  });
+
+  if (tokenInput.value) {
+    loadOrders();
+  }
+})();
+  </script>
+</body>
+</html>

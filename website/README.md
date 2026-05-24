@@ -29,12 +29,24 @@ server {
 
 ## 发布新版本流程
 
-1. 本地执行 `npm run dist:win` 生成安装包与便携包。
+1. 本地执行 `npm run dist:mac:arm64`、`npm run dist:mac:x64`、`npm run dist:win` 生成 macOS Apple 芯片版、macOS Intel 芯片版、Windows 安装包与便携包。
 2. 将产物上传到 CDN/OSS，记录可公网访问的 URL。
-3. 编辑 **`releases.json`**：更新 `version`、`releasedAt`，以及 `windows.nsis.url`、`windows.portable.url`（必要时更新 `beta` 对象；无内测则保持 `"beta": null`）。
+3. 配置 `.env.production` 中的 `ZHIMENG_MACOS_ARM64_URL`、`ZHIMENG_MACOS_X64_URL`、`ZHIMENG_WINDOWS_NSIS_URL` 与 `ZHIMENG_WINDOWS_PORTABLE_URL`，执行 `npm run release:update-downloads` 更新 **`releases.json`**。必要时更新 `beta` 对象；无内测则保持 `"beta": null`。
 4. 重新上传 `releases.json`（及如更换了 logo 时的 `assets/`）。
 
 无需修改 `index.html`，页面会自动读取 `releases.json` 显示版本号与下载按钮。
+
+## 本地验收下载页
+
+在正式上传 CDN 前，可先本地跑通完整下载链路：
+
+```bash
+npm run dist:desktop:local
+npm run release:update-local-downloads
+python3 -m http.server 4173 --bind 127.0.0.1 --directory website
+```
+
+打开 `http://127.0.0.1:4173/index.html`。页面会优先读取本地生成且不提交的 `releases.local.json`，下载按钮指向本机 `dist/` 中的 macOS Apple 芯片版、macOS Intel 芯片版、Windows 安装版和 Windows 便携版。
 
 ## `releases.json` 中 `beta` 字段
 

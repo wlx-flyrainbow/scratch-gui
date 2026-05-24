@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>知萌 — 订单支付</title>
+  <meta name="description" content="知萌订单支付页，支持扫码付款后提交付款凭证。" />
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero hero-compact">
+      <div class="logo-wrap logo-wrap-small">
+        <img class="logo" src="assets/logo.png" width="256" height="256" alt="知萌" />
+      </div>
+      <h1>知萌订单支付</h1>
+      <p class="subtitle">扫码付款后提交凭证，运营核对到账后开通授权。</p>
+    </header>
+
+    <div id="load-error" class="err-banner" role="alert"></div>
+
+    <section class="card pay-card" aria-labelledby="pay-heading">
+      <div class="version-line">
+        <span class="badge badge-stable">manual qr</span>
+        <span>订单号 <strong id="order-id">—</strong></span>
+      </div>
+      <h2 id="pay-heading">扫码付款</h2>
+      <div class="order-summary">
+        <div>
+          <span>套餐</span>
+          <strong id="plan">—</strong>
+        </div>
+        <div>
+          <span>金额</span>
+          <strong id="amount">—</strong>
+        </div>
+        <div>
+          <span>收款方</span>
+          <strong id="account-label">—</strong>
+        </div>
+      </div>
+      <div class="qr-wrap">
+        <img id="qr-code" class="qr-code" alt="收款二维码" />
+      </div>
+      <div class="note">
+        <p id="payment-note">—</p>
+        <p>付款后请保留交易记录。人工确认通常需要一点时间。</p>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="proof-heading">
+      <h2 id="proof-heading">我已付款</h2>
+      <form id="proof-form" class="proof-form">
+        <label>
+          付款方式
+          <select id="method" required>
+            <option value="wechat">微信</option>
+            <option value="alipay">支付宝</option>
+            <option value="bank">银行转账</option>
+            <option value="other">其他</option>
+          </select>
+        </label>
+        <label>
+          付款时间
+          <input id="paid-at" type="datetime-local" required />
+        </label>
+        <label>
+          实付金额
+          <input id="paid-amount" type="text" inputmode="decimal" required />
+        </label>
+        <label>
+          <span id="transfer-no-label">微信转账单号</span>
+          <input id="transfer-no" type="text" inputmode="text" maxlength="128" placeholder="可从账单详情复制完整单号" />
+        </label>
+        <label id="merchant-order-field" class="is-hidden">
+          商家订单号
+          <input id="merchant-order-no" type="text" inputmode="text" maxlength="128" placeholder="支付宝账单详情中的商家订单号" />
+        </label>
+        <label>
+          交易号后 6-10 位
+          <input id="trade-tail" type="text" inputmode="text" minlength="4" maxlength="64" required />
+        </label>
+        <label>
+          备注
+          <textarea id="payer-note" rows="3" placeholder="可填写付款账号、订单备注或其他核对信息"></textarea>
+        </label>
+        <label>
+          付款截图（可选）
+          <input id="proof-attachment" type="file" accept="image/png,image/jpeg,image/webp" />
+        </label>
+        <button id="submit-proof" class="btn btn-primary" type="submit">提交付款凭证</button>
+      </form>
+      <div id="success" class="success-banner" role="status"></div>
+    </section>
+
+    <footer class="site-footer">
+      <p>凭证提交后，请回到客户端稍后点击「刷新授权」。</p>
+    </footer>
+  </div>
+
+  <script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var orderId = params.get('order_id') || '';
+  var proofToken = params.get('proof_token') || '';
+  var apiBase = (params.get('api_base') || window.location.origin).replace(/\/$/, '');
+  var errEl = document.getElementById('load-error');
+  var successEl = document.getElementById('success');
+  var form = document.getElementById('proof-form');
+  var submitBtn = document.getElementById('submit-proof');
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('is-visible');
+  }
+
+  function showSuccess(msg) {
+    successEl.textContent = msg;
+    successEl.classList.add('is-visible');
+  }
+
+  function formatAmount(cents, currency) {
+    var value = Number(cents || 0) / 100;
+    try {
+      return new Intl.NumberFormat('zh-CN', {
+        style: 'currency',
+        currency: currency || 'CNY'
+      }).format(value);
+    } catch (e) {
+      return (currency || 'CNY') + ' ' + value.toFixed(2);
+    }
+  }
+
+  function amountText(cents) {
+    return (Number(cents || 0) / 100).toFixed(2);
+  }
+
+  function toIsoFromLocal(value) {
+    var date = new Date(value);
+    return date.toISOString();
+  }
+
+  function normalizeQrUrl(url) {
+    if (!url || url.indexOf('example.com') !== -1) {
+      return 'assets/logo.png';
+    }
+    return url;
+  }
+
+  function readProofAttachment() {
+    var input = document.getElementById('proof-attachment');
+    var file = input.files && input.files[0];
+    if (!file) {
+      return Promise.resolve(null);
+    }
+    if (['image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) === -1) {
+      return Promise.reject(new Error('付款截图仅支持 JPG、PNG 或 WebP。'));
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return Promise.reject(new Error('付款截图不能超过 5MB。'));
+    }
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        resolve({
+          filename: file.name,
+          mime_type: file.type,
+          data_url: reader.result
+        });
+      };
+      reader.onerror = function () {
+        reject(new Error('无法读取付款截图，请重新选择。'));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setChannelLabels(channel) {
+    var transferLabel = document.getElementById('transfer-no-label');
+    var transferInput = document.getElementById('transfer-no');
+    var merchantField = document.getElementById('merchant-order-field');
+    var methodInput = document.getElementById('method');
+    if (channel) {
+      methodInput.value = channel;
+    }
+    if (channel === 'alipay') {
+      transferLabel.textContent = '支付宝订单号';
+      transferInput.placeholder = '支付宝账单详情中的订单号';
+      merchantField.classList.remove('is-hidden');
+      return;
+    }
+    transferLabel.textContent = '微信转账单号';
+    transferInput.placeholder = '微信账单详情中的转账单号';
+    merchantField.classList.add('is-hidden');
+  }
+
+  function initPaidAt() {
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('paid-at').value = now.toISOString().slice(0, 16);
+  }
+
+  if (!orderId || !proofToken) {
+    showErr('订单链接无效，请从客户端重新点击「前往购买」。');
+    form.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+      el.disabled = true;
+    });
+    return;
+  }
+
+  initPaidAt();
+
+  fetch(apiBase + '/order/' + encodeURIComponent(orderId) + '/payment-page?proof_token=' + encodeURIComponent(proofToken))
+    .then(function (res) {
+      if (!res.ok) throw new Error('无法加载订单信息');
+      return res.json();
+    })
+    .then(function (order) {
+      document.getElementById('order-id').textContent = order.order_id || orderId;
+      setChannelLabels(order.channel);
+      document.getElementById('plan').textContent = order.plan || '—';
+      document.getElementById('amount').textContent = formatAmount(order.amount_cents, order.currency);
+      document.getElementById('paid-amount').value = amountText(order.amount_cents);
+      document.getElementById('account-label').textContent = order.payment_account_label || '—';
+      document.getElementById('payment-note').textContent = order.payment_note || '';
+      document.getElementById('qr-code').src = normalizeQrUrl(order.qr_code_url);
+      if (order.payment_proof) {
+        showSuccess('已提交付款凭证，等待人工确认。');
+      }
+    })
+    .catch(function (err) {
+      showErr(err.message || '无法加载订单信息，请稍后重试。');
+    });
+
+  document.getElementById('transfer-no').addEventListener('input', function () {
+    var normalized = this.value.replace(/\s/g, '');
+    if (normalized.length >= 6) {
+      document.getElementById('trade-tail').value = normalized.slice(-10);
+    }
+  });
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    errEl.classList.remove('is-visible');
+    successEl.classList.remove('is-visible');
+    submitBtn.disabled = true;
+    readProofAttachment()
+      .then(function (proofAttachment) {
+        return fetch(apiBase + '/order/' + encodeURIComponent(orderId) + '/payment-proof', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            proof_token: proofToken,
+            method: document.getElementById('method').value,
+            paid_at: toIsoFromLocal(document.getElementById('paid-at').value),
+            amount: document.getElementById('paid-amount').value.trim(),
+            currency: 'CNY',
+            transfer_no: document.getElementById('transfer-no').value.trim(),
+            merchant_order_no: document.getElementById('merchant-order-no').value.trim(),
+            trade_no_tail: document.getElementById('trade-tail').value.trim(),
+            payer_note: document.getElementById('payer-note').value.trim(),
+            proof_attachment: proofAttachment
+          })
+        });
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().then(function (body) {
+            throw new Error(body.message || '提交失败');
+          });
+        }
+        return res.json();
+      })
+      .then(function () {
+        showSuccess('付款凭证已提交，等待人工确认。确认后回到客户端刷新授权即可。');
+      })
+      .catch(function (err) {
+        submitBtn.disabled = false;
+        showErr(err.message || '提交失败，请稍后重试。');
+      });
+  });
+})();
+  </script>
+</body>
+</html>
