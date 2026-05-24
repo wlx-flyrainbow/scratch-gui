@@ -1,25 +1,25 @@
 {
   "channel": "stable",
   "version": "5.2.16",
-  "releasedAt": "2026-04-02",
+  "releasedAt": "2026-05-24",
   "windows": {
     "nsis": {
       "label": "Windows 安装版",
-      "url": "https://YOUR-CDN.example/zhimeng-setup.exe"
+      "url": "https://zhimeng.codevalley.cn/downloads/zhimeng-setup-5.2.16.exe"
     },
     "portable": {
       "label": "Windows 便携版",
-      "url": "https://YOUR-CDN.example/zhimeng-portable.exe"
+      "url": "https://zhimeng.codevalley.cn/downloads/zhimeng-portable-5.2.16.exe"
     }
   },
   "macos": {
     "appleSilicon": {
       "label": "macOS Apple 芯片版",
-      "url": "https://YOUR-CDN.example/zhimeng-mac-arm64.dmg"
+      "url": "https://zhimeng.codevalley.cn/downloads/zhimeng-mac-arm64-5.2.16.dmg"
     },
     "intel": {
       "label": "macOS Intel 芯片版",
-      "url": "https://YOUR-CDN.example/zhimeng-mac-x64.dmg"
+      "url": "https://zhimeng.codevalley.cn/downloads/zhimeng-mac-x64-5.2.16.dmg"
     }
   },
   "beta": null

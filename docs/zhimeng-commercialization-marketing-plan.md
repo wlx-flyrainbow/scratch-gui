@@ -261,21 +261,31 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 
 ## 6. 发布前商业化验收清单
 
-- [ ] 官网首屏能在 5 秒内说明产品、适龄、价格和下载入口。
-- [ ] 官网套餐区展示 29 元/月、199 元/年、299 元/2 年，并突出 199 元年卡为推荐套餐。
+- [x] 官网首屏能在 5 秒内说明产品、适龄、价格和下载入口。
+- [x] 官网套餐区展示 29 元/月、199 元/年、299 元/2 年，并突出 199 元年卡为推荐套餐。
 - [ ] 官网下载链接全部是真实可用地址。
-- [ ] 官网不把云保存、分享、社区、背包写成已上线权益。
+- [x] 官网不把云保存、分享、社区、背包写成已上线权益。
 - [ ] 客户端锁定页能清楚说明未开通原因和订阅入口。
 - [ ] 订阅中心显示家庭年卡 199 元。
 - [ ] 微信和支付宝二维码均使用真实收款码。
-- [ ] 提交付款凭证后不会自动解锁。
-- [ ] 运营确认后刷新授权可进入完整编辑器。
+- [x] 提交付款凭证后不会自动解锁。
+- [x] 运营确认后刷新授权可进入完整编辑器。
 - [ ] 客服 FAQ 已准备。
 - [ ] 私域首发文案、海报和演示视频已准备。
-- [ ] `npm run release:check` 通过。
-- [ ] `npm run test:zhimeng-purchase-flow` 通过。
-- [ ] `npm run test:zhimeng-purchase-flow:realdb` 通过。
-- [ ] `npm run test:zhimeng-new-user-flow:realdb` 通过。
+- [x] `npm run release:check` 通过。
+- [x] `npm run test:zhimeng-purchase-flow` 通过。
+- [x] `npm run test:zhimeng-purchase-flow:realdb` 通过。
+- [x] `npm run test:zhimeng-new-user-flow:realdb` 通过。
+
+### 6.1 2026-05-24 本地商业化验收记录
+
+- Mock 购买闭环通过：`_bmad-output/test-reports/zhimeng-purchase-flow-2026-05-24T15-05-23-902Z.md`。
+- 隔离 MySQL 真库购买闭环通过：`_bmad-output/test-reports/zhimeng-purchase-flow-2026-05-24T15-05-42-905Z.md`。
+- 新用户注册到开通完整流程通过：`_bmad-output/test-reports/zhimeng-purchase-flow-2026-05-24T15-06-01-554Z.md`。
+- 订阅中心布局验收通过：`_bmad-output/test-reports/zhimeng-billing-layout-2026-05-24T15-06-56-025Z.json`。
+- 发布环境检查通过：使用 `deploy/env/zhimeng-prod.env.example` 作为生产模板，并用高强度 `ZHIMENG_ADMIN_TOKEN` 覆盖示例占位后执行 `npm run release:check`。
+- `website/releases.json` 已从 `YOUR-CDN.example` 占位切换为 `https://zhimeng.codevalley.cn/downloads/` 下的 macOS Apple 芯片、macOS Intel、Windows 安装版、Windows 便携版下载路径。
+- 下载链接尚未标记完成：本机 `curl -I` 探测 `https://zhimeng.codevalley.cn/downloads/zhimeng-setup-5.2.16.exe` 直连失败，需在服务器完成静态站部署、安装包上传和 HTTPS 可访问验证后再关闭该项。
 
 ## 7. 默认决策
 

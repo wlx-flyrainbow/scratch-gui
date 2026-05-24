@@ -3,22 +3,109 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>知萌 — 下载</title>
-  <meta name="description" content="知萌少儿创意编程启蒙桌面客户端，支持 macOS 与 Windows。安装后登录并订阅即可解锁云保存、分享与社区能力。" />
+  <title>知萌 — 少儿创意编程启蒙</title>
+  <meta name="description" content="知萌是面向 6-8 岁孩子的少儿创意编程启蒙桌面客户端，用积木编程做故事、动画和小游戏。家庭年卡 199 元/年。" />
   <link rel="icon" href="assets/logo.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="wrap">
-    <header class="hero">
-      <div class="logo-wrap">
-        <img class="logo" src="assets/logo.png" width="256" height="256" alt="知萌" />
+  <div class="wrap sales-wrap">
+    <header class="sales-hero">
+      <div class="sales-hero-copy">
+        <p class="eyebrow">6-8 岁少儿创意编程启蒙</p>
+        <h1>知萌</h1>
+        <p class="sales-subtitle">用积木编程做故事、动画和小游戏</p>
+        <p class="sales-copy">给家庭用户一个低门槛的开始：先让孩子在完整编程编辑器里动手创作，再决定是否继续深入学习。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#download-heading">下载客户端</a>
+          <a class="btn btn-secondary" href="#plans">查看套餐</a>
+        </div>
+        <div class="hero-facts" aria-label="知萌产品信息">
+          <span>家庭年卡 199 元/年</span>
+          <span>macOS / Windows</span>
+          <span>客户端内开通</span>
+        </div>
       </div>
-      <h1>知萌</h1>
-      <p class="subtitle">知萌｜少儿创意编程启蒙｜用积木编程讲故事、做动画</p>
+      <div class="hero-product" aria-label="知萌产品定位">
+        <div class="logo-wrap">
+          <img class="logo" src="assets/logo.png" width="256" height="256" alt="知萌" />
+        </div>
+        <h2>少儿创意编程启蒙</h2>
+        <p>适合家长陪孩子从第一个角色、第一个故事、第一个小游戏开始。</p>
+        <div class="product-tags" aria-label="创作方向">
+          <span>故事</span>
+          <span>动画</span>
+          <span>小游戏</span>
+        </div>
+      </div>
     </header>
 
     <div id="load-error" class="err-banner" role="alert"></div>
+
+    <section class="sales-section" aria-labelledby="value-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">为什么是知萌</p>
+          <h2 id="value-heading">先解决家庭启蒙最现实的问题</h2>
+        </div>
+        <p>不是高价课程，也不是把复杂工具直接丢给孩子。知萌把入口收窄到“能做出作品”的第一步。</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-block">
+          <span class="feature-kicker">01</span>
+          <h3>低成本试错</h3>
+          <p>家庭年卡定价适合先验证孩子兴趣，不需要一开始就购买系统课。</p>
+        </article>
+        <article class="feature-block">
+          <span class="feature-kicker">02</span>
+          <h3>完整编辑器</h3>
+          <p>登录并开通后进入完整编程编辑器，用积木编程完成故事、动画和小游戏。</p>
+        </article>
+        <article class="feature-block">
+          <span class="feature-kicker">03</span>
+          <h3>开通路径清楚</h3>
+          <p>注册登录、订阅解锁、扫码付款、提交凭证、刷新授权都在客户端完成。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="plans" class="sales-section" aria-labelledby="plans-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">套餐建议</p>
+          <h2 id="plans-heading">主推家庭年卡，保留后续价格梯度</h2>
+        </div>
+        <p>当前 MVP 以家庭年卡为主售套餐，月卡与双年卡作为后续营销与复购工具逐步开放。</p>
+      </div>
+      <div class="pricing-grid">
+        <article class="plan-card">
+          <div class="plan-head">
+            <h3>体验月卡</h3>
+            <span class="plan-badge muted">后续开放</span>
+          </div>
+          <p class="plan-price">¥29<span>/月</span></p>
+          <p>适合短期体验与活动转化，暂不作为首发主推。</p>
+        </article>
+        <article class="plan-card is-featured">
+          <div class="plan-head">
+            <h3>家庭年卡</h3>
+            <span class="plan-badge">推荐</span>
+          </div>
+          <p class="plan-price">¥199<span>/年</span></p>
+          <p>首发主推套餐，适合家庭持续使用完整编程编辑器。</p>
+          <a class="btn btn-primary plan-cta" href="#download-heading">下载后开通</a>
+        </article>
+        <article class="plan-card">
+          <div class="plan-head">
+            <h3>家庭双年卡</h3>
+            <span class="plan-badge muted">后续开放</span>
+          </div>
+          <p class="plan-price">¥299<span>/2 年</span></p>
+          <p>用于长期用户续费与私域促销，首发阶段先验证年卡转化。</p>
+        </article>
+      </div>
+      <p class="plan-note">首发阶段采用客户端内创建订单、固定二维码收款、提交付款凭证、运营人工确认的闭环。</p>
+    </section>
 
     <section class="card" aria-labelledby="download-heading">
       <div class="version-line">
@@ -47,8 +134,25 @@
       </div>
       <p id="download-status" class="download-status" role="status"></p>
       <div class="note">
-        <p>安装并打开应用后，请使用账号登录。未订阅用户可在应用内前往「订阅解锁」，开通后可使用云保存、作品分享与社区等完整能力。</p>
+        <p>安装并打开应用后，请注册或登录知萌账号。未开通用户可在应用内前往「订阅解锁」，开通家庭年卡后进入完整编程编辑器。</p>
         <p>订单创建、扫码付款、付款凭证提交都在客户端订阅中心完成；通过人工确认后，回到客户端点击「刷新授权」即可。</p>
+      </div>
+    </section>
+
+    <section class="sales-section" aria-labelledby="flow-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">新用户流程</p>
+          <h2 id="flow-heading">从下载到开通，只保留必要步骤</h2>
+        </div>
+      </div>
+      <div class="process-grid">
+        <div class="process-step"><span>1</span><strong>下载客户端</strong><p>按设备选择 macOS 或 Windows 安装包。</p></div>
+        <div class="process-step"><span>2</span><strong>注册或登录</strong><p>使用知萌账号进入客户端授权流程。</p></div>
+        <div class="process-step"><span>3</span><strong>订阅解锁</strong><p>在订阅中心创建家庭年卡订单。</p></div>
+        <div class="process-step"><span>4</span><strong>扫码付款</strong><p>按默认微信二维码付款并填写订单备注。</p></div>
+        <div class="process-step"><span>5</span><strong>提交凭证</strong><p>补充付款时间、金额、订单号等核对信息。</p></div>
+        <div class="process-step"><span>6</span><strong>刷新授权</strong><p>运营确认到账后回到客户端刷新授权。</p></div>
       </div>
     </section>
 
@@ -59,6 +163,33 @@
         <li>Windows 10 或更高版本（64 位）</li>
         <li>Windows 安装版需管理员权限完成安装；便携版无需安装，解压即可运行</li>
       </ul>
+    </section>
+
+    <section class="sales-section faq-section" aria-labelledby="faq-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">常见问题</p>
+          <h2 id="faq-heading">购买前先把关键问题说清楚</h2>
+        </div>
+      </div>
+      <div class="faq-grid">
+        <article class="faq-item">
+          <h3>为什么需要人工确认？</h3>
+          <p>首发 MVP 先用固定二维码和付款凭证确认跑通售卖闭环，确认到账后开通授权。</p>
+        </article>
+        <article class="faq-item">
+          <h3>多久可以开通？</h3>
+          <p>提交凭证后由运营核对到账信息，通常 24 小时内完成确认。</p>
+        </article>
+        <article class="faq-item">
+          <h3>Mac 应该下载哪个版本？</h3>
+          <p>M1/M2/M3/M4 选择 Apple 芯片版；较早的 Intel Mac 选择 Intel 芯片版。</p>
+        </article>
+        <article class="faq-item">
+          <h3>是否已经包含云保存和社区？</h3>
+          <p>首发阶段不把云保存、分享、社区作为已上线权益，后续会按产品计划逐步开放。</p>
+        </article>
+      </div>
     </section>
 
     <section id="beta-section" class="beta" aria-labelledby="beta-heading">
