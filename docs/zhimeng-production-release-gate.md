@@ -160,10 +160,10 @@ curl -fsS https://zhimeng.codevalley.cn/releases.json
 下载包验证：
 
 ```bash
-curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-setup-5.2.16.exe
-curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-portable-5.2.16.exe
-curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-mac-arm64-5.2.16.dmg
-curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-mac-x64-5.2.16.dmg
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-setup-1.0.0.exe
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-portable-1.0.0.exe
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-mac-arm64-1.0.0.dmg
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-mac-x64-1.0.0.dmg
 ```
 
 ## 6. 线上购买闭环验收

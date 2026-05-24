@@ -222,6 +222,47 @@ mkdir -p /www/wwwroot/<app-test>/downloads
 rsync -a --delete --exclude='.user.ini' --exclude='downloads/' website/ /www/wwwroot/<app>/
 ```
 
+### 阶段 5.1：安装包和发布清单
+
+桌面应用要把“产品版本”当作独立发布物管理，不能长期沿用上游项目版本号。正式首发建议从 `1.0.0` 开始，内测可用 `0.x` 或 `-beta` 后缀。
+
+每次发布必须保持三件事一致：
+
+- `package.json` / lockfile 中的产品版本。
+- `website/releases.json` 中展示给用户看的版本和下载 URL。
+- `/downloads/` 目录里的真实安装包文件名。
+
+推荐文件命名：
+
+```text
+downloads/<app>-setup-<version>.exe
+downloads/<app>-portable-<version>.exe
+downloads/<app>-mac-arm64-<version>.dmg
+downloads/<app>-mac-x64-<version>.dmg
+```
+
+上传顺序建议：
+
+1. 本地或 CI 先完成完整打包。
+2. 将安装包上传到服务器临时目录或最终 `downloads/` 目录。
+3. 用 `curl -fsSI` 确认每个新包都是 `200`。
+4. 再部署新的 `releases.json`。
+5. 再部署或刷新官网页面。
+
+如果先发布 `releases.json`，但安装包还没上传，用户会看到新版本却下载 404。正式发布时要避免这个窗口；如果必须分步执行，先上传新包，再切清单。
+
+验证命令：
+
+```bash
+curl -fsS https://example.com/releases.json
+curl -fsSI https://example.com/downloads/<app>-setup-<version>.exe
+curl -fsSI https://example.com/downloads/<app>-portable-<version>.exe
+curl -fsSI https://example.com/downloads/<app>-mac-arm64-<version>.dmg
+curl -fsSI https://example.com/downloads/<app>-mac-x64-<version>.dmg
+```
+
+本地有 `releases.local.json` 这类调试清单时，要确认它指向的也是实际存在的本地安装包；否则本地页面验收会出现“页面版本对、下载断链”的假象。
+
 ### 阶段 6：Nginx 反向代理
 
 配置必须同时覆盖 HTTP 和 HTTPS。一个常见问题是 HTTP 已经正常，但 HTTPS 还在旧默认站点。
@@ -490,6 +531,10 @@ curl -fsSI https://example.com/pay.html
 curl -fsSI https://example.com/ops.html
 curl -fsS https://example.com/releases.json
 curl -fsSI https://example.com/assets/logo.png
+curl -fsSI https://example.com/downloads/<app>-setup-<version>.exe
+curl -fsSI https://example.com/downloads/<app>-portable-<version>.exe
+curl -fsSI https://example.com/downloads/<app>-mac-arm64-<version>.dmg
+curl -fsSI https://example.com/downloads/<app>-mac-x64-<version>.dmg
 ```
 
 ### 业务闭环
@@ -546,6 +591,7 @@ nginx -t
 
 - 是否已有真实安装包上传到 `/downloads/`。
 - `releases.json` 是否指向真实 HTTPS URL。
+- `package.json`、`releases.json`、安装包文件名是否使用同一个产品版本。
 - 付款二维码是否为当前收款主体。
 - 测试价格是否已经切回正式价格。
 - 测试运营口令和正式运营口令是否不同。

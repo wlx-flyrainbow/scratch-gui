@@ -137,6 +137,32 @@ mkdir -p /www/wwwroot/zhimeng/downloads
 
 后续下载量变大后再迁到 OSS/CDN。
 
+当前正式首发版本采用知萌独立产品版本 `1.0.0`，不要继续使用上游 Scratch 的 `5.2.16`。正式站下载目录应存在：
+
+```text
+/www/wwwroot/zhimeng/downloads/zhimeng-setup-1.0.0.exe
+/www/wwwroot/zhimeng/downloads/zhimeng-portable-1.0.0.exe
+/www/wwwroot/zhimeng/downloads/zhimeng-mac-arm64-1.0.0.dmg
+/www/wwwroot/zhimeng/downloads/zhimeng-mac-x64-1.0.0.dmg
+```
+
+发布顺序：
+
+1. 先上传四个 `1.0.0` 安装包。
+2. 确认四个下载 URL 都返回 `200`。
+3. 再同步 `website/releases.json` 和官网静态文件。
+4. 最后打开 `https://zhimeng.codevalley.cn/` 确认展示“当前版本 1.0.0”。
+
+验证：
+
+```bash
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-setup-1.0.0.exe
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-portable-1.0.0.exe
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-mac-arm64-1.0.0.dmg
+curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-mac-x64-1.0.0.dmg
+curl -fsS https://zhimeng.codevalley.cn/releases.json
+```
+
 ## 8. 启动后端
 
 测试环境：

@@ -70,10 +70,10 @@ python3 -m http.server 4173 --bind 127.0.0.1 --directory website
 
 打开 `http://127.0.0.1:4173/index.html`，页面会优先读取 `website/releases.local.json`，四个下载按钮会指向本机 `dist/` 产物：
 
-- macOS Apple 芯片版：`dist/知萌-5.2.16-arm64.dmg`
-- macOS Intel 芯片版：`dist/知萌-5.2.16.dmg`
-- Windows 安装版：`dist/知萌 Setup 5.2.16.exe`
-- Windows 便携版：`dist/知萌 5.2.16.exe`
+- macOS Apple 芯片版：`dist/知萌-1.0.0-arm64.dmg`
+- macOS Intel 芯片版：`dist/知萌-1.0.0.dmg`
+- Windows 安装版：`dist/知萌 Setup 1.0.0.exe`
+- Windows 便携版：`dist/知萌 1.0.0.exe`
 
 注意：本地包用于流程验收；生产 macOS 包需启用 Developer ID 签名、timestamp 与 notarization，Windows 包需使用正式代码签名证书。
 
