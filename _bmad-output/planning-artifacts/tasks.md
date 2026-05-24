@@ -1,7 +1,7 @@
 # 知萌产品化改造 TASKS
 
-**Source PRD:** `_bmad-output/planning-artifacts/prd.md`  
-**Date:** 2026-05-23  
+**Source PRD:** `_bmad-output/planning-artifacts/prd.md`
+**Date:** 2026-05-23
 **Goal:** 将知萌从 Scratch GUI 分叉推进为可上线售卖的桌面产品，优先完成客户端内置购买闭环。
 
 ## Execution Order

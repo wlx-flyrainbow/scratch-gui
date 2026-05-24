@@ -20,11 +20,11 @@
 
 ## 3. 参考来源
 
-- Code.org：课程与学习资源面向学生免费，付费主要来自教师培训、场地或服务，而不是学生课程内容本身。  
+- Code.org：课程与学习资源面向学生免费，付费主要来自教师培训、场地或服务，而不是学生课程内容本身。
   https://support.code.org/hc/en-us/articles/202518403-How-much-does-it-cost-to-use-Code-org
-- CodeMonkey：家庭端有个人、家庭、Home school 等不同价格层级，公开页面显示以月费/年费订阅为主。  
+- CodeMonkey：家庭端有个人、家庭、Home school 等不同价格层级，公开页面显示以月费/年费订阅为主。
   https://www.codemonkey.com/pricing/
-- Tynker：提供面向儿童的季度、年度、终身计划，强调家庭学习和多个孩子覆盖。  
+- Tynker：提供面向儿童的季度、年度、终身计划，强调家庭学习和多个孩子覆盖。
   https://www.tynker.com/parents/pricing/
 - 国内少儿编程课程公开信息通常落在数千元/年的课程型价格带，常见代表包括核桃编程、西瓜创客、猿编程等；该价格包含课程体系、教师服务、学习督导或直播/录播课，不适合直接套用到当前知萌 MVP。
 
