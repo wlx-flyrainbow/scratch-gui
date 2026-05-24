@@ -3,6 +3,9 @@
 
 # Local secrets / machine-specific (see .env.example)
 .env
+.env.production
+/data/payment-proofs
+/website/releases.local.json
 
 # NPM
 /node_modules
@@ -34,3 +37,6 @@ npm-*
 /.cursor/skills/bmad-*/
 /.opencode/skills/bmad-*/
 /.trae/skills/bmad-*/
+
+_bmad-output/test-reports/*
+.playwright-mcp/*

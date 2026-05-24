@@ -12,6 +12,16 @@ const adminToken = process.env.ZHIMENG_CHECK_ADMIN_TOKEN || '';
 const nowStamp = () => new Date().toISOString();
 const reportDir = path.resolve(__dirname, '../_bmad-output/test-reports');
 
+const joinUrl = (base, route) => {
+    const cleanBase = String(base || '').replace(/\/$/, '');
+    const cleanRoute = route.startsWith('/') ? route : `/${route}`;
+    return `${cleanBase}${cleanRoute}`;
+};
+
+const includesAll = (text, needles) => needles.every(needle => String(text || '').includes(needle));
+
+const hasAgplSourceLink = text => /AGPL|源码|源代码|github\.com\/wlx-flyrainbow\/scratch-gui/i.test(text || '');
+
 const requestJson = async ({method, url, body, token, adminToken: requestAdminToken}) => {
     const headers = {'Content-Type': 'application/json'};
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -35,6 +45,18 @@ const requestJson = async ({method, url, body, token, adminToken: requestAdminTo
         status: response.status,
         ok: response.ok,
         json,
+        text
+    };
+};
+
+const requestText = async ({method, url}) => {
+    const response = await fetch(url, {method});
+    const text = await response.text();
+    return {
+        url,
+        method,
+        status: response.status,
+        ok: response.ok,
         text
     };
 };
@@ -75,6 +97,52 @@ const toMarkdown = result => {
     return lines.join('\n');
 };
 
+const redactValue = value => {
+    if (typeof value !== 'string') return value;
+    return value
+        .replace(/at_[a-f0-9]+/g, 'ACCESS_TOKEN_REDACTED')
+        .replace(/rt_[a-f0-9]+/g, 'REFRESH_TOKEN_REDACTED')
+        .replace(/pay_[a-f0-9]+/g, 'PAYMENT_TOKEN_REDACTED');
+};
+
+const sanitizeValue = value => {
+    if (Array.isArray(value)) return value.map(sanitizeValue);
+    if (value && typeof value === 'object') {
+        return Object.keys(value).reduce((memo, key) => {
+            if (['access_token', 'refresh_token'].includes(key)) {
+                memo[key] = 'REDACTED';
+            } else {
+                memo[key] = sanitizeValue(value[key]);
+            }
+            return memo;
+        }, {});
+    }
+    return redactValue(value);
+};
+
+const sanitizeResponse = (key, response) => {
+    if (!response || typeof response !== 'object') return response;
+    const next = Object.keys(response).reduce((memo, responseKey) => {
+        if (['access_token', 'refresh_token'].includes(responseKey)) {
+            memo[responseKey] = 'REDACTED';
+        } else if (responseKey === 'text' && /^frontend/.test(key)) {
+            memo[responseKey] = `[html omitted; length=${String(response.text || '').length}]`;
+        } else {
+            memo[responseKey] = sanitizeValue(response[responseKey]);
+        }
+        return memo;
+    }, {});
+    return next;
+};
+
+const sanitizeResult = result => ({
+    ...result,
+    responses: Object.keys(result.responses || {}).reduce((memo, key) => {
+        memo[key] = sanitizeResponse(key, result.responses[key]);
+        return memo;
+    }, {})
+});
+
 const main = async () => {
     const timestamp = nowStamp();
     const steps = [];
@@ -82,20 +150,101 @@ const main = async () => {
     let pass = true;
 
     try {
-        responses.frontendHead = await requestJson({
+        responses.frontendHome = await requestText({
             method: 'GET',
             url: frontendBase
         });
-        const frontendPass = responses.frontendHead.status === 200;
+        const frontendHttpPass = responses.frontendHome.status === 200;
         pushStep(
             steps,
             'frontend_http',
-            frontendPass,
-            `GET ${frontendBase} -> ${responses.frontendHead.status}`
+            frontendHttpPass,
+            `GET ${frontendBase} -> ${responses.frontendHome.status}`
         );
-        if (!frontendPass) pass = false;
+        if (!frontendHttpPass) pass = false;
+
+        const frontendContentPass = frontendHttpPass &&
+            includesAll(responses.frontendHome.text, ['知萌', '下载 Windows 客户端']) &&
+            hasAgplSourceLink(responses.frontendHome.text) &&
+            !responses.frontendHome.text.includes('purchase.html');
+        pushStep(
+            steps,
+            'frontend_home_content',
+            Boolean(frontendContentPass),
+            frontendContentPass ?
+                '首页包含知萌品牌、Windows 下载入口和 AGPL/源码链接，且未推荐 purchase.html' :
+                '首页缺少知萌品牌、Windows 下载入口、AGPL/源码链接，或仍推荐 purchase.html'
+        );
+        if (!frontendContentPass) pass = false;
     } catch (err) {
         pushStep(steps, 'frontend_http', false, `请求失败: ${err.message || err}`);
+        pass = false;
+    }
+
+    try {
+        responses.frontendPurchase = await requestText({
+            method: 'GET',
+            url: joinUrl(frontendBase, '/purchase.html')
+        });
+        const purchasePass = responses.frontendPurchase.status === 200 &&
+            includesAll(responses.frontendPurchase.text, [
+                '本地订单验收工具',
+                '客服辅助',
+                '正式购买请在知萌客户端'
+            ]);
+        pushStep(
+            steps,
+            'frontend_purchase_demoted',
+            Boolean(purchasePass),
+            `GET /purchase.html -> ${responses.frontendPurchase.status}, ${
+                purchasePass ? '已降级为验收/客服辅助页' : '仍像正式购买入口或缺少降级文案'
+            }`
+        );
+        if (!purchasePass) pass = false;
+    } catch (err) {
+        pushStep(steps, 'frontend_purchase_demoted', false, `请求失败: ${err.message || err}`);
+        pass = false;
+    }
+
+    try {
+        responses.frontendPay = await requestText({
+            method: 'GET',
+            url: joinUrl(frontendBase, '/pay.html')
+        });
+        const payPass = responses.frontendPay.status === 200 &&
+            includesAll(responses.frontendPay.text, ['知萌订单支付', '扫码付款', '我已付款']);
+        pushStep(
+            steps,
+            'frontend_pay_content',
+            Boolean(payPass),
+            `GET /pay.html -> ${responses.frontendPay.status}, ${
+                payPass ? '关键元素存在' : '缺少付款页关键元素'
+            }`
+        );
+        if (!payPass) pass = false;
+    } catch (err) {
+        pushStep(steps, 'frontend_pay_content', false, `请求失败: ${err.message || err}`);
+        pass = false;
+    }
+
+    try {
+        responses.frontendOps = await requestText({
+            method: 'GET',
+            url: joinUrl(frontendBase, '/ops.html')
+        });
+        const opsPass = responses.frontendOps.status === 200 &&
+            includesAll(responses.frontendOps.text, ['订单确认', '运营口令', '待确认订单']);
+        pushStep(
+            steps,
+            'frontend_ops_content',
+            Boolean(opsPass),
+            `GET /ops.html -> ${responses.frontendOps.status}, ${
+                opsPass ? '关键元素存在' : '缺少运营确认页关键元素'
+            }`
+        );
+        if (!opsPass) pass = false;
+    } catch (err) {
+        pushStep(steps, 'frontend_ops_content', false, `请求失败: ${err.message || err}`);
         pass = false;
     }
 
@@ -219,6 +368,8 @@ const main = async () => {
             body: {
                 operator: 'goal-check',
                 provider_trade_no: `goal-${timestamp.replace(/[:.]/g, '-')}`,
+                amount_cents: responses.createOrder.json.amount_cents,
+                currency: responses.createOrder.json.currency,
                 note: 'automated goal check'
             }
         });
@@ -302,8 +453,9 @@ const main = async () => {
     const fileTag = timestamp.replace(/[:.]/g, '-');
     const jsonPath = path.join(reportDir, `zhimeng-goal-check-${fileTag}.json`);
     const mdPath = path.join(reportDir, `zhimeng-goal-check-${fileTag}.md`);
-    fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
-    fs.writeFileSync(mdPath, toMarkdown(result), 'utf8');
+    const sanitizedResult = sanitizeResult(result);
+    fs.writeFileSync(jsonPath, JSON.stringify(sanitizedResult, null, 2), 'utf8');
+    fs.writeFileSync(mdPath, toMarkdown(sanitizedResult), 'utf8');
 
     // eslint-disable-next-line no-console
     console.log(JSON.stringify({
