@@ -4,7 +4,16 @@ import {connect} from 'react-redux';
 
 import ZhimengLoginForm from '../components/menu-bar/zhimeng-login-form.jsx';
 import authConfig from './auth/config';
-import {login, refresh, fetchEntitlement, logout, createOrder, getOrderStatus, mockOrderPaid} from './auth/api';
+import {
+    login,
+    register,
+    refresh,
+    fetchEntitlement,
+    logout,
+    createOrder,
+    getOrderStatus,
+    submitPaymentProof
+} from './auth/api';
 import {buildLease, isLeaseValid} from './auth/lease';
 import {loadAuthBundle, saveAuthBundle, clearAuthBundle} from './auth/storage';
 import {setEntitlement, setPermissions, setSession, clearSession} from '../reducers/session';
@@ -14,18 +23,38 @@ const hasFeature = (entitlement, feature) => {
     return Array.isArray(features) && features.includes(feature);
 };
 
+const isOrderFulfilled = order => order && order.status === 'fulfilled';
+
 const AuthHOC = WrappedComponent => {
     class AuthComponent extends React.Component {
         constructor (props) {
             super(props);
             this.state = {
-                isReady: false
+                billingError: null,
+                billingModalOpen: false,
+                billingOrder: null,
+                billingPaymentMethod: 'wechat',
+                billingProofError: null,
+                billingProofSubmitted: false,
+                billingSubmitting: false,
+                billingStatusRefreshing: false,
+                authActionError: null,
+                isReady: false,
+                loginModalOpen: false
             };
             this.handleLogin = this.handleLogin.bind(this);
             this.handleLogout = this.handleLogout.bind(this);
-            this.handleOpenRegistration = this.handleOpenRegistration.bind(this);
+            this.handleCloseBilling = this.handleCloseBilling.bind(this);
+            this.handleCloseLogin = this.handleCloseLogin.bind(this);
             this.handleOpenBilling = this.handleOpenBilling.bind(this);
+            this.handleOpenExternalBilling = this.handleOpenExternalBilling.bind(this);
+            this.handleOpenLogin = this.handleOpenLogin.bind(this);
+            this.handlePaymentMethodChange = this.handlePaymentMethodChange.bind(this);
+            this.handleRefreshBillingOrder = this.handleRefreshBillingOrder.bind(this);
             this.handleRefreshEntitlement = this.handleRefreshEntitlement.bind(this);
+            this.handleRefreshEntitlementForUi = this.handleRefreshEntitlementForUi.bind(this);
+            this.handleRegister = this.handleRegister.bind(this);
+            this.handleSubmitPaymentProof = this.handleSubmitPaymentProof.bind(this);
             this.renderLogin = this.renderLogin.bind(this);
         }
 
@@ -99,6 +128,15 @@ const AuthHOC = WrappedComponent => {
 
         async handleLogin (payload) {
             const result = await login(payload);
+            await this.applyAuthResult(result);
+        }
+
+        async handleRegister (payload) {
+            const result = await register(payload);
+            await this.applyAuthResult(result);
+        }
+
+        async applyAuthResult (result) {
             const leasedEntitlement = buildLease(result.entitlement || {}, authConfig.leaseDays);
             const session = {user: {...result.user, token: result.access_token}};
             await saveAuthBundle({
@@ -113,6 +151,10 @@ const AuthHOC = WrappedComponent => {
             this.props.onSetSession(session);
             this.props.onSetPermissions(result.permissions || {});
             this.props.onSetEntitlement(leasedEntitlement);
+            this.setState({
+                authActionError: null,
+                loginModalOpen: false
+            });
         }
 
         async handleLogout () {
@@ -125,60 +167,184 @@ const AuthHOC = WrappedComponent => {
             }
             await clearAuthBundle();
             this.props.onClearSession();
+            this.setState({
+                billingOrder: null,
+                billingModalOpen: false,
+                billingProofError: null,
+                billingProofSubmitted: false
+            });
         }
 
-        handleOpenRegistration () {
-            if (typeof window !== 'undefined') {
-                window.open(authConfig.registerUrl, '_blank', 'noopener,noreferrer');
-            }
+        handleOpenLogin () {
+            this.setState({
+                authActionError: null,
+                loginModalOpen: true
+            });
+        }
+
+        handleCloseLogin () {
+            this.setState({loginModalOpen: false});
+        }
+
+        handleCloseBilling () {
+            this.setState({
+                billingModalOpen: false,
+                billingError: null,
+                billingProofError: null
+            });
         }
 
         async handleRefreshEntitlement () {
-            const bundle = await loadAuthBundle();
-            const refreshToken = bundle && bundle.tokens && bundle.tokens.refresh_token;
-            if (!refreshToken) throw new Error('当前会话缺少 refresh token，请重新登录');
-            const refreshed = await refresh(refreshToken);
-            const accessToken = refreshed.access_token;
-            const entitlement = await fetchEntitlement(accessToken);
-            const leasedEntitlement = buildLease(entitlement, authConfig.leaseDays);
-            const session = {
-                user: {
-                    ...(bundle.session && bundle.session.user ? bundle.session.user : {}),
-                    token: accessToken
-                }
-            };
-            await saveAuthBundle({
-                tokens: {
-                    access_token: accessToken,
-                    refresh_token: refreshToken
-                },
-                session,
-                entitlement: leasedEntitlement,
-                permissions: bundle.permissions || {}
-            });
-            this.props.onSetSession(session);
-            this.props.onSetEntitlement(leasedEntitlement);
-            return leasedEntitlement;
+            try {
+                this.setState({authActionError: null});
+                const bundle = await loadAuthBundle();
+                const refreshToken = bundle && bundle.tokens && bundle.tokens.refresh_token;
+                if (!refreshToken) throw new Error('登录状态已失效，请重新登录知萌账号。');
+                const refreshed = await refresh(refreshToken);
+                const accessToken = refreshed.access_token;
+                const entitlement = await fetchEntitlement(accessToken);
+                const leasedEntitlement = buildLease(entitlement, authConfig.leaseDays);
+                const session = {
+                    user: {
+                        ...(bundle.session && bundle.session.user ? bundle.session.user : {}),
+                        token: accessToken
+                    }
+                };
+                await saveAuthBundle({
+                    tokens: {
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    },
+                    session,
+                    entitlement: leasedEntitlement,
+                    permissions: bundle.permissions || {}
+                });
+                this.props.onSetSession(session);
+                this.props.onSetEntitlement(leasedEntitlement);
+                return leasedEntitlement;
+            } catch (err) {
+                const message = err.message || '刷新授权失败，请稍后重试。';
+                this.setState({authActionError: message});
+                throw err;
+            }
         }
 
-        async handleOpenBilling () {
-            const user = this.props.session && this.props.session.user;
-            if (!user || !user.token) throw new Error('请先登录后再购买');
-            const created = await createOrder(user.token, {
-                plan: 'family_yearly',
-                channel: 'wechat',
-                return_url: authConfig.billingUrl
+        handleRefreshEntitlementForUi () {
+            this.handleRefreshEntitlement().catch(() => {
+                // User-facing copy is displayed through authActionError.
             });
-            if (typeof window !== 'undefined' && created && created.pay_url) {
-                window.open(created.pay_url, '_blank', 'noopener,noreferrer');
+        }
+
+        async handleOpenBilling (channel = 'wechat') {
+            const user = this.props.session && this.props.session.user;
+            if (!user || !user.token) {
+                this.setState({loginModalOpen: true});
+                return null;
             }
-            if (typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname)) {
-                await mockOrderPaid(user.token, created.order_id);
+            const paymentChannel = ['wechat', 'alipay'].includes(channel) ? channel : 'wechat';
+            if (this.state.billingOrder) {
+                this.setState({
+                    billingModalOpen: true,
+                    billingPaymentMethod: paymentChannel
+                });
+                return this.state.billingOrder;
             }
-            if (created && created.order_id) {
-                await getOrderStatus(user.token, created.order_id);
+            this.setState({
+                billingError: null,
+                billingPaymentMethod: paymentChannel,
+                billingProofError: null,
+                billingProofSubmitted: false,
+                billingModalOpen: true,
+                billingSubmitting: true
+            });
+            try {
+                const created = await createOrder(user.token, {
+                    plan: 'family_yearly',
+                    channel: paymentChannel,
+                    return_url: authConfig.billingUrl
+                });
+                this.setState({billingOrder: created});
+                return created;
+            } catch (err) {
+                this.setState({billingError: err.message || '创建订单失败，请稍后重试'});
+                return null;
+            } finally {
+                this.setState({billingSubmitting: false});
             }
-            await this.handleRefreshEntitlement();
+        }
+
+        handlePaymentMethodChange (paymentMethod) {
+            this.setState({
+                billingPaymentMethod: paymentMethod || 'wechat'
+            });
+        }
+
+        async handleRefreshBillingOrder () {
+            const user = this.props.session && this.props.session.user;
+            const order = this.state.billingOrder;
+            if (!user || !user.token || !order || !order.order_id) return null;
+            this.setState({
+                billingStatusRefreshing: true,
+                billingError: null,
+                billingProofError: null
+            });
+            let refreshedOrder = null;
+            try {
+                const refreshed = await getOrderStatus(user.token, order.order_id);
+                const nextOrder = {...order, ...refreshed};
+                refreshedOrder = nextOrder;
+                this.setState({billingOrder: nextOrder});
+                if (isOrderFulfilled(nextOrder)) {
+                    await this.handleRefreshEntitlement();
+                    this.setState({
+                        billingModalOpen: false,
+                        billingProofSubmitted: false
+                    });
+                }
+                return refreshed;
+            } catch (err) {
+                const message = isOrderFulfilled(refreshedOrder) ?
+                    '订单已确认，但刷新授权失败，请重新登录或稍后再试' :
+                    (err.message || '刷新订单状态失败，请稍后重试');
+                this.setState({billingError: message});
+                return null;
+            } finally {
+                this.setState({billingStatusRefreshing: false});
+            }
+        }
+
+        async handleSubmitPaymentProof (payload) {
+            const user = this.props.session && this.props.session.user;
+            const order = this.state.billingOrder;
+            if (!user || !user.token || !order || !order.order_id) {
+                this.setState({billingProofError: '订单信息不完整，请重新创建订单'});
+                return null;
+            }
+            this.setState({
+                billingProofError: null,
+                billingProofSubmitted: false,
+                billingSubmitting: true
+            });
+            try {
+                const result = await submitPaymentProof(user.token, order.order_id, payload);
+                this.setState({
+                    billingOrder: {...order, ...result},
+                    billingProofSubmitted: true
+                });
+                return result;
+            } catch (err) {
+                this.setState({billingProofError: err.message || '提交付款凭证失败，请检查后重试'});
+                return null;
+            } finally {
+                this.setState({billingSubmitting: false});
+            }
+        }
+
+        handleOpenExternalBilling () {
+            const order = this.state.billingOrder;
+            if (typeof window !== 'undefined' && order && order.pay_url) {
+                window.open(order.pay_url, '_blank', 'noopener,noreferrer');
+            }
         }
 
         renderLogin ({onClose}) {
@@ -186,6 +352,7 @@ const AuthHOC = WrappedComponent => {
                 <ZhimengLoginForm
                     onClose={onClose}
                     onLogin={this.handleLogin}
+                    onRegister={this.handleRegister}
                 />
             );
         }
@@ -220,13 +387,20 @@ const AuthHOC = WrappedComponent => {
                 /[?&]backpack_host=/.test(window.location.search);
             const backpackVisibleResolved =
                 Boolean(mergedBackpackHost) && (urlBackpackSelfTest || backpackAllowed);
+            const appUnlocked = hasSession && active && leaseValid;
+            let authStatus = 'locked';
             let authNotice = '';
-            if (!hasSession) {
-                authNotice = '登录知萌账号后可解锁云保存、分享与社区能力';
-            } else if (!active) {
-                authNotice = '当前订阅未生效或已到期，请续费后解锁云功能';
-            } else if (!leaseValid) {
+            if (hasSession && active && leaseValid) {
+                authStatus = 'active';
+            } else if (hasSession && active) {
+                authStatus = 'leaseExpired';
                 authNotice = '授权租约已过期，请联网刷新授权';
+            } else if (hasSession) {
+                authStatus = 'inactive';
+                authNotice = '当前订阅未生效或已到期，付款后需人工确认再刷新授权';
+            } else {
+                authStatus = 'signedOut';
+                authNotice = '登录知萌账号后可解锁云保存、分享与社区能力';
             }
 
             if (!this.state.isReady) return null;
@@ -244,11 +418,32 @@ const AuthHOC = WrappedComponent => {
                     hasCloudPermission={cloudEnabled}
                     showComingSoon={!cloudEnabled}
                     onLogOut={this.handleLogout}
-                    onOpenRegistration={this.handleOpenRegistration}
                     onOpenBilling={this.handleOpenBilling}
-                    onRefreshEntitlement={this.handleRefreshEntitlement}
+                    onRefreshEntitlement={this.handleRefreshEntitlementForUi}
                     renderLogin={this.renderLogin}
+                    onRegister={this.handleRegister}
                     authNotice={authNotice}
+                    authStatus={authStatus}
+                    authActionError={this.state.authActionError}
+                    billingError={this.state.billingError}
+                    billingModalOpen={this.state.billingModalOpen}
+                    billingOrder={this.state.billingOrder}
+                    billingPaymentMethod={this.state.billingPaymentMethod}
+                    billingProofError={this.state.billingProofError}
+                    billingProofSubmitted={this.state.billingProofSubmitted}
+                    billingSubmitting={this.state.billingSubmitting}
+                    billingStatusRefreshing={this.state.billingStatusRefreshing}
+                    entitlement={entitlement}
+                    isAppUnlocked={appUnlocked}
+                    loginModalOpen={this.state.loginModalOpen}
+                    session={this.props.session}
+                    onCloseBilling={this.handleCloseBilling}
+                    onCloseLogin={this.handleCloseLogin}
+                    onOpenExternalBilling={this.handleOpenExternalBilling}
+                    onOpenLogin={this.handleOpenLogin}
+                    onPaymentMethodChange={this.handlePaymentMethodChange}
+                    onRefreshBillingOrder={this.handleRefreshBillingOrder}
+                    onSubmitPaymentProof={this.handleSubmitPaymentProof}
                 />
             );
         }

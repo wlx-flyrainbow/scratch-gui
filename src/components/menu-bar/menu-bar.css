@@ -171,6 +171,45 @@
     align-items: center;
 }
 
+.zhimeng-account-menu {
+    gap: 0.25rem;
+}
+
+.zhimeng-account-dropdown {
+    min-width: 14rem;
+}
+
+.zhimeng-account-summary {
+    display: grid;
+    gap: 0.4rem;
+    padding: 0.65rem 0.75rem;
+    color: $text-primary;
+}
+
+.zhimeng-account-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $text-primary;
+}
+
+.zhimeng-account-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.zhimeng-account-meta span {
+    color: $text-primary-transparent;
+}
+
+.zhimeng-account-meta strong {
+    color: $text-primary;
+    text-align: right;
+    word-break: break-word;
+}
+
 .profile-icon {
     margin: 0 .25rem;
     width: $menu-bar-button-size;

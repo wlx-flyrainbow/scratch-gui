@@ -9,7 +9,7 @@ const asNumber = (value, fallback) => {
 const authConfig = {
     apiBaseUrl: process.env.ZHIMENG_AUTH_API_BASE || 'http://localhost:3001',
     billingUrl: process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com',
-    registerUrl: process.env.ZHIMENG_REGISTER_URL || 'https://accounts.zhimeng.example.com/register',
+    registerUrl: (process.env.ZHIMENG_REGISTER_URL || '').trim(),
     leaseDays: asNumber(process.env.ZHIMENG_LEASE_DAYS, 7),
     cloudHost: (process.env.ZHIMENG_CLOUD_HOST || '').trim(),
     /** Backpack API root (no trailing slash); optional — URL ?backpack_host= still works in playground */

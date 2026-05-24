@@ -1,0 +1,125 @@
+.auth-form {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.auth-hero {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.auth-badge {
+    justify-self: start;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    background: #efe7ff;
+    color: #7446c8;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.auth-hero h2 {
+    margin: 0;
+    color: #28304a;
+    font-size: 1.55rem;
+    line-height: 1.25;
+}
+
+.auth-hero p {
+    margin: 0;
+    color: #687089;
+    line-height: 1.5;
+}
+
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: #f5f7fb;
+}
+
+.auth-tabs button {
+    min-height: 2.25rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #687089;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-tabs button.is-selected {
+    background: #855cd6;
+    color: white;
+    box-shadow: 0 2px 8px rgba(76, 46, 138, 0.22);
+}
+
+.auth-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.auth-field span {
+    color: #4e5570;
+    font-weight: 700;
+}
+
+.auth-field input {
+    width: 100%;
+    min-height: 2.65rem;
+    border: 1px solid rgba(0, 0, 0, 0.16);
+    border-radius: 8px;
+    padding: 0 0.85rem;
+    color: #28304a;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-field input:focus {
+    border-color: #855cd6;
+    box-shadow: 0 0 0 3px rgba(133, 92, 214, 0.16);
+}
+
+.auth-error {
+    border-radius: 8px;
+    padding: 0.75rem;
+    background: #ffebee;
+    color: #b71c1c;
+    line-height: 1.45;
+}
+
+.auth-submit {
+    min-height: 2.75rem;
+    border: 1px solid #855cd6;
+    border-radius: 8px;
+    background: #855cd6;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-submit:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
+.auth-switch-hint {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    color: #687089;
+}
+
+.auth-switch-hint button {
+    border: 0;
+    background: transparent;
+    color: #855cd6;
+    font-weight: 700;
+    cursor: pointer;
+}

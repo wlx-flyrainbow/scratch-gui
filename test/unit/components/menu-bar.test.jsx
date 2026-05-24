@@ -10,13 +10,13 @@ import {Provider} from 'react-redux';
 import VM from 'scratch-vm';
 
 describe('MenuBar Component', () => {
-    const store = configureStore()({
+    const makeStore = (overrides = {}) => configureStore()({
         locales: {
             isRtl: false,
             locale: 'en-US'
         },
         scratchGui: {
-            menus: menuInitialState,
+            menus: overrides.menus || menuInitialState,
             projectState: {
                 loadingState: LoadingState.NOT_LOADED
             },
@@ -27,11 +27,14 @@ describe('MenuBar Component', () => {
                 year: 'NOW'
             },
             vm: new VM()
-        }
+        },
+        session: overrides.session
     });
 
     const getComponent = function (props = {}) {
-        return <Provider store={store}><MenuBar {...props} /></Provider>;
+        const store = makeStore(props.storeOverrides);
+        const {storeOverrides, ...componentProps} = props;
+        return <Provider store={store}><MenuBar {...componentProps} /></Provider>;
     };
 
     test('menu bar with no About handler has no About button', () => {
@@ -54,5 +57,42 @@ describe('MenuBar Component', () => {
         expect(onClickAbout).toHaveBeenCalledTimes(0);
         button.simulate('click');
         expect(onClickAbout).toHaveBeenCalledTimes(1);
+    });
+
+    test('logged-in account menu shows Zhimeng subscription actions', () => {
+        const menuBar = mountWithIntl(getComponent({
+            authStatus: 'inactive',
+            entitlement: {
+                expires_at: '2026-12-31T00:00:00.000Z',
+                plan: 'family_yearly',
+                status: 'inactive'
+            },
+            onOpenBilling: jest.fn(),
+            onRefreshEntitlement: jest.fn(),
+            onLogOut: jest.fn(),
+            storeOverrides: {
+                menus: {
+                    ...menuInitialState,
+                    accountMenu: true
+                },
+                session: {
+                    session: {
+                        user: {
+                            username: 'local_buyer'
+                        }
+                    }
+                }
+            }
+        }));
+
+        expect(menuBar.text()).toContain('local_buyer');
+        expect(menuBar.text()).toContain('订阅状态');
+        expect(menuBar.text()).toContain('未开通');
+        expect(menuBar.text()).toContain('family_yearly');
+        expect(menuBar.text()).toContain('2026-12-31T00:00:00.000Z');
+        expect(menuBar.text()).toContain('订阅解锁');
+        expect(menuBar.text()).toContain('刷新授权');
+        expect(menuBar.text()).toContain('退出登录');
+        expect(menuBar.text()).not.toContain('My Stuff');
     });
 });

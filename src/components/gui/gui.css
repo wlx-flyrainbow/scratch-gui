@@ -312,6 +312,12 @@ $fade-out-distance: 15px;
     padding: 0.4rem 0.8rem;
 }
 
+.auth-notice-error {
+    background: #ffebee;
+    border-color: #ffcdd2;
+    color: #b71c1c;
+}
+
 .auth-notice-actions {
     display: flex;
     gap: 0.5rem;
@@ -328,6 +334,584 @@ $fade-out-distance: 15px;
 
 .auth-notice-button:hover {
     background: #fffde7;
+}
+
+.locked-experience {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #edf6ff;
+}
+
+.locked-content {
+    width: 720px;
+    max-width: 100%;
+    padding: 2.4rem;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 8px;
+    background: $ui-white;
+    text-align: left;
+    box-shadow: 0 8px 24px $ui-black-transparent;
+}
+
+.locked-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    text-align: left;
+}
+
+.locked-brand-logo,
+.zhimeng-brand-logo {
+    flex: 0 0 auto;
+    object-fit: contain;
+    border-radius: 8px;
+    background: $ui-white;
+    box-shadow: 0 4px 14px $ui-black-transparent;
+}
+
+.locked-brand-logo {
+    width: 72px;
+    height: 72px;
+}
+
+.locked-brand {
+    color: $text-primary;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.locked-brand-sub {
+    margin-top: 0.25rem;
+    color: $text-primary-transparent;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.locked-content h1 {
+    margin: 1.45rem 0 0.65rem;
+    font-size: 1.75rem;
+    color: $text-primary;
+    text-align: center;
+}
+
+.locked-content p {
+    margin: 0;
+    line-height: 1.6;
+    color: $text-primary-transparent;
+    text-align: center;
+}
+
+.locked-status {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+    background: #fff8dd;
+    color: #6f4b00;
+    line-height: 1.5;
+}
+
+.locked-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+}
+
+.zhimeng-auth-modal,
+.zhimeng-billing-modal {
+    width: 440px;
+    max-height: calc(100vh - 4rem);
+    overflow: hidden;
+    background: $ui-white;
+}
+
+.zhimeng-billing-modal {
+    width: min(1120px, calc(100vw - 4rem));
+}
+
+.zhimeng-auth-modal {
+    width: 500px;
+}
+
+.zhimeng-modal-body {
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.25rem;
+}
+
+.zhimeng-modal-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: $text-primary;
+}
+
+.zhimeng-modal-eyebrow {
+    margin-bottom: 0.25rem;
+    color: $looks-secondary;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.zhimeng-modal-description {
+    margin-top: 0.35rem;
+    color: $text-primary-transparent;
+    line-height: 1.5;
+}
+
+.billing-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 0.95rem;
+}
+
+.billing-brand-header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.zhimeng-brand-logo {
+    width: 52px;
+    height: 52px;
+}
+
+.billing-status-pill {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    background: #fff8dd;
+    color: #7c4d00;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.billing-status-pill.is-active {
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+.zhimeng-login-form {
+    margin-top: 0;
+}
+
+.zhimeng-primary-button,
+.zhimeng-secondary-button,
+.zhimeng-text-button {
+    min-height: 2.25rem;
+    border-radius: 6px;
+    padding: 0 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.zhimeng-primary-button {
+    border: 1px solid $looks-secondary;
+    background: $looks-secondary;
+    color: $ui-white;
+}
+
+.zhimeng-secondary-button {
+    border: 1px solid $looks-secondary;
+    background: $ui-white;
+    color: $looks-secondary;
+}
+
+.zhimeng-text-button {
+    margin-top: 0.75rem;
+    border: none;
+    background: transparent;
+    color: $looks-secondary;
+}
+
+.zhimeng-primary-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.zhimeng-secondary-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.zhimeng-error {
+    margin-top: 0.6rem;
+    padding: 0.6rem;
+    border-radius: 6px;
+    background: #ffebee;
+    color: #b71c1c;
+}
+
+.zhimeng-success {
+    padding: 0.6rem;
+    border-radius: 6px;
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+.subscription-status,
+.order-summary {
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.subscription-status > div,
+.order-summary > div:not(.qr-panel):not(.zhimeng-success):not(.zhimeng-error) {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 6px;
+    background: $ui-secondary;
+}
+
+.subscription-status > div > span,
+.order-summary > div > span {
+    color: $text-primary-transparent;
+}
+
+.subscription-status > div > strong,
+.order-summary > div > strong {
+    color: $text-primary;
+    text-align: right;
+    word-break: break-word;
+}
+
+.order-summary p {
+    margin: 0;
+    color: $text-primary-transparent;
+    line-height: 1.5;
+}
+
+.billing-checkout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.28fr);
+    gap: 0.75rem;
+    align-items: stretch;
+    min-width: 0;
+}
+
+.billing-progress-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 8px;
+    background: #f7fbff;
+}
+
+.payment-guide,
+.order-side-panel,
+.proof-panel,
+.plan-card {
+    min-width: 0;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 8px;
+    background: $ui-white;
+}
+
+.payment-guide {
+    padding: 0.85rem;
+}
+
+.payment-guide-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.payment-guide-label,
+.payment-note-box span,
+.order-meta span,
+.proof-section-title span {
+    color: $text-primary-transparent;
+}
+
+.payment-amount {
+    margin-top: 0.1rem;
+    color: $text-primary;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.payment-channel-badge {
+    border-radius: 999px;
+    padding: 0.3rem 0.65rem;
+    background: #e8f5e9;
+    color: #1b5e20;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.payment-channel-badge.is-alipay {
+    background: #e8f1ff;
+    color: #0d47a1;
+}
+
+.payment-channel-badge.is-bank {
+    background: #eef0f6;
+    color: #3d455f;
+}
+
+.payment-channel-badge.is-other {
+    background: #fff3e0;
+    color: #7c4d00;
+}
+
+.qr-panel {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0.65rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f7fbff;
+}
+
+.qr-panel img {
+    width: 148px;
+    height: 148px;
+    object-fit: contain;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 8px;
+    background: $ui-white;
+}
+
+.qr-missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 148px;
+    height: 148px;
+    border: 1px dashed $ui-black-transparent;
+    border-radius: 8px;
+    color: $text-primary-transparent;
+}
+
+.payment-note-box {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.65rem;
+    padding: 0.6rem;
+    border-radius: 6px;
+    background: #fff8dd;
+}
+
+.payment-note-box strong {
+    color: #6f4b00;
+    text-align: right;
+    word-break: break-word;
+}
+
+.payment-hint {
+    margin: 0.55rem 0 0;
+    color: $text-primary-transparent;
+    line-height: 1.45;
+}
+
+.order-side-panel {
+    padding: 0.85rem;
+}
+
+.order-steps {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.billing-progress-panel .order-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.order-step-done,
+.order-step-current,
+.order-step-muted {
+    border-radius: 6px;
+    padding: 0.48rem 0.62rem;
+    font-weight: 700;
+}
+
+.order-step-done {
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+.order-step-current {
+    background: #fff8dd;
+    color: #7c4d00;
+}
+
+.order-step-muted {
+    background: $ui-secondary;
+    color: $text-primary-transparent;
+}
+
+.order-meta {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.billing-progress-panel .order-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem 0.85rem;
+    margin-top: 0;
+}
+
+.order-meta > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.billing-progress-panel .order-meta > div {
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.order-meta strong {
+    color: $text-primary;
+    text-align: right;
+    word-break: break-word;
+}
+
+.proof-panel {
+    display: grid;
+    align-content: start;
+    gap: 0.55rem;
+    padding: 0.85rem;
+}
+
+.proof-section-title {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.payment-proof-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid $ui-black-transparent;
+}
+
+.create-order-form {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.payment-proof-form label,
+.create-order-form label {
+    display: grid;
+    gap: 0.25rem;
+    color: $text-primary;
+}
+
+.payment-proof-form label span,
+.create-order-form label span {
+    color: $text-primary-transparent;
+    font-size: 0.82rem;
+}
+
+.payment-proof-form input,
+.payment-proof-form select,
+.payment-proof-form textarea,
+.create-order-form select {
+    box-sizing: border-box;
+    min-height: 2rem;
+    width: 100%;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 4px;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color: $text-primary;
+    background: $ui-white;
+}
+
+.payment-proof-form textarea {
+    resize: vertical;
+}
+
+.payment-proof-form label:last-of-type {
+    grid-column: 1 / -1;
+}
+
+.billing-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.billing-actions button {
+    flex: 1 1 9rem;
+}
+
+.plan-intro {
+    margin-top: 1.25rem;
+}
+
+.plan-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f7fbff;
+}
+
+.plan-name {
+    color: $text-primary;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.plan-card p {
+    margin: 0.35rem 0 0;
+    color: $text-primary-transparent;
+    line-height: 1.45;
+}
+
+.plan-price {
+    flex: 0 0 auto;
+    color: $looks-secondary;
+    font-weight: 700;
+}
+
+@media (max-width: 820px) {
+    .zhimeng-billing-modal {
+        width: calc(100vw - 2rem);
+    }
+
+    .billing-progress-panel,
+    .billing-progress-panel .order-steps,
+    .billing-checkout,
+    .payment-proof-form {
+        grid-template-columns: 1fr;
+    }
+
+    .billing-progress-panel .order-meta {
+        justify-content: flex-start;
+    }
 }
 /* Alerts */
 

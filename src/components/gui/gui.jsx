@@ -18,6 +18,7 @@ import StageWrapper from '../../containers/stage-wrapper.jsx';
 import Loader from '../loader/loader.jsx';
 import Box from '../box/box.jsx';
 import MenuBar from '../menu-bar/menu-bar.jsx';
+import Modal from '../../containers/modal.jsx';
 import CostumeLibrary from '../../containers/costume-library.jsx';
 import BackdropLibrary from '../../containers/backdrop-library.jsx';
 import Watermark from '../../containers/watermark.jsx';
@@ -40,6 +41,7 @@ import addExtensionIcon from './icon--extensions.svg';
 import codeIcon from './icon--code.svg';
 import costumesIcon from './icon--costumes.svg';
 import soundsIcon from './icon--sounds.svg';
+import zhimengLogo from '../../../static/app-icon.png';
 import DebugModal from '../debug-modal/debug-modal.jsx';
 
 const messages = defineMessages({
@@ -49,6 +51,85 @@ const messages = defineMessages({
         defaultMessage: 'Add Extension'
     }
 });
+
+const formatAmount = (cents, currency) => {
+    const value = Number(cents || 0) / 100;
+    try {
+        return new Intl.NumberFormat('zh-CN', {
+            style: 'currency',
+            currency: currency || 'CNY'
+        }).format(value);
+    } catch (e) {
+        return `${currency || 'CNY'} ${value.toFixed(2)}`;
+    }
+};
+
+const defaultPaidAt = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+};
+
+const paymentChannelLabel = channel => ({
+    alipay: '支付宝',
+    bank: '银行转账',
+    other: '其他',
+    wechat: '微信'
+}[channel] || '微信');
+
+const paymentChannelConfig = channel => ({
+    alipay: {
+        label: '支付宝',
+        noteLabel: '付款备注',
+        hint: '请使用支付宝扫码付款，并在付款备注中填写上方订单备注，方便运营快速核对。',
+        transferPlaceholder: '支付宝订单号或转账单号',
+        merchantPlaceholder: '支付宝商家订单号，可从账单详情复制',
+        tailPlaceholder: '支付宝交易号后 6-10 位'
+    },
+    bank: {
+        label: '银行转账',
+        noteLabel: '转账备注',
+        hint: '请按运营提供的银行账户转账，并在转账备注中填写上方订单备注。',
+        transferPlaceholder: '银行流水号或转账凭证号',
+        merchantPlaceholder: '银行转账可留空',
+        tailPlaceholder: '流水号后 6-10 位'
+    },
+    other: {
+        label: '其他',
+        noteLabel: '付款备注',
+        hint: '请按运营沟通的方式付款，并填写可核对到账的凭证信息。',
+        transferPlaceholder: '平台订单号或转账凭证号',
+        merchantPlaceholder: '无商家订单号可留空',
+        tailPlaceholder: '凭证号后 6-10 位'
+    },
+    wechat: {
+        label: '微信',
+        noteLabel: '付款备注',
+        hint: '请使用微信扫码付款，并在付款备注中填写上方订单备注，方便运营快速核对。',
+        transferPlaceholder: '微信转账单号或微信支付订单号',
+        merchantPlaceholder: '微信付款可留空',
+        tailPlaceholder: '微信交易号后 6-10 位'
+    }
+}[channel] || paymentChannelConfig('wechat'));
+
+const switchQrChannel = (url, channel) => {
+    if (!url || !['wechat', 'alipay'].includes(channel)) return null;
+    if (/\/(wechat|alipay)\.jpg(?:[?#].*)?$/.test(url)) {
+        return url.replace(/\/(wechat|alipay)\.jpg/, `/${channel}.jpg`);
+    }
+    return null;
+};
+
+const orderStatusLabel = status => ({
+    created: '待确认',
+    fulfilled: '已开通',
+    paid: '已付款'
+}[status] || '待付款');
+
+const localDateTimeToIso = value => {
+    if (!value) return '';
+    return new Date(value).toISOString();
+};
 
 // Cache this value to only retrieve it once the first time.
 // Assume that it doesn't change for a session.
@@ -62,11 +143,21 @@ const GUIComponent = props => {
         authorId,
         authorThumbnailUrl,
         authorUsername,
+        authActionError,
         authNotice,
+        authStatus,
         basePath,
         backdropLibraryVisible,
         backpackHost,
         backpackVisible,
+        billingError,
+        billingModalOpen,
+        billingOrder,
+        billingPaymentMethod,
+        billingProofError,
+        billingProofSubmitted,
+        billingSubmitting,
+        billingStatusRefreshing,
         blocksId,
         blocksTabVisible,
         cardsVisible,
@@ -86,7 +177,9 @@ const GUIComponent = props => {
         costumesTabVisible,
         debugModalVisible,
         enableCommunity,
+        entitlement,
         intl,
+        isAppUnlocked,
         isCreating,
         isFullScreen,
         isPlayerOnly,
@@ -97,13 +190,20 @@ const GUIComponent = props => {
         loading,
         logo,
         renderLogin,
+        loginModalOpen,
         onClickAbout,
         onClickAccountNav,
         onCloseAccountNav,
+        onCloseBilling,
+        onCloseLogin,
         onLogOut,
         onOpenBilling,
-        onOpenRegistration,
+        onOpenExternalBilling,
+        onOpenLogin,
+        onPaymentMethodChange,
+        onRefreshBillingOrder,
         onRefreshEntitlement,
+        onSubmitPaymentProof,
         onToggleLoginOpen,
         onActivateCostumesTab,
         onActivateSoundsTab,
@@ -144,6 +244,49 @@ const GUIComponent = props => {
         tabPanelSelected: classNames(tabStyles.reactTabsTabPanelSelected, styles.isSelected),
         tabSelected: classNames(tabStyles.reactTabsTabSelected, styles.isSelected)
     };
+
+    const handlePaymentProofSubmit = event => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        onSubmitPaymentProof({
+            method: data.get('method'),
+            paid_at: localDateTimeToIso(data.get('paid_at')),
+            amount: data.get('amount'),
+            currency: billingOrder && billingOrder.currency ? billingOrder.currency : 'CNY',
+            transfer_no: data.get('transfer_no'),
+            merchant_order_no: data.get('merchant_order_no'),
+            trade_no_tail: data.get('trade_no_tail'),
+            payer_note: data.get('payer_note')
+        });
+    };
+    const handleCreateOrderSubmit = event => {
+        event.preventDefault();
+        const channel = event.currentTarget.elements.channel.value;
+        onOpenBilling(channel);
+    };
+    const handlePaymentMethodChange = event => {
+        onPaymentMethodChange(event.currentTarget.value);
+    };
+    const billingAmountValue = billingOrder ?
+        (Number(billingOrder.amount_cents || 0) / 100).toFixed(2) :
+        '0.00';
+    const billingOrderFulfilled = billingOrder && billingOrder.status === 'fulfilled';
+    const billingProofWaiting = Boolean(
+        !billingOrderFulfilled &&
+        billingOrder &&
+        (billingProofSubmitted || billingOrder.payment_proof)
+    );
+    const billingOrderAmount = billingOrder ?
+        formatAmount(billingOrder.amount_cents, billingOrder.currency) :
+        null;
+    const selectedPaymentMethod = billingPaymentMethod || (billingOrder && billingOrder.channel) || 'wechat';
+    const billingChannel = paymentChannelLabel(selectedPaymentMethod);
+    const selectedPaymentCopy = paymentChannelConfig(selectedPaymentMethod);
+    const paymentMethods = billingOrder && billingOrder.payment_methods ? billingOrder.payment_methods : {};
+    const selectedPaymentMethodConfig = paymentMethods[selectedPaymentMethod] || {};
+    const billingQrCodeUrl = selectedPaymentMethodConfig.qr_code_url ||
+        (billingOrder && selectedPaymentMethod === billingOrder.channel ? billingOrder.qr_code_url : null) ||
+        (billingOrder ? switchQrChannel(billingOrder.qr_code_url, selectedPaymentMethod) : null);
 
     if (isRendererSupported === null) {
         isRendererSupported = Renderer.isSupported();
@@ -221,6 +364,286 @@ const GUIComponent = props => {
                         onRequestClose={onRequestCloseBackdropLibrary}
                     />
                 ) : null}
+                {loginModalOpen ? (
+                    <Modal
+                        className={styles.zhimengAuthModal}
+                        contentLabel={'登录知萌账号'}
+                        id="zhimeng-login"
+                        onRequestClose={onCloseLogin}
+                    >
+                        <div className={styles.zhimengModalBody}>
+                            <div className={styles.zhimengLoginForm}>
+                                {renderLogin({
+                                    onClose: onCloseLogin
+                                })}
+                            </div>
+                        </div>
+                    </Modal>
+                ) : null}
+                {billingModalOpen ? (
+                    <Modal
+                        className={styles.zhimengBillingModal}
+                        contentLabel={'知萌订阅中心'}
+                        id="zhimeng-billing"
+                        onRequestClose={onCloseBilling}
+                    >
+                        <div className={styles.zhimengModalBody}>
+                            <div className={styles.billingHeader}>
+                                <div className={styles.billingBrandHeader}>
+                                    <img
+                                        alt=""
+                                        className={styles.zhimengBrandLogo}
+                                        src={zhimengLogo}
+                                    />
+                                    <div>
+                                        <div className={styles.zhimengModalEyebrow}>{'知萌订阅'}</div>
+                                        <div className={styles.zhimengModalTitle}>{'开通完整编程编辑器'}</div>
+                                        <div className={styles.zhimengModalDescription}>
+                                            {'扫码付款后提交凭证，运营确认到账后刷新授权即可进入完整编辑器。'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    className={classNames(
+                                        styles.billingStatusPill,
+                                        authStatus === 'active' ? styles.isActive : null
+                                    )}
+                                >
+                                    {authStatus === 'active' ? '已开通' : '待开通'}
+                                </div>
+                            </div>
+                            {billingError ? (
+                                <div className={styles.zhimengError}>{billingError}</div>
+                            ) : null}
+                            {billingOrder ? (
+                                <div>
+                                    <div className={styles.billingProgressPanel}>
+                                        <div className={styles.orderSteps}>
+                                            <div className={styles.orderStepDone}>{'1. 创建订单'}</div>
+                                            <div
+                                                className={billingProofSubmitted || billingOrder.payment_proof ?
+                                                    styles.orderStepDone :
+                                                    styles.orderStepCurrent}
+                                            >
+                                                {'2. 付款并提交凭证'}
+                                            </div>
+                                            <div
+                                                className={billingOrderFulfilled ?
+                                                    styles.orderStepDone :
+                                                    styles.orderStepMuted}
+                                            >
+                                                {'3. 运营确认后解锁'}
+                                            </div>
+                                        </div>
+                                        <div className={styles.orderMeta}>
+                                            <div>
+                                                <span>{'订单号'}</span>
+                                                <strong>{billingOrder.order_id}</strong>
+                                            </div>
+                                            <div>
+                                                <span>{'状态'}</span>
+                                                <strong>{orderStatusLabel(billingOrder.status)}</strong>
+                                            </div>
+                                            <div>
+                                                <span>{'套餐'}</span>
+                                                <strong>{billingOrder.plan || 'family_yearly'}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={styles.billingCheckout}>
+                                        <div className={styles.paymentGuide}>
+                                            <div className={styles.paymentGuideHeader}>
+                                                <div>
+                                                    <div className={styles.paymentGuideLabel}>{'应付金额'}</div>
+                                                    <div className={styles.paymentAmount}>{billingOrderAmount}</div>
+                                                </div>
+                                                <div
+                                                    className={classNames(
+                                                        styles.paymentChannelBadge,
+                                                        selectedPaymentMethod === 'alipay' ? styles.isAlipay : null,
+                                                        selectedPaymentMethod === 'bank' ? styles.isBank : null,
+                                                        selectedPaymentMethod === 'other' ? styles.isOther : null
+                                                    )}
+                                                >
+                                                    {billingChannel}
+                                                </div>
+                                            </div>
+                                            <div className={styles.qrPanel}>
+                                                {billingQrCodeUrl ? (
+                                                    <img
+                                                        alt={`知萌${billingChannel}收款二维码`}
+                                                        src={billingQrCodeUrl}
+                                                    />
+                                                ) : (
+                                                    <div className={styles.qrMissing}>
+                                                        {`${billingChannel}二维码暂不可用`}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className={styles.paymentNoteBox}>
+                                                <span>{selectedPaymentCopy.noteLabel}</span>
+                                                <strong>{billingOrder.payment_note || '按页面提示填写订单号'}</strong>
+                                            </div>
+                                            <p className={styles.paymentHint}>
+                                                {selectedPaymentCopy.hint}
+                                            </p>
+                                        </div>
+                                        <div className={styles.proofPanel}>
+                                            {billingOrderFulfilled ? (
+                                                <div className={styles.zhimengSuccess}>
+                                                    {'订单已确认，授权刷新后将自动进入完整编辑器。'}
+                                                </div>
+                                            ) : null}
+                                            {billingProofWaiting ? (
+                                                <div className={styles.zhimengSuccess}>
+                                                    {'付款凭证已提交，等待运营核对到账后开通授权。'}
+                                                </div>
+                                            ) : null}
+                                            {billingProofError ? (
+                                                <div className={styles.zhimengError}>{billingProofError}</div>
+                                            ) : null}
+                                            <div className={styles.proofSectionTitle}>
+                                                <strong>{'付款后提交凭证'}</strong>
+                                                <span>{'填写到账信息即可，截图可后续补充给运营。'}</span>
+                                            </div>
+                                            <form
+                                                className={styles.paymentProofForm}
+                                                // eslint-disable-next-line react/jsx-no-bind
+                                                onSubmit={handlePaymentProofSubmit}
+                                            >
+                                                <label>
+                                                    <span>{'付款方式'}</span>
+                                                    <select
+                                                        name="method"
+                                                        value={selectedPaymentMethod}
+                                                        // eslint-disable-next-line react/jsx-no-bind
+                                                        onChange={handlePaymentMethodChange}
+                                                    >
+                                                        <option value="wechat">{'微信'}</option>
+                                                        <option value="alipay">{'支付宝'}</option>
+                                                        <option value="bank">{'银行转账'}</option>
+                                                        <option value="other">{'其他'}</option>
+                                                    </select>
+                                                </label>
+                                                <label>
+                                                    <span>{'付款时间'}</span>
+                                                    <input
+                                                        defaultValue={defaultPaidAt()}
+                                                        name="paid_at"
+                                                        required
+                                                        type="datetime-local"
+                                                    />
+                                                </label>
+                                                <label>
+                                                    <span>{'实付金额'}</span>
+                                                    <input
+                                                        defaultValue={billingAmountValue}
+                                                        inputMode="decimal"
+                                                        name="amount"
+                                                        required
+                                                        type="text"
+                                                    />
+                                                </label>
+                                                <label>
+                                                    <span>{'转账/平台订单号'}</span>
+                                                    <input
+                                                        name="transfer_no"
+                                                        placeholder={selectedPaymentCopy.transferPlaceholder}
+                                                        required
+                                                        type="text"
+                                                    />
+                                                </label>
+                                                <label>
+                                                    <span>{'支付宝商家订单号'}</span>
+                                                    <input
+                                                        name="merchant_order_no"
+                                                        placeholder={selectedPaymentCopy.merchantPlaceholder}
+                                                        type="text"
+                                                    />
+                                                </label>
+                                                <label>
+                                                    <span>{'交易号后 6-10 位'}</span>
+                                                    <input
+                                                        name="trade_no_tail"
+                                                        placeholder={selectedPaymentCopy.tailPlaceholder}
+                                                        required
+                                                        type="text"
+                                                    />
+                                                </label>
+                                                <label>
+                                                    <span>{'备注'}</span>
+                                                    <textarea
+                                                        name="payer_note"
+                                                        placeholder="付款账号昵称、截图说明等"
+                                                        rows="2"
+                                                    />
+                                                </label>
+                                                <div className={styles.billingActions}>
+                                                    <button
+                                                        className={styles.zhimengPrimaryButton}
+                                                        disabled={billingSubmitting}
+                                                        type="submit"
+                                                    >
+                                                        {billingSubmitting ? '正在提交...' : '提交付款凭证'}
+                                                    </button>
+                                                    <button
+                                                        className={styles.zhimengSecondaryButton}
+                                                        disabled={billingStatusRefreshing}
+                                                        type="button"
+                                                        onClick={onRefreshBillingOrder}
+                                                    >
+                                                        {billingStatusRefreshing ? '刷新中...' : '我已完成付款，刷新状态'}
+                                                    </button>
+                                                    {billingOrder.pay_url ? (
+                                                        <button
+                                                            className={styles.zhimengSecondaryButton}
+                                                            type="button"
+                                                            onClick={onOpenExternalBilling}
+                                                        >
+                                                            {'浏览器付款页'}
+                                                        </button>
+                                                    ) : null}
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className={styles.planIntro}>
+                                    <div className={styles.planCard}>
+                                        <div>
+                                            <div className={styles.planName}>{'家庭年卡'}</div>
+                                            <p>{'适合孩子持续学习，用积木编程讲故事、做动画和小游戏。'}</p>
+                                        </div>
+                                        <div className={styles.planPrice}>{'开通后解锁'}</div>
+                                    </div>
+                                    <form
+                                        className={styles.createOrderForm}
+                                        onSubmit={handleCreateOrderSubmit} // eslint-disable-line react/jsx-no-bind
+                                    >
+                                        <label>
+                                            <span>{'选择付款方式'}</span>
+                                            <select
+                                                defaultValue="wechat"
+                                                name="channel"
+                                            >
+                                                <option value="wechat">{'微信支付'}</option>
+                                                <option value="alipay">{'支付宝'}</option>
+                                            </select>
+                                        </label>
+                                        <button
+                                            className={styles.zhimengPrimaryButton}
+                                            disabled={billingSubmitting}
+                                            type="submit"
+                                        >
+                                            {billingSubmitting ? '正在创建订单...' : '生成付款二维码'}
+                                        </button>
+                                    </form>
+                                </div>
+                            )}
+                        </div>
+                    </Modal>
+                ) : null}
                 <MenuBar
                     accountNavOpen={accountNavOpen}
                     authorId={authorId}
@@ -238,6 +661,8 @@ const GUIComponent = props => {
                     className={styles.menuBarPosition}
                     comingSoonHint={authNotice}
                     enableCommunity={enableCommunity}
+                    entitlement={entitlement}
+                    authStatus={authStatus}
                     isShared={isShared}
                     isTotallyNormal={isTotallyNormal}
                     logo={logo}
@@ -248,12 +673,14 @@ const GUIComponent = props => {
                     onClickLogo={onClickLogo}
                     onCloseAccountNav={onCloseAccountNav}
                     onLogOut={onLogOut}
-                    onOpenRegistration={onOpenRegistration}
+                    onOpenBilling={onOpenBilling}
+                    onOpenRegistration={onOpenLogin}
                     onProjectTelemetryEvent={onProjectTelemetryEvent}
+                    onRefreshEntitlement={onRefreshEntitlement}
                     onSeeCommunity={onSeeCommunity}
                     onShare={onShare}
                     onStartSelectingFileUpload={onStartSelectingFileUpload}
-                    onToggleLoginOpen={onToggleLoginOpen}
+                    onToggleLoginOpen={onOpenLogin || onToggleLoginOpen}
                 />
                 {authNotice ? (
                     <div className={styles.authNotice}>
@@ -264,7 +691,7 @@ const GUIComponent = props => {
                                     className={styles.authNoticeButton}
                                     onClick={onOpenBilling}
                                 >
-                                    {'前往购买'}
+                                    {'订阅解锁'}
                                 </button>
                             ) : null}
                             {onRefreshEntitlement ? (
@@ -278,127 +705,188 @@ const GUIComponent = props => {
                         </div>
                     </div>
                 ) : null}
-                <Box className={styles.bodyWrapper}>
-                    <Box className={styles.flexWrapper}>
-                        <Box className={styles.editorWrapper}>
-                            <Tabs
-                                forceRenderTabPanel
-                                className={tabClassNames.tabs}
-                                selectedIndex={activeTabIndex}
-                                selectedTabClassName={tabClassNames.tabSelected}
-                                selectedTabPanelClassName={tabClassNames.tabPanelSelected}
-                                onSelect={onActivateTab}
-                            >
-                                <TabList className={tabClassNames.tabList}>
-                                    <Tab className={tabClassNames.tab}>
-                                        <img
-                                            draggable={false}
-                                            src={codeIcon}
-                                        />
-                                        <FormattedMessage
-                                            defaultMessage="Code"
-                                            description="Button to get to the code panel"
-                                            id="gui.gui.codeTab"
-                                        />
-                                    </Tab>
-                                    <Tab
-                                        className={tabClassNames.tab}
-                                        onClick={onActivateCostumesTab}
-                                    >
-                                        <img
-                                            draggable={false}
-                                            src={costumesIcon}
-                                        />
-                                        {targetIsStage ? (
-                                            <FormattedMessage
-                                                defaultMessage="Backdrops"
-                                                description="Button to get to the backdrops panel"
-                                                id="gui.gui.backdropsTab"
+                {authActionError ? (
+                    <div
+                        className={classNames(styles.authNotice, styles.authNoticeError)}
+                        role="alert"
+                    >
+                        <span>{authActionError}</span>
+                    </div>
+                ) : null}
+                {isAppUnlocked ? (
+                    <Box className={styles.bodyWrapper}>
+                        <Box className={styles.flexWrapper}>
+                            <Box className={styles.editorWrapper}>
+                                <Tabs
+                                    forceRenderTabPanel
+                                    className={tabClassNames.tabs}
+                                    selectedIndex={activeTabIndex}
+                                    selectedTabClassName={tabClassNames.tabSelected}
+                                    selectedTabPanelClassName={tabClassNames.tabPanelSelected}
+                                    onSelect={onActivateTab}
+                                >
+                                    <TabList className={tabClassNames.tabList}>
+                                        <Tab className={tabClassNames.tab}>
+                                            <img
+                                                draggable={false}
+                                                src={codeIcon}
                                             />
-                                        ) : (
                                             <FormattedMessage
-                                                defaultMessage="Costumes"
-                                                description="Button to get to the costumes panel"
-                                                id="gui.gui.costumesTab"
+                                                defaultMessage="Code"
+                                                description="Button to get to the code panel"
+                                                id="gui.gui.codeTab"
                                             />
-                                        )}
-                                    </Tab>
-                                    <Tab
-                                        className={tabClassNames.tab}
-                                        onClick={onActivateSoundsTab}
-                                    >
-                                        <img
-                                            draggable={false}
-                                            src={soundsIcon}
-                                        />
-                                        <FormattedMessage
-                                            defaultMessage="Sounds"
-                                            description="Button to get to the sounds panel"
-                                            id="gui.gui.soundsTab"
-                                        />
-                                    </Tab>
-                                </TabList>
-                                <TabPanel className={tabClassNames.tabPanel}>
-                                    <Box className={styles.blocksWrapper}>
-                                        <Blocks
-                                            key={`${blocksId}/${theme}`}
-                                            canUseCloud={canUseCloud}
-                                            grow={1}
-                                            isVisible={blocksTabVisible}
-                                            options={{
-                                                media: `${basePath}static/${themeMap[theme].blocksMediaFolder}/`
-                                            }}
-                                            stageSize={stageSize}
-                                            theme={theme}
-                                            vm={vm}
-                                        />
-                                    </Box>
-                                    <Box className={styles.extensionButtonContainer}>
-                                        <button
-                                            className={styles.extensionButton}
-                                            title={intl.formatMessage(messages.addExtension)}
-                                            onClick={onExtensionButtonClick}
+                                        </Tab>
+                                        <Tab
+                                            className={tabClassNames.tab}
+                                            onClick={onActivateCostumesTab}
                                         >
                                             <img
-                                                className={styles.extensionButtonIcon}
                                                 draggable={false}
-                                                src={addExtensionIcon}
+                                                src={costumesIcon}
                                             />
-                                        </button>
-                                    </Box>
-                                    <Box className={styles.watermark}>
-                                        <Watermark />
-                                    </Box>
-                                </TabPanel>
-                                <TabPanel className={tabClassNames.tabPanel}>
-                                    {costumesTabVisible ? <CostumeTab vm={vm} /> : null}
-                                </TabPanel>
-                                <TabPanel className={tabClassNames.tabPanel}>
-                                    {soundsTabVisible ? <SoundTab vm={vm} /> : null}
-                                </TabPanel>
-                            </Tabs>
-                            {backpackVisible ? (
-                                <Backpack host={backpackHost} />
-                            ) : null}
-                        </Box>
+                                            {targetIsStage ? (
+                                                <FormattedMessage
+                                                    defaultMessage="Backdrops"
+                                                    description="Button to get to the backdrops panel"
+                                                    id="gui.gui.backdropsTab"
+                                                />
+                                            ) : (
+                                                <FormattedMessage
+                                                    defaultMessage="Costumes"
+                                                    description="Button to get to the costumes panel"
+                                                    id="gui.gui.costumesTab"
+                                                />
+                                            )}
+                                        </Tab>
+                                        <Tab
+                                            className={tabClassNames.tab}
+                                            onClick={onActivateSoundsTab}
+                                        >
+                                            <img
+                                                draggable={false}
+                                                src={soundsIcon}
+                                            />
+                                            <FormattedMessage
+                                                defaultMessage="Sounds"
+                                                description="Button to get to the sounds panel"
+                                                id="gui.gui.soundsTab"
+                                            />
+                                        </Tab>
+                                    </TabList>
+                                    <TabPanel className={tabClassNames.tabPanel}>
+                                        <Box className={styles.blocksWrapper}>
+                                            <Blocks
+                                                key={`${blocksId}/${theme}`}
+                                                canUseCloud={canUseCloud}
+                                                grow={1}
+                                                isVisible={blocksTabVisible}
+                                                options={{
+                                                    media: `${basePath}static/${themeMap[theme].blocksMediaFolder}/`
+                                                }}
+                                                stageSize={stageSize}
+                                                theme={theme}
+                                                vm={vm}
+                                            />
+                                        </Box>
+                                        <Box className={styles.extensionButtonContainer}>
+                                            <button
+                                                className={styles.extensionButton}
+                                                title={intl.formatMessage(messages.addExtension)}
+                                                onClick={onExtensionButtonClick}
+                                            >
+                                                <img
+                                                    className={styles.extensionButtonIcon}
+                                                    draggable={false}
+                                                    src={addExtensionIcon}
+                                                />
+                                            </button>
+                                        </Box>
+                                        <Box className={styles.watermark}>
+                                            <Watermark />
+                                        </Box>
+                                    </TabPanel>
+                                    <TabPanel className={tabClassNames.tabPanel}>
+                                        {costumesTabVisible ? <CostumeTab vm={vm} /> : null}
+                                    </TabPanel>
+                                    <TabPanel className={tabClassNames.tabPanel}>
+                                        {soundsTabVisible ? <SoundTab vm={vm} /> : null}
+                                    </TabPanel>
+                                </Tabs>
+                                {backpackVisible ? (
+                                    <Backpack host={backpackHost} />
+                                ) : null}
+                            </Box>
 
-                        <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
-                            <StageWrapper
-                                isFullScreen={isFullScreen}
-                                isRendererSupported={isRendererSupported}
-                                isRtl={isRtl}
-                                stageSize={stageSize}
-                                vm={vm}
-                            />
-                            <Box className={styles.targetWrapper}>
-                                <TargetPane
+                            <Box className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}>
+                                <StageWrapper
+                                    isFullScreen={isFullScreen}
+                                    isRendererSupported={isRendererSupported}
+                                    isRtl={isRtl}
                                     stageSize={stageSize}
                                     vm={vm}
                                 />
+                                <Box className={styles.targetWrapper}>
+                                    <TargetPane
+                                        stageSize={stageSize}
+                                        vm={vm}
+                                    />
+                                </Box>
                             </Box>
                         </Box>
                     </Box>
-                </Box>
+                ) : (
+                    <Box className={styles.bodyWrapper}>
+                        <div className={styles.lockedExperience}>
+                            <div className={styles.lockedContent}>
+                                <div className={styles.lockedBrandRow}>
+                                    <img
+                                        alt=""
+                                        className={styles.lockedBrandLogo}
+                                        src={zhimengLogo}
+                                    />
+                                    <div>
+                                        <div className={styles.lockedBrand}>{'知萌'}</div>
+                                        <div className={styles.lockedBrandSub}>{'少儿创意编程启蒙'}</div>
+                                    </div>
+                                </div>
+                                <h1>{'用积木编程讲故事、做动画和小游戏'}</h1>
+                                <p>
+                                    {'登录并开通订阅后，即可进入完整编程编辑器，开启孩子的创意编程练习空间。'}
+                                </p>
+                                <div className={styles.lockedStatus}>
+                                    {authActionError || authNotice || '当前账号未开通完整编辑器权限'}
+                                </div>
+                                <div className={styles.lockedActions}>
+                                    {onOpenLogin ? (
+                                        <button
+                                            className={styles.zhimengPrimaryButton}
+                                            onClick={onOpenLogin}
+                                        >
+                                            {'登录账号'}
+                                        </button>
+                                    ) : null}
+                                    {onOpenBilling ? (
+                                        <button
+                                            className={styles.zhimengSecondaryButton}
+                                            onClick={onOpenBilling}
+                                        >
+                                            {'订阅解锁'}
+                                        </button>
+                                    ) : null}
+                                    {onRefreshEntitlement ? (
+                                        <button
+                                            className={styles.zhimengSecondaryButton}
+                                            onClick={onRefreshEntitlement}
+                                        >
+                                            {'刷新授权'}
+                                        </button>
+                                    ) : null}
+                                </div>
+                            </div>
+                        </div>
+                    </Box>
+                )}
                 <DragLayer />
             </Box>
         );
@@ -411,10 +899,20 @@ GUIComponent.propTypes = {
     authorId: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
     authorThumbnailUrl: PropTypes.string,
     authorUsername: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]), // can be false
+    authActionError: PropTypes.string,
     authNotice: PropTypes.string,
+    authStatus: PropTypes.string,
     backdropLibraryVisible: PropTypes.bool,
     backpackHost: PropTypes.string,
     backpackVisible: PropTypes.bool,
+    billingError: PropTypes.string,
+    billingModalOpen: PropTypes.bool,
+    billingOrder: PropTypes.object,
+    billingPaymentMethod: PropTypes.string,
+    billingProofError: PropTypes.string,
+    billingProofSubmitted: PropTypes.bool,
+    billingSubmitting: PropTypes.bool,
+    billingStatusRefreshing: PropTypes.bool,
     basePath: PropTypes.string,
     blocksTabVisible: PropTypes.bool,
     blocksId: PropTypes.string,
@@ -434,7 +932,9 @@ GUIComponent.propTypes = {
     costumesTabVisible: PropTypes.bool,
     debugModalVisible: PropTypes.bool,
     enableCommunity: PropTypes.bool,
+    entitlement: PropTypes.object,
     intl: intlShape.isRequired,
+    isAppUnlocked: PropTypes.bool,
     isCreating: PropTypes.bool,
     isFullScreen: PropTypes.bool,
     isPlayerOnly: PropTypes.bool,
@@ -449,10 +949,15 @@ GUIComponent.propTypes = {
     onClickAccountNav: PropTypes.func,
     onClickLogo: PropTypes.func,
     onCloseAccountNav: PropTypes.func,
+    onCloseBilling: PropTypes.func,
+    onCloseLogin: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
     onLogOut: PropTypes.func,
     onOpenBilling: PropTypes.func,
-    onOpenRegistration: PropTypes.func,
+    onOpenExternalBilling: PropTypes.func,
+    onOpenLogin: PropTypes.func,
+    onPaymentMethodChange: PropTypes.func,
+    onRefreshBillingOrder: PropTypes.func,
     onRefreshEntitlement: PropTypes.func,
     onRequestCloseBackdropLibrary: PropTypes.func,
     onRequestCloseCostumeLibrary: PropTypes.func,
@@ -467,7 +972,9 @@ GUIComponent.propTypes = {
     onTelemetryModalOptIn: PropTypes.func,
     onTelemetryModalOptOut: PropTypes.func,
     onToggleLoginOpen: PropTypes.func,
+    onSubmitPaymentProof: PropTypes.func,
     renderLogin: PropTypes.func,
+    loginModalOpen: PropTypes.bool,
     showComingSoon: PropTypes.bool,
     soundsTabVisible: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
@@ -484,7 +991,14 @@ GUIComponent.defaultProps = {
     blocksId: 'original',
     canChangeLanguage: true,
     canChangeTheme: true,
+    authActionError: '',
     authNotice: '',
+    authStatus: 'signedOut',
+    billingModalOpen: false,
+    billingPaymentMethod: 'wechat',
+    billingProofSubmitted: false,
+    billingSubmitting: false,
+    billingStatusRefreshing: false,
     canCreateNew: false,
     canEditTitle: false,
     canManageFiles: true,
@@ -494,10 +1008,12 @@ GUIComponent.defaultProps = {
     canShare: false,
     canUseCloud: false,
     enableCommunity: false,
+    isAppUnlocked: false,
     isCreating: false,
     isShared: false,
     isTotallyNormal: false,
     loading: false,
+    onPaymentMethodChange: () => {},
     showComingSoon: false,
     stageSizeMode: STAGE_SIZE_MODES.large
 };
@@ -508,6 +1024,10 @@ const mapStateToProps = state => ({
     stageSizeMode: state.scratchGui.stageSize.stageSize,
     theme: state.scratchGui.theme.theme
 });
+
+export {
+    GUIComponent
+};
 
 export default injectIntl(connect(
     mapStateToProps

@@ -68,6 +68,10 @@ const createWindow = function () {
 
     // 加载构建后的 index.html
     mainWindow.loadFile(path.join(__dirname, 'build/index.html'));
+    mainWindow.on('page-title-updated', event => {
+        event.preventDefault();
+        mainWindow.setTitle('知萌');
+    });
 
     // 创建菜单
     const template = [

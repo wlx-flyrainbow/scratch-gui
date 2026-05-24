@@ -21,7 +21,6 @@ import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
 import ProjectTitleInput from './project-title-input.jsx';
 import AuthorInfo from './author-info.jsx';
-import AccountNav from '../../containers/account-nav.jsx';
 import LoginDropdown from './login-dropdown.jsx';
 import SB3Downloader from '../../containers/sb3-downloader.jsx';
 import DeletionRestorer from '../../containers/deletion-restorer.jsx';
@@ -77,7 +76,6 @@ import collectMetadata from '../../lib/collect-metadata';
 import styles from './menu-bar.css';
 
 import helpIcon from '../../lib/assets/icon--tutorials.svg';
-import mystuffIcon from './icon--mystuff.png';
 import profileIcon from './icon--profile.png';
 import remixIcon from './icon--remix.svg';
 import dropdownCaret from './dropdown-caret.svg';
@@ -86,7 +84,7 @@ import fileIcon from './icon--file.svg';
 import editIcon from './icon--edit.svg';
 import debugIcon from '../debug-modal/icons/icon--debug.svg';
 
-import scratchLogo from './scratch-logo.svg';
+import zhimengLogo from '../../../static/app-icon.png';
 import ninetiesLogo from './nineties_logo.svg';
 import catLogo from './cat_logo.svg';
 import prehistoricLogo from './prehistoric-logo.svg';
@@ -177,16 +175,34 @@ AboutButton.propTypes = {
     onClick: PropTypes.func.isRequired
 };
 
+const formatEntitlementStatus = (authStatus, entitlement) => {
+    if (authStatus === 'active' || (entitlement && entitlement.status === 'active')) {
+        return '已开通';
+    }
+    if (authStatus === 'leaseExpired') return '需刷新授权';
+    if (entitlement && entitlement.status === 'expired') return '已过期';
+    if (entitlement && entitlement.status === 'pending') return '待确认';
+    return '未开通';
+};
+
+const formatEntitlementDate = entitlement => {
+    if (!entitlement || !entitlement.expires_at) return '未生效';
+    return entitlement.expires_at;
+};
+
 class MenuBar extends React.Component {
     constructor (props) {
         super(props);
         bindAll(this, [
             'handleClickNew',
+            'handleClickOpenBilling',
             'handleClickRemix',
+            'handleClickRefreshEntitlement',
             'handleClickSave',
             'handleClickSaveAsCopy',
             'handleClickSeeCommunity',
             'handleClickShare',
+            'handleClickZhimengLogout',
             'handleSetMode',
             'handleKeyPress',
             'handleRestoreOption',
@@ -214,6 +230,18 @@ class MenuBar extends React.Component {
             this.props.onClickNew(this.props.canSave && this.props.canCreateNew);
         }
         this.props.onRequestCloseFile();
+    }
+    handleClickOpenBilling () {
+        this.props.onRequestCloseAccount();
+        if (this.props.onOpenBilling) this.props.onOpenBilling();
+    }
+    handleClickRefreshEntitlement () {
+        this.props.onRequestCloseAccount();
+        if (this.props.onRefreshEntitlement) {
+            Promise.resolve(this.props.onRefreshEntitlement()).catch(() => {
+                // AuthHOC surfaces the user-facing error banner.
+            });
+        }
     }
     handleClickRemix () {
         this.props.onClickRemix();
@@ -247,6 +275,10 @@ class MenuBar extends React.Component {
                 waitForUpdate(false); // immediately transition to project page
             }
         }
+    }
+    handleClickZhimengLogout () {
+        this.props.onRequestCloseAccount();
+        if (this.props.onLogOut) this.props.onLogOut();
     }
     handleSetMode (mode) {
         return () => {
@@ -436,7 +468,7 @@ class MenuBar extends React.Component {
                         <div className={classNames(styles.menuBarItem)}>
                             <img
                                 id="logo_img"
-                                alt="Scratch"
+                                alt="知萌"
                                 className={classNames(styles.scratchLogo, {
                                     [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
                                 })}
@@ -746,33 +778,77 @@ class MenuBar extends React.Component {
                         this.props.username ? (
                             // ************ user is logged in ************
                             <React.Fragment>
-                                <a href="/mystuff/">
-                                    <div
-                                        className={classNames(
-                                            styles.menuBarItem,
-                                            styles.hoverable,
-                                            styles.mystuffButton
-                                        )}
-                                    >
-                                        <img
-                                            className={styles.mystuffIcon}
-                                            src={mystuffIcon}
-                                        />
-                                    </div>
-                                </a>
-                                <AccountNav
+                                <div
                                     className={classNames(
                                         styles.menuBarItem,
                                         styles.hoverable,
+                                        styles.zhimengAccountMenu,
                                         {[styles.active]: this.props.accountMenuOpen}
                                     )}
-                                    isOpen={this.props.accountMenuOpen}
-                                    isRtl={this.props.isRtl}
-                                    menuBarMenuClassName={classNames(styles.menuBarMenu)}
-                                    onClick={this.props.onClickAccount}
-                                    onClose={this.props.onRequestCloseAccount}
-                                    onLogOut={this.props.onLogOut}
-                                />
+                                    onMouseUp={this.props.onClickAccount}
+                                >
+                                    <img
+                                        className={styles.profileIcon}
+                                        src={profileIcon}
+                                    />
+                                    <span>{this.props.username}</span>
+                                    <img
+                                        className={styles.dropdownCaretIcon}
+                                        src={dropdownCaret}
+                                    />
+                                </div>
+                                <MenuBarMenu
+                                    className={classNames(styles.menuBarMenu, styles.zhimengAccountDropdown)}
+                                    open={this.props.accountMenuOpen}
+                                    place={this.props.isRtl ? 'right' : 'left'}
+                                    onRequestClose={this.props.onRequestCloseAccount}
+                                >
+                                    <MenuSection>
+                                        <div className={styles.zhimengAccountSummary}>
+                                            <div className={styles.zhimengAccountName}>
+                                                {this.props.username}
+                                            </div>
+                                            <div className={styles.zhimengAccountMeta}>
+                                                <span>{'订阅状态'}</span>
+                                                <strong>
+                                                    {formatEntitlementStatus(
+                                                        this.props.authStatus,
+                                                        this.props.entitlement
+                                                    )}
+                                                </strong>
+                                            </div>
+                                            <div className={styles.zhimengAccountMeta}>
+                                                <span>{'套餐'}</span>
+                                                <strong>
+                                                    {this.props.entitlement && this.props.entitlement.plan ?
+                                                        this.props.entitlement.plan :
+                                                        '未开通'}
+                                                </strong>
+                                            </div>
+                                            <div className={styles.zhimengAccountMeta}>
+                                                <span>{'到期时间'}</span>
+                                                <strong>{formatEntitlementDate(this.props.entitlement)}</strong>
+                                            </div>
+                                        </div>
+                                    </MenuSection>
+                                    <MenuSection>
+                                        {this.props.authStatus !== 'active' && this.props.onOpenBilling ? (
+                                            <MenuItem onClick={this.handleClickOpenBilling}>
+                                                {'订阅解锁'}
+                                            </MenuItem>
+                                        ) : null}
+                                        {this.props.onRefreshEntitlement ? (
+                                            <MenuItem onClick={this.handleClickRefreshEntitlement}>
+                                                {'刷新授权'}
+                                            </MenuItem>
+                                        ) : null}
+                                    </MenuSection>
+                                    <MenuSection>
+                                        <MenuItem onClick={this.handleClickZhimengLogout}>
+                                            {'退出登录'}
+                                        </MenuItem>
+                                    </MenuSection>
+                                </MenuBarMenu>
                             </React.Fragment>
                         ) : (
                             // ********* user not logged in, but a session exists
@@ -786,11 +862,7 @@ class MenuBar extends React.Component {
                                     key="join"
                                     onMouseUp={this.props.onOpenRegistration}
                                 >
-                                    <FormattedMessage
-                                        defaultMessage="Join Scratch"
-                                        description="Link for creating a Scratch account"
-                                        id="gui.menuBar.joinScratch"
-                                    />
+                                    {'注册知萌'}
                                 </div>
                                 <div
                                     className={classNames(
@@ -798,20 +870,18 @@ class MenuBar extends React.Component {
                                         styles.hoverable
                                     )}
                                     key="login"
-                                    onMouseUp={this.props.onClickLogin}
+                                    onMouseUp={this.props.onToggleLoginOpen || this.props.onClickLogin}
                                 >
-                                    <FormattedMessage
-                                        defaultMessage="Sign in"
-                                        description="Link for signing in to your Scratch account"
-                                        id="gui.menuBar.signIn"
-                                    />
-                                    <LoginDropdown
-                                        className={classNames(styles.menuBarMenu)}
-                                        isOpen={this.props.loginMenuOpen}
-                                        isRtl={this.props.isRtl}
-                                        renderLogin={this.props.renderLogin}
-                                        onClose={this.props.onRequestCloseLogin}
-                                    />
+                                    {'登录'}
+                                    {this.props.onToggleLoginOpen ? null : (
+                                        <LoginDropdown
+                                            className={classNames(styles.menuBarMenu)}
+                                            isOpen={this.props.loginMenuOpen}
+                                            isRtl={this.props.isRtl}
+                                            renderLogin={this.props.renderLogin}
+                                            onClose={this.props.onRequestCloseLogin}
+                                        />
+                                    )}
                                 </div>
                             </React.Fragment>
                         )
@@ -828,12 +898,12 @@ class MenuBar extends React.Component {
                                             className={classNames(
                                                 styles.menuBarItem,
                                                 styles.hoverable,
-                                                styles.mystuffButton
+                                                styles.accountNavMenu
                                             )}
                                         >
                                             <img
-                                                className={styles.mystuffIcon}
-                                                src={mystuffIcon}
+                                                className={styles.profileIcon}
+                                                src={profileIcon}
                                             />
                                         </div>
                                     </MenuBarItemTooltip>
@@ -896,7 +966,9 @@ MenuBar.propTypes = {
     currentLocale: PropTypes.string.isRequired,
     editMenuOpen: PropTypes.bool,
     enableCommunity: PropTypes.bool,
+    entitlement: PropTypes.object,
     fileMenuOpen: PropTypes.bool,
+    authStatus: PropTypes.string,
     intl: intlShape,
     isRtl: PropTypes.bool,
     isShared: PropTypes.bool,
@@ -933,6 +1005,7 @@ MenuBar.propTypes = {
     onClickSaveAsCopy: PropTypes.func,
     onClickSettings: PropTypes.func,
     onLogOut: PropTypes.func,
+    onOpenBilling: PropTypes.func,
     onOpenRegistration: PropTypes.func,
     onOpenTipLibrary: PropTypes.func,
     onOpenDebugModal: PropTypes.func,
@@ -945,6 +1018,7 @@ MenuBar.propTypes = {
     onRequestCloseMode: PropTypes.func,
     onRequestCloseSettings: PropTypes.func,
     onRequestOpenAbout: PropTypes.func,
+    onRefreshEntitlement: PropTypes.func,
     onSeeCommunity: PropTypes.func,
     onSetTimeTravelMode: PropTypes.func,
     onShare: PropTypes.func,
@@ -962,7 +1036,7 @@ MenuBar.propTypes = {
 };
 
 MenuBar.defaultProps = {
-    logo: scratchLogo,
+    logo: zhimengLogo,
     onShare: () => {}
 };
 
