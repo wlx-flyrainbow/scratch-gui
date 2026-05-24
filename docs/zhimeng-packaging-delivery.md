@@ -42,6 +42,22 @@
 6. 执行发布检查：`npm run release:check`。`website/releases.json` 不得保留 `YOUR-CDN` / `example` / localhost 占位。
 7. 打版本 tag，对外公告（更新说明 + 回滚说明）。
 
+## codevalley.cn 宝塔部署
+
+当前规划的公网环境：
+
+- 测试：`https://zhimeng-test.codevalley.cn`
+- 正式：`https://zhimeng.codevalley.cn`
+
+部署到阿里云 + 宝塔时，按 [zhimeng-codevalley-deployment.md](./zhimeng-codevalley-deployment.md) 执行。仓库内同时提供：
+
+- `deploy/env/zhimeng-test.env.example`
+- `deploy/env/zhimeng-prod.env.example`
+- `deploy/bt/nginx/zhimeng-test.codevalley.cn.conf`
+- `deploy/bt/nginx/zhimeng.codevalley.cn.conf`
+
+注意：桌面客户端的 `ZHIMENG_AUTH_API_BASE` / `ZHIMENG_BILLING_URL` 是构建期注入，测试包和正式包需要分别带对应环境变量构建。
+
 ## 本地完整流程
 
 用于在上传 CDN 和正式签名/公证前，先确认打包、下载页和本机安装包链路可走通：

@@ -27,6 +27,14 @@ server {
 
 3. 若使用 **OSS / 静态托管**：上传整个目录，确保 `index.html` 为默认首页；将 `releases.json` 的缓存策略设短（如 5 分钟），安装包 `.exe` 可设长缓存。
 
+## codevalley.cn 当前部署
+
+测试环境优先部署到 `https://zhimeng-test.codevalley.cn`，正式环境部署到 `https://zhimeng.codevalley.cn`。宝塔/Nginx/PM2 的完整步骤见：
+
+- `docs/zhimeng-codevalley-deployment.md`
+- `deploy/bt/nginx/`
+- `deploy/env/`
+
 ## 发布新版本流程
 
 1. 本地执行 `npm run dist:mac:arm64`、`npm run dist:mac:x64`、`npm run dist:win` 生成 macOS Apple 芯片版、macOS Intel 芯片版、Windows 安装包与便携包。

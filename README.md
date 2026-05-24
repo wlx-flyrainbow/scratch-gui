@@ -29,6 +29,7 @@ npm run release:check
 - TASKS：`_bmad-output/planning-artifacts/tasks.md`
 - 购买支付流程：`docs/zhimeng-payment-flow.md`
 - 运维发布 Runbook：`docs/zhimeng-ops-runbook.md`
+- codevalley.cn 宝塔部署：`docs/zhimeng-codevalley-deployment.md`
 - AGPL 源码公开说明：`docs/agpl-source-disclosure.md`
 
 源码与许可：
