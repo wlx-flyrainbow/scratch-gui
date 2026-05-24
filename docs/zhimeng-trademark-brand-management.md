@@ -53,6 +53,8 @@
 
 ## 5. 品牌资产清单
 
+当前资产清单见：[`docs/zhimeng-brand-assets-inventory.md`](./zhimeng-brand-assets-inventory.md)。
+
 上线前至少维护以下资产：
 
 - Logo 原图。

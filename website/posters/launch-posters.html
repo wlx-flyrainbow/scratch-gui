@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>知萌首发海报</title>
+  <style>
+    :root {
+      --ink: #18162f;
+      --muted: #646078;
+      --purple: #6b4dff;
+      --purple-dark: #4932bd;
+      --green: #2f8f46;
+      --green-soft: #e8f5e9;
+      --amber: #8a5b00;
+      --amber-soft: #fff3cf;
+      --blue: #2f6fa3;
+      --blue-soft: #eaf4ff;
+      --line: #ded8f1;
+      --white: #ffffff;
+      --font: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 1080px;
+      min-height: 1440px;
+      font-family: var(--font);
+      color: var(--ink);
+      background: #f7f5ff;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    .poster {
+      position: relative;
+      width: 1080px;
+      height: 1440px;
+      padding: 74px 76px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(255,255,255,0.24) 42%, rgba(255,255,255,0.9) 100%),
+        linear-gradient(135deg, #f0ebff 0%, #eef8ff 48%, #fff7df 100%);
+      overflow: hidden;
+    }
+
+    .poster::before {
+      content: "";
+      position: absolute;
+      inset: 40px;
+      border: 2px solid rgba(107, 77, 255, 0.16);
+      border-radius: 28px;
+      pointer-events: none;
+    }
+
+    .top {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      z-index: 1;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .logo-frame {
+      width: 118px;
+      height: 118px;
+      border-radius: 26px;
+      background: var(--white);
+      border: 1px solid rgba(107, 77, 255, 0.14);
+      box-shadow: 0 18px 40px rgba(40, 30, 90, 0.12);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.22);
+      transform-origin: center;
+    }
+
+    .brand-name {
+      font-size: 48px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .brand-sub {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .age-pill {
+      flex: 0 0 auto;
+      padding: 15px 24px;
+      color: #1f6b31;
+      background: var(--green-soft);
+      border: 1px solid #c7e7ce;
+      border-radius: 999px;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .hero {
+      position: relative;
+      z-index: 1;
+      margin-top: 82px;
+      max-width: 850px;
+    }
+
+    .kicker {
+      color: var(--purple);
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 18px 0 0;
+      font-size: 76px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      font-weight: 900;
+    }
+
+    .lead {
+      margin: 32px 0 0;
+      color: var(--muted);
+      font-size: 34px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .price-panel {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      margin-top: 58px;
+      padding: 34px 38px;
+      background: var(--white);
+      border: 2px solid rgba(107, 77, 255, 0.18);
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(40, 30, 90, 0.12);
+    }
+
+    .price-label {
+      color: var(--muted);
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .price {
+      margin-top: 6px;
+      font-size: 68px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .price span {
+      color: var(--muted);
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .cta {
+      padding: 22px 34px;
+      color: var(--white);
+      background: var(--purple);
+      border-radius: 18px;
+      font-size: 26px;
+      font-weight: 900;
+      text-align: center;
+      box-shadow: 0 16px 30px rgba(107, 77, 255, 0.28);
+    }
+
+    .cards {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 42px;
+    }
+
+    .card {
+      min-height: 170px;
+      padding: 24px 22px;
+      background: rgba(255,255,255,0.86);
+      border: 2px solid rgba(107, 77, 255, 0.14);
+      border-radius: 20px;
+    }
+
+    .card strong {
+      display: block;
+      font-size: 27px;
+      line-height: 1.25;
+      font-weight: 950;
+    }
+
+    .card p {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 21px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .flow {
+      position: relative;
+      z-index: 1;
+      margin-top: 48px;
+      padding: 28px 32px;
+      background: var(--amber-soft);
+      border-radius: 20px;
+      color: var(--amber);
+      font-size: 23px;
+      line-height: 1.55;
+      font-weight: 900;
+    }
+
+    .footer {
+      position: absolute;
+      left: 76px;
+      right: 76px;
+      bottom: 58px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+      color: var(--muted);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .note {
+      max-width: 720px;
+    }
+
+    .tagline {
+      flex: 0 0 auto;
+      color: var(--purple-dark);
+      font-weight: 950;
+    }
+
+    .poster-pain {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.28) 52%, rgba(255,255,255,0.92) 100%),
+        linear-gradient(135deg, #eef8ff 0%, #f7f5ff 52%, #f1fff2 100%);
+    }
+
+    .poster-pain .kicker,
+    .poster-pain .tagline {
+      color: var(--blue);
+    }
+
+    .poster-pain .cta {
+      background: var(--green);
+      box-shadow: 0 16px 30px rgba(47, 143, 70, 0.22);
+    }
+
+    .poster-seed {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.2) 48%, rgba(255,255,255,0.9) 100%),
+        linear-gradient(135deg, #fff4d5 0%, #f3edff 48%, #eaf4ff 100%);
+    }
+
+    .poster-seed .cta {
+      background: var(--amber);
+      box-shadow: 0 16px 30px rgba(138, 91, 0, 0.18);
+    }
+
+    .poster-seed .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .poster-seed .card {
+      min-height: 145px;
+    }
+  </style>
+</head>
+<body>
+  <main id="poster" class="poster">
+    <section class="top">
+      <div class="brand">
+        <div class="logo-frame">
+          <img src="../assets/logo.png" alt="知萌" />
+        </div>
+        <div>
+          <div class="brand-name">知萌</div>
+          <div class="brand-sub">少儿创意编程启蒙</div>
+        </div>
+      </div>
+      <div class="age-pill">6-10 岁</div>
+    </section>
+
+    <section class="hero">
+      <div class="kicker" id="kicker">家庭低成本编程启蒙</div>
+      <h1 id="title">用积木编程做故事、动画和小游戏</h1>
+      <p class="lead" id="lead">先让孩子动手做出一个作品，再决定要不要继续深入学习。</p>
+    </section>
+
+    <section class="price-panel">
+      <div>
+        <div class="price-label" id="priceLabel">首发主推</div>
+        <div class="price" id="price">¥199<span>/年</span></div>
+      </div>
+      <div class="cta" id="cta">下载客户端，开通完整编辑器</div>
+    </section>
+
+    <section class="cards" id="cards">
+      <div class="card">
+        <strong id="card1Title">适合先试试</strong>
+        <p id="card1Text">不一开始报高价课，先验证孩子是否喜欢编程创作。</p>
+      </div>
+      <div class="card">
+        <strong id="card2Title">完整编辑器</strong>
+        <p id="card2Text">开通后进入完整编程编辑器，开始做故事和小游戏。</p>
+      </div>
+      <div class="card">
+        <strong id="card3Title">客户端内开通</strong>
+        <p id="card3Text">注册登录、订阅解锁、付款凭证都在客户端完成。</p>
+      </div>
+      <div class="card" id="card4" style="display:none">
+        <strong id="card4Title"></strong>
+        <p id="card4Text"></p>
+      </div>
+    </section>
+
+    <section class="flow" id="flow">开通流程：下载客户端 -> 注册登录 -> 订阅解锁 -> 扫码付款 -> 提交凭证 -> 运营确认后刷新授权</section>
+
+    <section class="footer">
+      <div class="note" id="note">首发阶段采用人工确认开通；云保存、社区等能力后续逐步开放。</div>
+      <div class="tagline" id="tagline">私信获取下载方式</div>
+    </section>
+  </main>
+
+  <script>
+    var variants = {
+      direct: {
+        cls: '',
+        kicker: '家庭低成本编程启蒙',
+        title: '孩子的第一次编程启蒙',
+        lead: '面向 6-10 岁孩子，首发优先验证 6-8 岁家庭。用积木编程做故事、动画和小游戏。',
+        cta: '下载客户端，开通完整编辑器',
+        note: '首发阶段采用人工确认开通；付款后提交凭证，运营确认到账后刷新授权即可使用。',
+        tagline: '家庭年卡 199 元/年'
+      },
+      pain: {
+        cls: 'poster-pain',
+        kicker: '想让孩子试试编程，不一定先报课',
+        title: '先做出作品，再决定要不要深入学',
+        lead: '知萌把入口收窄到孩子能理解的创作：一个角色、一个故事、一个小游戏。',
+        cta: '适合 6-10 岁孩子先体验',
+        card1Title: '低成本试错',
+        card1Text: '家庭年卡 199 元/年，适合先验证兴趣。',
+        card2Title: '积木编程',
+        card2Text: '通过拖拽积木理解事件、动作和顺序。',
+        card3Title: '电脑端创作',
+        card3Text: '桌面客户端专注创作，不依赖复杂网页环境。',
+        flow: '当前版本先交付完整编程编辑器；云保存、社区等能力后续逐步开放。',
+        note: '不是直播课，也不是高价课程。先让孩子低成本动手试试。',
+        tagline: '少儿创意编程启蒙'
+      },
+      seed: {
+        cls: 'poster-seed',
+        kicker: '招募 20 个知萌种子用户',
+        title: '一起验证孩子的第一次编程创作',
+        lead: '如果你家有 6-10 岁孩子，愿意体验下载、注册、开通和首次创作流程，欢迎加入首批种子用户。',
+        priceLabel: '种子用户价格',
+        cta: '私信获取下载与开通方式',
+        card1Title: '家庭年卡',
+        card1Text: '首发 199 元/年，开通完整编程编辑器。',
+        card2Title: '客服协助',
+        card2Text: '协助安装、注册、付款凭证和授权刷新。',
+        card3Title: '真实反馈',
+        card3Text: '你的反馈会直接进入产品优化。',
+        card4Title: '首发说明',
+        card4Text: '付款后提交凭证，运营确认到账后开通。',
+        showCard4: true,
+        flow: '我们想验证：家长是否愿意付费、孩子能否开始创作、下载到开通流程是否顺畅。',
+        note: '首发 MVP 不承诺云保存、社区或自动支付到账确认。',
+        tagline: '限首批种子用户'
+      }
+    };
+
+    var params = new URLSearchParams(window.location.search);
+    var variant = variants[params.get('variant')] || variants.direct;
+    var poster = document.getElementById('poster');
+    if (variant.cls) poster.classList.add(variant.cls);
+
+    Object.keys(variant).forEach(function (key) {
+      var el = document.getElementById(key);
+      if (!el || key === 'cls' || key === 'showCard4') return;
+      el.textContent = variant[key];
+    });
+
+    if (variant.showCard4) {
+      document.getElementById('card4').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
