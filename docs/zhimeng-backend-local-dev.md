@@ -42,6 +42,21 @@ npm run db:migrate
 
 仅前端 + 后端联调见上 `dev:full`。
 
+桌面客户端完整联调（Docker MySQL + auth server + Electron）：
+
+```bash
+npm run electron-dev:full
+```
+
+如果只运行 `npm run electron-dev`，需要另开终端启动 `npm run auth-server`；否则注册/登录会因为 `http://localhost:3001` 未启动而显示网络连接失败。
+
+本地开发默认使用 0.01 元测试价，并由认证后端提供本地收款二维码：
+
+- 微信：`http://localhost:3001/payment/qr/wechat.jpg`
+- 支付宝：`http://localhost:3001/payment/qr/alipay.jpg`
+
+生产价格和二维码请在 `.env.production` 中用真实值覆盖。
+
 浏览器打开开发地址（默认 `http://localhost:8601/`，以终端输出为准）。
 
 默认地址：`http://localhost:3001`

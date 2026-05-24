@@ -1,4 +1,45 @@
-# scratch-gui
+# 知萌桌面客户端
+
+知萌是基于 Scratch GUI 分叉改造的少儿创意编程启蒙桌面应用。本仓库当前用于知萌产品化、账号授权、客户端内置购买、人工确认开通和 Windows 客户端交付。
+
+## 知萌开发与发布入口
+
+常用命令：
+
+```bash
+npm install
+npm start
+npm run build
+npm run electron
+npm run dist:win
+```
+
+产品化验收：
+
+```bash
+npm run test:zhimeng-package-metadata
+npm run test:zhimeng-purchase-flow
+npm run test:zhimeng-goal
+npm run release:check
+```
+
+关键文档：
+
+- PRD：`_bmad-output/planning-artifacts/prd.md`
+- TASKS：`_bmad-output/planning-artifacts/tasks.md`
+- 购买支付流程：`docs/zhimeng-payment-flow.md`
+- 运维发布 Runbook：`docs/zhimeng-ops-runbook.md`
+- AGPL 源码公开说明：`docs/agpl-source-disclosure.md`
+
+源码与许可：
+
+- 许可证：`AGPL-3.0-only`
+- 当前对应源码：`https://github.com/wlx-flyrainbow/scratch-gui`
+- 客户端帮助菜单和下载页页脚均应指向当前对应源码。
+
+---
+
+# scratch-gui upstream notes
 
 ## **⚠️ NOTICE: Repository Migration to Mono-Repo ⚠️**
 

@@ -7,8 +7,19 @@
 ```bash
 ZHIMENG_AUTH_API_BASE=https://api.zhimeng.example.com
 ZHIMENG_BILLING_URL=https://billing.zhimeng.example.com
-ZHIMENG_REGISTER_URL=https://accounts.zhimeng.example.com/register
+# 可选：外部注册页入口。MVP 主路径为客户端内置注册，可不配置。
+# ZHIMENG_REGISTER_URL=https://accounts.zhimeng.example.com/register
 ZHIMENG_LEASE_DAYS=7
+ZHIMENG_PAYMENT_MODE=manual_qr
+ZHIMENG_PAYMENT_API_BASE=https://api.zhimeng.example.com
+ZHIMENG_WECHAT_PAYMENT_QR_URL=https://cdn.zhimeng.example.com/pay/wechat-qr.png
+ZHIMENG_ALIPAY_PAYMENT_QR_URL=https://cdn.zhimeng.example.com/pay/alipay-qr.png
+ZHIMENG_PAYMENT_QR_URL=https://cdn.zhimeng.example.com/pay/wechat-qr.png
+ZHIMENG_PAYMENT_ACCOUNT_LABEL=知萌官方收款
+ZHIMENG_PAYMENT_CURRENCY=CNY
+ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS=19900
+ZHIMENG_PAYMENT_PROOF_STORAGE_DIR=./data/payment-proofs
+ZHIMENG_PAYMENT_PROOF_MAX_BYTES=5242880
 ZHIMENG_CLOUD_HOST=cloud.zhimeng.example.com
 ZHIMENG_PROJECT_HOST=https://projects.zhimeng.example.com
 ZHIMENG_ASSET_HOST=https://assets.zhimeng.example.com
@@ -19,7 +30,7 @@ ZHIMENG_AUTH_PORT=3001
 ZHIMENG_ADMIN_TOKEN=replace-with-random-admin-token
 ZHIMENG_AUTO_INIT_SCHEMA=0
 ZHIMENG_CORS_ORIGINS=https://download.zhimeng.example.com,https://app.zhimeng.example.com
-ZHIMENG_JSON_LIMIT=1mb
+ZHIMENG_JSON_LIMIT=8mb
 ZHIMENG_RATE_LIMIT_WINDOW_MS=60000
 ZHIMENG_RATE_LIMIT_MAX=600
 ZHIMENG_MYSQL_HOST=127.0.0.1
@@ -45,8 +56,18 @@ ZHIMENG_MYSQL_CONNECT_TIMEOUT=10000
 
 - `ZHIMENG_AUTH_API_BASE`：认证/授权 API 根地址
 - `ZHIMENG_BILLING_URL`：支付/账单页入口
-- `ZHIMENG_REGISTER_URL`：注册页入口
+- `ZHIMENG_REGISTER_URL`：可选外部注册页入口；MVP 主路径为客户端内置注册，发布检查不要求配置
 - `ZHIMENG_LEASE_DAYS`：离线授权租约天数
+- `ZHIMENG_PAYMENT_MODE`：支付模式；MVP 默认 `manual_qr`，表示固定二维码收款 + 人工确认
+- `ZHIMENG_PAYMENT_API_BASE`：支付页浏览器请求的认证/订单 API 根地址；未配置时使用 `ZHIMENG_AUTH_API_BASE`
+- `ZHIMENG_WECHAT_PAYMENT_QR_URL`：微信固定收款二维码图片地址
+- `ZHIMENG_ALIPAY_PAYMENT_QR_URL`：支付宝固定收款二维码图片地址
+- `ZHIMENG_PAYMENT_QR_URL`：固定收款二维码兜底地址；未配置渠道专属二维码时使用
+- `ZHIMENG_PAYMENT_ACCOUNT_LABEL`：订单页展示的收款账号名称
+- `ZHIMENG_PAYMENT_CURRENCY`：订单币种，默认 `CNY`
+- `ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS`：`family_yearly` 套餐金额，单位为分
+- `ZHIMENG_PAYMENT_PROOF_STORAGE_DIR`：付款截图本地私有存储目录；不要指向公开静态资源目录
+- `ZHIMENG_PAYMENT_PROOF_MAX_BYTES`：单张付款截图大小上限，默认 `5242880`（5MB）
 - `ZHIMENG_CLOUD_HOST`：Scratch 云变量 WebSocket 主机（不含 `ws://` / `wss://`；暂不启用云变量时可留空）
 - `ZHIMENG_PROJECT_HOST`：项目读写服务地址
 - `ZHIMENG_ASSET_HOST`：资源服务地址
@@ -55,7 +76,7 @@ ZHIMENG_MYSQL_CONNECT_TIMEOUT=10000
 - `ZHIMENG_ADMIN_TOKEN`：运营/后台接口令牌，用于受保护的人工确认订单等操作；生产必须使用高强度随机值
 - `ZHIMENG_AUTO_INIT_SCHEMA`：生产默认不隐式建表；生产部署请先运行 `npm run db:migrate`，仅明确设为 `1` 时启动自动建表
 - `ZHIMENG_CORS_ORIGINS`：允许访问认证 API 的来源白名单，逗号分隔；生产未配置时默认不允许浏览器跨域访问
-- `ZHIMENG_JSON_LIMIT`：JSON 请求体大小限制，默认 `1mb`
+- `ZHIMENG_JSON_LIMIT`：JSON 请求体大小限制，默认 `8mb`，需覆盖 5MB 付款截图 base64 载荷
 - `ZHIMENG_RATE_LIMIT_WINDOW_MS` / `ZHIMENG_RATE_LIMIT_MAX`：基础请求限流窗口与最大次数；生产默认 `60000` / `600`
 - `ZHIMENG_ENABLE_MOCK_PAYMENT`：仅本地/测试开启 `/order/:id/mock-paid`，生产默认关闭
 - `ZHIMENG_SEED_DEMO_USER`：仅本地/测试允许自动创建 `demo` 用户，生产默认关闭
