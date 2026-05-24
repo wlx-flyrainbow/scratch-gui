@@ -1,5 +1,7 @@
 # 知萌 codevalley.cn 宝塔部署计划
 
+> 通用部署复盘与最佳实践见：[宝塔 + Node 项目部署最佳实践](./bt-node-deployment-best-practices.md)。本计划是知萌当前域名和端口的落地版本。
+
 ## 1. 域名与环境
 
 当前阿里云 DNS 已将以下域名解析到 `39.106.81.189`：
@@ -117,14 +119,14 @@ npm run db:migrate
 先发布测试站：
 
 ```bash
-rsync -av --delete website/ /www/wwwroot/zhimeng-test/
+rsync -av --delete --exclude='.user.ini' website/ /www/wwwroot/zhimeng-test/
 mkdir -p /www/wwwroot/zhimeng-test/downloads
 ```
 
 发布正式站：
 
 ```bash
-rsync -av --delete website/ /www/wwwroot/zhimeng/
+rsync -av --delete --exclude='.user.ini' website/ /www/wwwroot/zhimeng/
 mkdir -p /www/wwwroot/zhimeng/downloads
 ```
 
