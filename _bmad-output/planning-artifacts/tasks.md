@@ -81,7 +81,7 @@ Acceptance:
 
 - [x] 修正 `scripts/run-zhimeng-goal-check.js`，前端检查必须断言真实知萌页面内容，不能只看 HTTP 200。
 - [x] `release:check` 覆盖生产 API、账单地址、注册链接、二维码、套餐价格、下载链接、admin token、CORS。
-- [ ] `website/releases.json` 发布前必须配置真实 macOS Apple 芯片版、macOS Intel 芯片版、Windows NSIS 和 portable 下载地址。
+- [x] `website/releases.json` 发布前必须配置真实 macOS Apple 芯片版、macOS Intel 芯片版、Windows NSIS 和 portable 下载地址。
 - [x] 新增自包含购买闭环验收脚本：inactive 登录、创建订单、提交付款凭证、运营列表、人工确认、刷新授权 active。
 - [x] 新增隔离 MySQL 容器的真库购买闭环验收命令 `npm run test:zhimeng-purchase-flow:realdb`。
 - [x] 新增新用户完整流程真库验收命令 `npm run test:zhimeng-new-user-flow:realdb`，从注册账号开始验证到开通授权。
@@ -91,6 +91,7 @@ Acceptance:
 - [x] 真库验收覆盖 inactive 用户创建订单、提交付款凭证、人工确认、刷新授权 active。
 - [x] 本地 macOS 与 Windows 打包后检查安装包名称、架构、DMG 校验、下载页按钮和源码链接。
 - [ ] 生产 macOS 包完成 Developer ID 签名、timestamp、公证；Windows 包完成正式代码签名。
+- [ ] 上传正式安装包到 `https://zhimeng.codevalley.cn/downloads/` 并验证四个下载 URL 可访问。
 
 Acceptance:
 
