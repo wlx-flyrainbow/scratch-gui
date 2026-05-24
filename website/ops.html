@@ -63,6 +63,48 @@
       <div id="orders-list" class="ops-list"></div>
     </section>
 
+    <section class="card ops-copy-kit" aria-labelledby="ops-copy-heading">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">私域运营</div>
+          <h2 id="ops-copy-heading">首发投放与跟进话术</h2>
+        </div>
+        <div class="ops-state-pill is-ok">内部使用</div>
+      </div>
+      <p class="ops-copy-intro">这些话术用于朋友圈、微信群、一对一私聊和付款后跟进，不展示在对外官网。</p>
+      <div class="ops-copy-grid">
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>朋友圈版</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-moments">复制</button>
+          </div>
+          <p id="ops-copy-moments">我最近在做一个少儿创意编程启蒙产品「知萌」。它适合 6-10 岁孩子在电脑上用积木编程做故事、动画和小游戏。首发家庭年卡 199 元/年，适合想让孩子先低成本试试编程、但还不确定要不要报课的家庭。现在招募首批种子用户，感兴趣可以私信我，我发下载和开通方式。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>微信群版</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-group">复制</button>
+          </div>
+          <p id="ops-copy-group">大家好，我最近在做「知萌」，一款少儿创意编程启蒙桌面客户端。孩子可以用积木编程做故事、动画和小游戏。首发家庭年卡 199 元/年，主要想验证下载、注册、付款、开通和孩子首次创作流程。家里有 6-10 岁孩子、愿意体验反馈的家长可以私聊我。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>一对一私聊版</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-private">复制</button>
+          </div>
+          <p id="ops-copy-private">你好，我最近在做一个少儿创意编程启蒙产品，叫「知萌」。它不是直播课，也不是一上来几千块的课程，而是家庭年卡 199 元/年的桌面创作工具。流程是：下载客户端 -> 注册账号 -> 订阅解锁 -> 扫码付款 -> 提交凭证 -> 运营确认后刷新授权。如果你愿意试一下，我可以发你下载地址。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>已提交凭证待确认</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-waiting">复制</button>
+          </div>
+          <p id="ops-copy-waiting">已经收到你的付款凭证。知萌首发阶段采用人工确认到账，我们会核对真实收款记录。确认后你回到客户端点击「刷新授权」，就可以进入完整编程编辑器。</p>
+        </article>
+      </div>
+      <p id="ops-copy-status" class="copy-status" role="status"></p>
+    </section>
+
     <footer class="site-footer">
       <p>确认前请核对实际到账记录。确认后用户会获得完整编辑器授权。</p>
     </footer>
@@ -104,6 +146,7 @@
   var confirmSummaryEl = document.getElementById('ops-confirm-summary');
   var confirmOkBtn = document.getElementById('ops-confirm-ok');
   var confirmCancelBtn = document.getElementById('ops-confirm-cancel');
+  var copyStatusEl = document.getElementById('ops-copy-status');
 
   function defaultApiBase() {
     var params = new URLSearchParams(window.location.search);
@@ -459,6 +502,41 @@
   toggleSettingsBtn.addEventListener('click', function () {
     setupCard.classList.toggle('is-collapsed');
   });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.ops-copy-btn'), function (button) {
+    button.addEventListener('click', function () {
+      var target = document.getElementById(button.getAttribute('data-copy-target'));
+      var text = target ? target.textContent.trim() : '';
+      if (!text) return;
+      copyText(text, function () {
+        copyStatusEl.textContent = '已复制：' + button.parentNode.querySelector('h3').textContent;
+        copyStatusEl.classList.add('is-visible');
+      });
+    });
+  });
+
+  function copyText(text, done) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function () {
+        fallbackCopyText(text, done);
+      });
+      return;
+    }
+    fallbackCopyText(text, done);
+  }
+
+  function fallbackCopyText(text, done) {
+    var input = document.createElement('textarea');
+    input.value = text;
+    input.setAttribute('readonly', 'readonly');
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    done();
+  }
 
   if (tokenInput.value) {
     loadOrders();

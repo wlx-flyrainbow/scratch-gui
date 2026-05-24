@@ -27,6 +27,9 @@
 | 首发海报：家长痛点版 | `website/assets/posters/zhimeng-poster-pain.png` | 327K | `88ba17d0097ee89359b56b60df2f717beb26d43d88d78c4f2178ce09775d946e` | 私域转化投放，主打报课前低成本试错 |
 | 首发海报：种子用户版 | `website/assets/posters/zhimeng-poster-seed.png` | 411K | `c6926ce7ea4bc496705380d55123c12f971b7c9ee378294eb32a4aee92120d7a` | 首批 20 个种子用户招募 |
 | 首发海报源文件 | `website/posters/launch-posters.html` | 11K | `1f15a07930a4d82077405a04c201a8c33416fc4d6f6c3fb8e1dec706bc489c33` | 通过 query 参数生成 direct/pain/seed 三版海报 |
+| 30 秒演示视频 | `website/assets/videos/zhimeng-demo-30s.mp4` | 1.8M | `b66e6359643178f4b5ccf7753e5dc2bee44478f41d8b48a2b9e2b539479ef207` | 私域首发转化视频，无旁白字幕版 |
+| 30 秒演示视频封面 | `website/assets/videos/zhimeng-demo-30s-cover.jpg` | 120K | `ae538ece34dc5bb1379eb8424f5fc78ecd109d509270e9c4aafa13e930cbf397` | 视频发布封面图 |
+| 演示视频生成脚本 | `scripts/generate-zhimeng-demo-video.js` | 16K | `7d83549a5165667dc5cd28354c83078ad5be46ebe552bc8b91c94af1d90d5554` | 生成 1920x1080、30 秒、24fps MP4 |
 
 图标生成规则：
 
@@ -38,10 +41,10 @@
 
 | 资产 | 路径 | 状态 |
 | --- | --- | --- |
-| 官网首页/下载页 | `website/index.html` | 已升级为销售 + 下载一体页 |
-| 官网样式 | `website/styles.css` | 已支持销售页、套餐区、FAQ |
+| 官网首页/下载页 | `website/index.html` | 已升级为销售 + 下载一体页，包含视频和种子用户招募；投放话术保留在内部文档 |
+| 官网样式 | `website/styles.css` | 已支持销售页、套餐区、FAQ、视频区和种子用户转化区 |
 | 付款兜底页 | `website/pay.html` | 保留为客户端 `pay_url` 兜底 |
-| 运营确认页 | `website/ops.html` | 保留给运营核账和人工确认 |
+| 运营确认页 | `website/ops.html` | 保留给运营核账、人工确认和内部私域话术复制 |
 | 发布下载清单 | `website/releases.json` | 已切换为正式域名下载路径，仍需服务器可访问验证 |
 | 本地下载清单 | `website/releases.local.json` | 本地验收优先读取 |
 | 商业化营销计划 | `docs/zhimeng-commercialization-marketing-plan.md` | 已包含价格、套餐、营销节奏、验收清单 |
@@ -50,6 +53,7 @@
 | 首发海报文案 | `docs/zhimeng-launch-poster-copy.md` | 已覆盖直接转化、家长痛点、种子用户招募和流程说明 |
 | 首发海报成图 | `website/assets/posters/zhimeng-poster-direct.png` / `website/assets/posters/zhimeng-poster-pain.png` / `website/assets/posters/zhimeng-poster-seed.png` | 已生成 1080x1440 PNG 三版 |
 | 演示视频脚本 | `docs/zhimeng-demo-video-script.md` | 已覆盖 60 秒脚本、30 秒短版、分镜和拍摄清单 |
+| 演示视频成片 | `website/assets/videos/zhimeng-demo-30s.mp4` | 已生成 30 秒无旁白字幕版 |
 | 种子用户跟进表 | `docs/zhimeng-seed-user-tracking.md` / `docs/zhimeng-seed-user-tracking.csv` | 已提供 Markdown 说明和 20 人 CSV 模板 |
 | 商标与品牌管理计划 | `docs/zhimeng-trademark-brand-management.md` | 已包含类别、阶段、品牌规则 |
 | AGPL 源码披露 | `docs/agpl-source-disclosure.md` | 对外合规引用 |

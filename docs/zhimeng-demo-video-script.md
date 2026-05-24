@@ -2,6 +2,8 @@
 
 适用阶段：首批私域种子用户，家庭年卡 199 元/年。
 
+成片状态：已生成 30 秒无旁白字幕版，路径为 `website/assets/videos/zhimeng-demo-30s.mp4`；封面图为 `website/assets/videos/zhimeng-demo-30s-cover.jpg`。源脚本为 `scripts/generate-zhimeng-demo-video.js`。
+
 ## 1. 视频目标
 
 让家长在 60 秒内理解：

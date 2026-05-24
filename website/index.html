@@ -17,8 +17,9 @@
         <p class="sales-subtitle">用积木编程做故事、动画和小游戏</p>
         <p class="sales-copy">给家庭用户一个低门槛的开始：先让孩子在完整编程编辑器里动手创作，再决定是否继续深入学习。</p>
         <div class="hero-actions">
+          <a class="btn btn-primary" href="#seed-launch">参与首发体验</a>
           <a class="btn btn-primary" href="#download-heading">下载客户端</a>
-          <a class="btn btn-secondary" href="#plans">查看套餐</a>
+          <a class="btn btn-secondary" href="#demo-video">30 秒看懂知萌</a>
         </div>
         <div class="hero-facts" aria-label="知萌产品信息">
           <span>家庭年卡 199 元/年</span>
@@ -41,6 +42,36 @@
     </header>
 
     <div id="load-error" class="err-banner" role="alert"></div>
+
+    <section id="seed-launch" class="sales-section seed-launch" aria-labelledby="seed-launch-heading">
+      <div class="seed-copy">
+        <p class="eyebrow">首批种子用户</p>
+        <h2 id="seed-launch-heading">先让孩子低成本试试编程创作</h2>
+        <p>知萌正在招募首批 20 个种子用户。适合家里有 6-10 岁孩子、想先验证少儿编程兴趣、愿意反馈使用体验的家庭。</p>
+        <div class="seed-actions">
+          <a class="btn btn-primary" href="#download-heading">下载客户端</a>
+          <a class="btn btn-secondary" href="#demo-video">观看 30 秒视频</a>
+        </div>
+      </div>
+      <div class="seed-offer" aria-label="首发套餐">
+        <span class="plan-badge">首发主推</span>
+        <strong>¥199<span>/年</span></strong>
+        <p>家庭年卡，开通完整编程编辑器。</p>
+      </div>
+    </section>
+
+    <section id="demo-video" class="sales-section video-section" aria-labelledby="demo-video-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">30 秒看懂知萌</p>
+          <h2 id="demo-video-heading">从“想试试”到“能创作”的完整路径</h2>
+        </div>
+        <p>静音也能看懂：低成本试编程、下载注册、订阅解锁、提交凭证和确认后进入完整编辑器。</p>
+      </div>
+      <video class="demo-video" controls preload="metadata" poster="assets/videos/zhimeng-demo-30s-cover.jpg">
+        <source src="assets/videos/zhimeng-demo-30s.mp4" type="video/mp4" />
+      </video>
+    </section>
 
     <section class="sales-section" aria-labelledby="value-heading">
       <div class="section-title-row">
@@ -185,10 +216,6 @@
           <h3>Mac 应该下载哪个版本？</h3>
           <p>M1/M2/M3/M4 选择 Apple 芯片版；较早的 Intel Mac 选择 Intel 芯片版。</p>
         </article>
-        <article class="faq-item">
-          <h3>是否已经包含云保存和社区？</h3>
-          <p>首发阶段不把云保存、分享、社区作为已上线权益，后续会按产品计划逐步开放。</p>
-        </article>
       </div>
     </section>
 
@@ -327,6 +354,7 @@
     .catch(function () {
       showErr('无法加载 releases.json，请检查文件是否已部署且路径正确。');
     });
+
 })();
   </script>
 </body>

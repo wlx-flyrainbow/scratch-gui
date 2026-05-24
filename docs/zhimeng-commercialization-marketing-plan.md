@@ -64,6 +64,8 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 
 结论：有必要做，且应作为发布前并行任务推进。
 
+商标检索与首批申请准备见：`docs/zhimeng-trademark-search-prep.md`。
+
 注册节奏：
 
 - 立即做“知萌”文字商标近似检索，优先检索第 9 类、第 41 类、第 42 类。
@@ -219,6 +221,7 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 ### P0：正式售卖前必须完成
 
 - 官网从下载页升级为销售 + 下载一体页。
+- 官网首发销售页承接视频和种子用户招募；私域投放话术保留在内部文档与 `ops.html` 运营工作台，不放到对外官网。
 - 明确展示套餐价格：体验月卡 29 元/月、家庭年卡 199 元/年、家庭双年卡 299 元/2 年；首发主推家庭年卡。
 - 移除“云保存、分享、社区”等已上线暗示。
 - `website/releases.json` 配置真实下载地址。
@@ -293,6 +296,7 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 ## 6. 发布前商业化验收清单
 
 - [x] 官网首屏能在 5 秒内说明产品、适龄、价格和下载入口。
+- [x] 官网提供 30 秒演示视频入口和首批种子用户转化区。
 - [x] 官网套餐区展示 29 元/月、199 元/年、299 元/2 年，并突出 199 元年卡为推荐套餐。
 - [ ] 官网下载链接全部是真实可用地址。
 - [x] 官网不把云保存、分享、社区、背包写成已上线权益。
@@ -306,7 +310,7 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 - [x] 首发海报文案已准备。
 - [x] 首发海报成图已准备。
 - [x] 演示视频脚本与分镜已准备。
-- [ ] 演示视频成片已准备。
+- [x] 演示视频成片已准备。
 - [x] 种子用户跟进表已准备。
 - [x] `npm run release:check` 通过。
 - [x] `npm run test:zhimeng-purchase-flow` 通过。
@@ -321,7 +325,17 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 - 订阅中心布局验收通过：`_bmad-output/test-reports/zhimeng-billing-layout-2026-05-24T15-06-56-025Z.json`。
 - 发布环境检查通过：使用 `deploy/env/zhimeng-prod.env.example` 作为生产模板，并用高强度 `ZHIMENG_ADMIN_TOKEN` 覆盖示例占位后执行 `npm run release:check`。
 - `website/releases.json` 已从 `YOUR-CDN.example` 占位切换为 `https://zhimeng.codevalley.cn/downloads/` 下的 macOS Apple 芯片、macOS Intel、Windows 安装版、Windows 便携版下载路径。
-- 下载链接尚未标记完成：本机 `curl -I` 探测 `https://zhimeng.codevalley.cn/downloads/zhimeng-setup-5.2.16.exe` 直连失败，需在服务器完成静态站部署、安装包上传和 HTTPS 可访问验证后再关闭该项。
+- 下载链接尚未标记完成：本机 `curl -I` 探测 `https://zhimeng.codevalley.cn/downloads/zhimeng-setup-1.0.0.exe` 直连失败，需在服务器完成静态站部署、安装包上传和 HTTPS 可访问验证后再关闭该项。
+
+### 6.2 2026-05-24 官网首发转化页验收记录
+
+- 官网已加入首批种子用户转化区：说明适合人群、首发价格、下载入口和视频入口。
+- 官网已加入 30 秒演示视频区：`website/assets/videos/zhimeng-demo-30s.mp4` 可从 `website/index.html#demo-video` 加载。
+- 私域投放话术保留在 `docs/zhimeng-private-domain-launch-copy.md` 与 `website/ops.html` 运营工作台，不放入对外官网。
+- 浏览器验收：通过本地静态服务 `python3 -m http.server 4177 --directory website` 打开 `http://127.0.0.1:4177/index.html`。
+- 桌面首屏验收：产品名、适龄、价值主张、首发体验、下载、视频入口、价格锚点可见。
+- 视频资源验收：页面内视频 `readyState = 4`，封面与 MP4 均能加载。
+- 移动端验收：390x844 视口下首屏按钮纵向排列，无横向溢出；正文可正常换行。
 
 ## 7. 默认决策
 
