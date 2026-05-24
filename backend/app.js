@@ -3,6 +3,8 @@ require('./load-local-env');
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const db = require('./db');
 
@@ -10,6 +12,13 @@ const LEASE_DAYS = Number(process.env.ZHIMENG_LEASE_DAYS || 7);
 const TOKEN_TTL_MS = 60 * 60 * 1000;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,32}$/;
+const PAYMENT_PROOF_MAX_BYTES = Number(process.env.ZHIMENG_PAYMENT_PROOF_MAX_BYTES || (5 * 1024 * 1024));
+const PAYMENT_PROOF_MIME_EXT = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp'
+};
 
 /** @type {Map<string, {userId: number, expiresAt: number}>} */
 const accessTokens = new Map();
@@ -24,6 +33,117 @@ const shouldAutoInitSchema = () => !isProduction() || isTruthyEnv(process.env.ZH
 
 const shouldEnableMockPayment = () => !isProduction() || isTruthyEnv(process.env.ZHIMENG_ENABLE_MOCK_PAYMENT);
 
+const paymentMode = () => process.env.ZHIMENG_PAYMENT_MODE || 'manual_qr';
+
+const paymentProofStorageDir = () =>
+    process.env.ZHIMENG_PAYMENT_PROOF_STORAGE_DIR ||
+    path.join(process.cwd(), 'data', 'payment-proofs');
+
+const localPaymentQrUrl = channel =>
+    `http://localhost:${process.env.ZHIMENG_AUTH_PORT || 3001}/payment/qr/${channel}.jpg`;
+
+const parsePlanPrices = () => {
+    const raw = process.env.ZHIMENG_PLAN_PRICES_JSON;
+    if (!raw) {
+        return {};
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+        return {};
+    }
+};
+
+const getPlanAmountCents = plan => {
+    const prices = parsePlanPrices();
+    const configured = prices[plan];
+    if (typeof configured === 'number' && Number.isFinite(configured)) {
+        return configured;
+    }
+    if (typeof configured === 'string' && configured.trim()) {
+        const parsed = Number(configured);
+        if (Number.isFinite(parsed)) {
+            return parsed;
+        }
+    }
+    if (plan === 'family_yearly') {
+        return Number(process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS || 19900);
+    }
+    return Number(process.env.ZHIMENG_DEFAULT_PLAN_AMOUNT_CENTS || 0);
+};
+
+const yuanToCents = value => {
+    const text = String(value || '').trim();
+    if (!text) {
+        return null;
+    }
+    if (!/^\d+(\.\d{1,2})?$/.test(text)) {
+        return null;
+    }
+    return Math.round(Number(text) * 100);
+};
+
+const buildPaymentNote = orderId => {
+    const template = process.env.ZHIMENG_PAYMENT_NOTE_TEMPLATE || '付款备注请填写：ZM-{order_id}';
+    return template.replace(/\{order_id\}/g, `o_${orderId}`);
+};
+
+const appendQuery = (url, params) => {
+    const query = Object.keys(params)
+        .filter(key => params[key])
+        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+        .join('&');
+    return query ? `${url}${url.indexOf('?') === -1 ? '?' : '&'}${query}` : url;
+};
+
+const getQrCodeUrl = (channel, base, orderId) => {
+    if (channel === 'wechat' && process.env.ZHIMENG_WECHAT_PAYMENT_QR_URL) {
+        return process.env.ZHIMENG_WECHAT_PAYMENT_QR_URL;
+    }
+    if (channel === 'alipay' && process.env.ZHIMENG_ALIPAY_PAYMENT_QR_URL) {
+        return process.env.ZHIMENG_ALIPAY_PAYMENT_QR_URL;
+    }
+    if (!isProduction() && ['wechat', 'alipay'].includes(channel)) {
+        return localPaymentQrUrl(channel);
+    }
+    return process.env.ZHIMENG_PAYMENT_QR_URL || `${base}/qr/${orderId}`;
+};
+
+const buildPaymentUrls = (orderId, paymentProofToken, channel) => {
+    const base = (process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com')
+        .replace(/\/$/, '');
+    const qrCodeUrl = getQrCodeUrl(channel, base, orderId);
+    const apiBase = process.env.ZHIMENG_PAYMENT_API_BASE || process.env.ZHIMENG_AUTH_API_BASE || '';
+    return {
+        pay_url: appendQuery(`${base}/pay.html`, {
+            order_id: `o_${orderId}`,
+            proof_token: paymentProofToken,
+            api_base: apiBase
+        }),
+        qr_code_url: qrCodeUrl
+    };
+};
+
+const buildPaymentMethods = orderId => ({
+    wechat: {
+        label: '微信',
+        qr_code_url: getQrCodeUrl('wechat', '', orderId)
+    },
+    alipay: {
+        label: '支付宝',
+        qr_code_url: getQrCodeUrl('alipay', '', orderId)
+    },
+    bank: {
+        label: '银行转账',
+        qr_code_url: null
+    },
+    other: {
+        label: '其他',
+        qr_code_url: null
+    }
+});
+
 const safeCompare = (a, b) => {
     const left = Buffer.from(String(a || ''), 'utf8');
     const right = Buffer.from(String(b || ''), 'utf8');
@@ -35,6 +155,80 @@ const issueToken = prefix => `${prefix}_${crypto.randomUUID().replace(/-/g, '')}
 const hashRefreshToken = token =>
     crypto.createHash('sha256').update(token, 'utf8')
         .digest('hex');
+
+const hashPaymentProofToken = token =>
+    crypto.createHash('sha256').update(String(token || ''), 'utf8')
+        .digest('hex');
+
+const sanitizeFilename = filename => {
+    const fallback = 'payment-proof';
+    return String(filename || fallback)
+        .replace(/[/\\]/g, '-')
+        .replace(/[^\w.\-\u4e00-\u9fa5]/g, '_')
+        .slice(0, 120) || fallback;
+};
+
+const parseProofAttachment = attachment => {
+    if (!attachment) {
+        return null;
+    }
+    const dataUrl = String(attachment.data_url || '');
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    const mimeType = String(
+        (match && match[1]) ||
+        attachment.mime_type ||
+        attachment.mimeType ||
+        ''
+    ).toLowerCase();
+    const encoded = match ? match[2] : String(attachment.base64 || '');
+    if (!PAYMENT_PROOF_MIME_EXT[mimeType]) {
+        const err = new Error('payment proof attachment must be jpg, png or webp');
+        err.statusCode = 400;
+        throw err;
+    }
+    if (!encoded) {
+        const err = new Error('payment proof attachment is empty');
+        err.statusCode = 400;
+        throw err;
+    }
+    const buffer = Buffer.from(encoded, 'base64');
+    if (!buffer.length || buffer.length > PAYMENT_PROOF_MAX_BYTES) {
+        const err = new Error('payment proof attachment exceeds size limit');
+        err.statusCode = 400;
+        throw err;
+    }
+    return {
+        buffer,
+        mimeType,
+        originalName: sanitizeFilename(attachment.filename || attachment.name),
+        ext: PAYMENT_PROOF_MIME_EXT[mimeType]
+    };
+};
+
+const storeProofAttachment = async ({orderId, attachment}) => {
+    const parsed = parseProofAttachment(attachment);
+    if (!parsed) {
+        return null;
+    }
+    const id = crypto.randomUUID();
+    const dir = paymentProofStorageDir();
+    const filename = `${orderId}-${id}.${parsed.ext}`;
+    const absolutePath = path.join(dir, filename);
+    await fs.promises.mkdir(dir, {recursive: true});
+    await fs.promises.writeFile(absolutePath, parsed.buffer, {flag: 'wx'});
+    return {
+        id,
+        filename: parsed.originalName,
+        mimeType: parsed.mimeType,
+        sizeBytes: parsed.buffer.length,
+        sha256: crypto.createHash('sha256')
+            .update(parsed.buffer)
+            .digest('hex'),
+        storage: 'local',
+        storageKey: filename,
+        uploadedAt: new Date().toISOString()
+    };
+};
 
 const nowIso = () => new Date().toISOString();
 
@@ -93,6 +287,31 @@ const buildEntitlementResponse = userPayload => ({
     }
 });
 
+const buildAuthSessionResponse = async row => {
+    const accessToken = issueToken('at');
+    const refreshToken = issueToken('rt');
+    const rtHash = hashRefreshToken(refreshToken);
+    const rtExpires = new Date(Date.now() + REFRESH_TTL_MS);
+    await db.insertRefreshToken(row.id, rtHash, rtExpires);
+    accessTokens.set(accessToken, {
+        userId: row.id,
+        expiresAt: Date.now() + TOKEN_TTL_MS
+    });
+    const devices = await db.listDevices(row.id);
+    const userPayload = toUserPayload(row, devices);
+    return {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        user: {
+            id: userPayload.id,
+            username: userPayload.username,
+            nickname: userPayload.nickname
+        },
+        permissions: userPayload.permissions,
+        entitlement: buildEntitlementResponse(userPayload)
+    };
+};
+
 const getAccessToken = req => {
     const header = req.headers.authorization || '';
     if (!header.startsWith('Bearer ')) return null;
@@ -106,9 +325,25 @@ const parseOrderId = rawId => {
 
 const toIso = value => (value instanceof Date ? value.toISOString() : value);
 
+const parseJsonValue = value => {
+    if (!value) {
+        return null;
+    }
+    if (typeof value === 'object') {
+        return value;
+    }
+    try {
+        return JSON.parse(value);
+    } catch (e) {
+        return null;
+    }
+};
+
 const toOrderPayload = order => ({
     order_id: `o_${order.id}`,
     user_id: String(order.user_id),
+    username: order.username || null,
+    nickname: order.nickname || null,
     plan: order.plan,
     channel: order.channel,
     provider: order.provider || order.channel,
@@ -118,7 +353,11 @@ const toOrderPayload = order => ({
     status: order.status,
     paid_at: toIso(order.paid_at),
     fulfilled_at: toIso(order.fulfilled_at),
-    expires_at: toIso(order.expires_at)
+    expires_at: toIso(order.expires_at),
+    payment_account_label: process.env.ZHIMENG_PAYMENT_ACCOUNT_LABEL || '知萌官方收款',
+    payment_note: buildPaymentNote(order.id),
+    payment_methods: buildPaymentMethods(order.id),
+    payment_proof: parseJsonValue(order.payment_proof_json)
 });
 
 const sendServerError = (res, err) => {
@@ -176,32 +415,54 @@ const createApp = async () => {
 
     const app = express();
     app.use(cors(buildCorsOptions()));
-    app.use(express.json({limit: process.env.ZHIMENG_JSON_LIMIT || '1mb'}));
+    app.use(express.json({limit: process.env.ZHIMENG_JSON_LIMIT || '8mb'}));
     app.use(createRateLimiter());
+    const websiteDir = path.join(process.cwd(), 'website');
+    app.get('/', (req, res) => res.redirect('/ops.html'));
+    app.use(express.static(websiteDir));
+    app.get('/payment/qr/:channel.jpg', (req, res) => {
+        const filename = req.params.channel === 'alipay' ?
+            'siang_alipay_qrcode.jpg' :
+            'siang_wxpay_qrcode.jpg';
+        return res.sendFile(path.join(process.cwd(), 'website', 'assets', filename));
+    });
+
+    const resolveAuth = async req => {
+        const token = getAccessToken(req);
+        if (!token || !accessTokens.has(token)) {
+            return null;
+        }
+        const rec = accessTokens.get(token);
+        if (Date.now() > rec.expiresAt) {
+            accessTokens.delete(token);
+            const err = new Error('Access token expired');
+            err.statusCode = 401;
+            throw err;
+        }
+        const row = await db.findUserById(rec.userId);
+        if (!row) {
+            const err = new Error('User not found');
+            err.statusCode = 401;
+            throw err;
+        }
+        const devices = await db.listDevices(row.id);
+        return {
+            user: toUserPayload(row, devices),
+            userNumericId: row.id
+        };
+    };
 
     const requireAuth = async (req, res, next) => {
         try {
-            const token = getAccessToken(req);
-            if (!token || !accessTokens.has(token)) {
-                return res.status(401).json({message: 'Unauthorized'});
-            }
-            const rec = accessTokens.get(token);
-            if (Date.now() > rec.expiresAt) {
-                accessTokens.delete(token);
-                return res.status(401).json({message: 'Access token expired'});
-            }
-            const row = await db.findUserById(rec.userId);
-            if (!row) {
-                return res.status(401).json({message: 'User not found'});
-            }
-            const devices = await db.listDevices(row.id);
-            const userPayload = toUserPayload(row, devices);
+            const auth = await resolveAuth(req);
+            if (!auth) return res.status(401).json({message: 'Unauthorized'});
             /* eslint-disable require-atomic-updates -- sequential auth attach */
-            req.user = userPayload;
-            req.userNumericId = row.id;
+            req.user = auth.user;
+            req.userNumericId = auth.userNumericId;
             /* eslint-enable require-atomic-updates */
             return next();
         } catch (err) {
+            if (err.statusCode) return res.status(err.statusCode).json({message: err.message});
             return sendServerError(res, err);
         }
     };
@@ -238,29 +499,42 @@ const createApp = async () => {
             if (!row || !db.bcrypt.compareSync(password, row.password_hash)) {
                 return res.status(401).json({message: 'Invalid username or password'});
             }
-            const accessToken = issueToken('at');
-            const refreshToken = issueToken('rt');
-            const rtHash = hashRefreshToken(refreshToken);
-            const rtExpires = new Date(Date.now() + REFRESH_TTL_MS);
-            await db.insertRefreshToken(row.id, rtHash, rtExpires);
-            accessTokens.set(accessToken, {
-                userId: row.id,
-                expiresAt: Date.now() + TOKEN_TTL_MS
-            });
-            const devices = await db.listDevices(row.id);
-            const userPayload = toUserPayload(row, devices);
-            return res.json({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-                user: {
-                    id: userPayload.id,
-                    username: userPayload.username,
-                    nickname: userPayload.nickname
-                },
-                permissions: userPayload.permissions,
-                entitlement: buildEntitlementResponse(userPayload)
-            });
+            return res.json(await buildAuthSessionResponse(row));
         } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.post('/auth/register', async (req, res) => {
+        try {
+            const {username, password, nickname} = req.body || {};
+            const normalizedUsername = String(username || '').trim();
+            const normalizedPassword = String(password || '');
+            if (!normalizedUsername || !normalizedPassword) {
+                return res.status(400).json({message: 'username and password are required'});
+            }
+            if (!USERNAME_PATTERN.test(normalizedUsername)) {
+                return res.status(400).json({message: 'Invalid username format'});
+            }
+            if (normalizedPassword.length < 6) {
+                return res.status(400).json({message: 'Password is too short'});
+            }
+            const existed = await db.findUserByUsername(normalizedUsername);
+            if (existed) {
+                return res.status(409).json({message: 'Username already exists'});
+            }
+            const passwordHash = db.bcrypt.hashSync(normalizedPassword, 10);
+            const userId = await db.createUser({
+                username: normalizedUsername,
+                passwordHash,
+                nickname: String(nickname || '').trim()
+            });
+            const row = await db.findUserById(userId);
+            return res.status(201).json(await buildAuthSessionResponse(row));
+        } catch (err) {
+            if (err && err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({message: 'Username already exists'});
+            }
             return sendServerError(res, err);
         }
     });
@@ -343,18 +617,154 @@ const createApp = async () => {
             if (!plan || !channel) {
                 return res.status(400).json({message: 'plan and channel are required'});
             }
+            const amountCents = getPlanAmountCents(plan);
+            if (!Number.isFinite(amountCents) || amountCents <= 0) {
+                return res.status(400).json({message: `No price configured for plan: ${plan}`});
+            }
+            const currency = process.env.ZHIMENG_PAYMENT_CURRENCY || 'CNY';
+            const paymentProofToken = issueToken('pay');
             const orderId = await db.createOrder({
                 userId: req.userNumericId,
                 plan,
                 channel,
-                returnUrl
+                returnUrl,
+                amountCents,
+                currency,
+                paymentProofTokenHash: hashPaymentProofToken(paymentProofToken)
             });
+            const urls = buildPaymentUrls(orderId, paymentProofToken, channel);
             return res.json({
                 order_id: `o_${orderId}`,
-                pay_url: `${process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com'}/pay/${orderId}`,
-                qr_code_url: `${process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com'}/qr/${orderId}`
+                status: 'created',
+                plan,
+                channel,
+                amount_cents: amountCents,
+                currency,
+                payment_mode: paymentMode(),
+                payment_account_label: process.env.ZHIMENG_PAYMENT_ACCOUNT_LABEL || '知萌官方收款',
+                payment_note: buildPaymentNote(orderId),
+                payment_methods: buildPaymentMethods(orderId),
+                ...urls
             });
         } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.get('/order/:id/payment-page', async (req, res) => {
+        try {
+            const numericId = parseOrderId(req.params.id);
+            if (!numericId) {
+                return res.status(400).json({message: 'Invalid order id'});
+            }
+            const proofToken = String(req.query.proof_token || '');
+            if (!proofToken) {
+                return res.status(401).json({message: 'proof_token is required'});
+            }
+            const order = await db.findOrderByPaymentProofToken({
+                orderId: numericId,
+                paymentProofTokenHash: hashPaymentProofToken(proofToken)
+            });
+            if (!order) {
+                return res.status(404).json({message: 'Order not found'});
+            }
+            const urls = buildPaymentUrls(numericId, proofToken, order.channel);
+            return res.json({
+                ...toOrderPayload(order),
+                payment_mode: paymentMode(),
+                payment_account_label: process.env.ZHIMENG_PAYMENT_ACCOUNT_LABEL || '知萌官方收款',
+                payment_note: buildPaymentNote(numericId),
+                payment_methods: buildPaymentMethods(numericId),
+                qr_code_url: urls.qr_code_url
+            });
+        } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.post('/order/:id/payment-proof', async (req, res) => {
+        let attachmentMeta = null;
+        try {
+            const rawId = String(req.params.id || '');
+            const numericId = parseOrderId(rawId);
+            if (!numericId) {
+                return res.status(400).json({message: 'Invalid order id'});
+            }
+            const {
+                method,
+                paid_at: paidAt,
+                amount,
+                currency,
+                transfer_no: transferNo,
+                merchant_order_no: merchantOrderNo,
+                trade_no_tail: tradeNoTail,
+                payer_note: payerNote,
+                proof_token: proofToken,
+                proof_attachment: proofAttachment
+            } = req.body || {};
+            const normalizedTransferNo = transferNo ? String(transferNo).replace(/\s/g, '') : '';
+            const normalizedMerchantOrderNo = merchantOrderNo ?
+                String(merchantOrderNo).replace(/\s/g, '') :
+                '';
+            const normalizedTail = tradeNoTail || (
+                normalizedTransferNo ? normalizedTransferNo.slice(-10) : normalizedMerchantOrderNo.slice(-10)
+            );
+            if (!method || !paidAt || !normalizedTail) {
+                return res.status(400).json({
+                    message: 'method, paid_at and trade_no_tail, transfer_no or merchant_order_no are required'
+                });
+            }
+            if (!/^[\w-]{4,64}$/.test(String(normalizedTail))) {
+                return res.status(400).json({message: 'trade_no_tail format is invalid'});
+            }
+            if (normalizedTransferNo && !/^[\w-]{8,128}$/.test(normalizedTransferNo)) {
+                return res.status(400).json({message: 'transfer_no format is invalid'});
+            }
+            if (
+                normalizedMerchantOrderNo &&
+                !/^[\w-]{8,128}$/.test(normalizedMerchantOrderNo)
+            ) {
+                return res.status(400).json({message: 'merchant_order_no format is invalid'});
+            }
+            const paidAtDate = new Date(paidAt);
+            if (Number.isNaN(paidAtDate.getTime())) {
+                return res.status(400).json({message: 'paid_at format is invalid'});
+            }
+            let userNumericId = null;
+            if (!proofToken) {
+                const auth = await resolveAuth(req);
+                if (!auth) {
+                    return res.status(401).json({message: 'Unauthorized'});
+                }
+                userNumericId = auth.userNumericId;
+            }
+            attachmentMeta = await storeProofAttachment({
+                orderId: numericId,
+                attachment: proofAttachment
+            });
+            const order = await db.submitOrderPaymentProof({
+                orderId: numericId,
+                userId: userNumericId,
+                paymentProofTokenHash: proofToken ? hashPaymentProofToken(proofToken) : null,
+                method,
+                paidAt: paidAtDate.toISOString(),
+                amountCents: yuanToCents(amount),
+                currency: currency || process.env.ZHIMENG_PAYMENT_CURRENCY || 'CNY',
+                transferNo: normalizedTransferNo,
+                merchantOrderNo: normalizedMerchantOrderNo,
+                tradeNoTail: String(normalizedTail),
+                payerNote,
+                attachment: attachmentMeta
+            });
+            return res.json(toOrderPayload(order));
+        } catch (err) {
+            if (attachmentMeta && attachmentMeta.storageKey) {
+                await fs.promises.unlink(path.join(paymentProofStorageDir(), attachmentMeta.storageKey))
+                    .catch(() => {});
+            }
+            if (err.statusCode) {
+                return res.status(err.statusCode).json({message: err.message});
+            }
             return sendServerError(res, err);
         }
     });
@@ -378,6 +788,24 @@ const createApp = async () => {
         }
     });
 
+    app.get('/admin/orders', requireAdmin, async (req, res) => {
+        try {
+            const hasPaymentProof = isTruthyEnv(req.query.has_payment_proof);
+            const status = req.query.status ? String(req.query.status) : null;
+            const limit = req.query.limit ? Number(req.query.limit) : 50;
+            const orders = await db.listOrders({
+                status,
+                hasPaymentProof,
+                limit
+            });
+            return res.json({
+                orders: orders.map(toOrderPayload)
+            });
+        } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
     app.post('/admin/order/:id/manual-confirm', requireAdmin, async (req, res) => {
         try {
             const numericId = parseOrderId(req.params.id);
@@ -391,6 +819,11 @@ const createApp = async () => {
                 currency,
                 note
             } = req.body || {};
+            if (!providerTradeNo || typeof amountCents !== 'number' || !currency) {
+                return res.status(400).json({
+                    message: 'provider_trade_no, amount_cents and currency are required'
+                });
+            }
             const result = await db.fulfillOrderFromPayment({
                 orderId: numericId,
                 actor: operator || 'manual-admin',
@@ -429,6 +862,42 @@ const createApp = async () => {
             }
             return res.json(toOrderPayload(order));
         } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.get('/admin/order/:id/payment-proof-attachment/:attachmentId', requireAdmin, async (req, res) => {
+        try {
+            const numericId = parseOrderId(req.params.id);
+            if (!numericId) {
+                return res.status(400).json({message: 'Invalid order id'});
+            }
+            const order = await db.findOrderById(numericId);
+            if (!order) {
+                return res.status(404).json({message: 'Order not found'});
+            }
+            const proof = parseJsonValue(order.payment_proof_json);
+            const attachment = proof && proof.attachment;
+            if (!attachment || attachment.id !== req.params.attachmentId || !attachment.storageKey) {
+                return res.status(404).json({message: 'Payment proof attachment not found'});
+            }
+            const baseDir = path.resolve(paymentProofStorageDir());
+            const filePath = path.resolve(baseDir, attachment.storageKey);
+            if (!filePath.startsWith(`${baseDir}${path.sep}`)) {
+                return res.status(404).json({message: 'Payment proof attachment not found'});
+            }
+            await fs.promises.access(filePath, fs.constants.R_OK);
+            res.setHeader('Cache-Control', 'no-store');
+            res.setHeader(
+                'Content-Disposition',
+                `inline; filename="${encodeURIComponent(attachment.filename || 'payment-proof')}"`
+            );
+            res.type(attachment.mimeType || 'application/octet-stream');
+            return res.sendFile(filePath);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                return res.status(404).json({message: 'Payment proof attachment not found'});
+            }
             return sendServerError(res, err);
         }
     });

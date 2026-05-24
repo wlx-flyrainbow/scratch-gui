@@ -24,6 +24,9 @@ if (!fs.existsSync(envPath)) {
         if (process.env.ZHIMENG_MYSQL_DATABASE === undefined) {
             process.env.ZHIMENG_MYSQL_DATABASE = 'zhimeng';
         }
+        if (process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS === undefined) {
+            process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS = '1';
+        }
     }
     module.exports = {loaded: false, defaults: true};
 } else {

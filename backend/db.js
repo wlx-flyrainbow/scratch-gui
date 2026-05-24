@@ -125,6 +125,7 @@ const initSchema = async () => {
             paid_at DATETIME NULL,
             fulfilled_at DATETIME NULL,
             expires_at DATETIME NULL,
+            payment_proof_token_hash CHAR(64) NULL,
             audit_json JSON NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -139,6 +140,8 @@ const initSchema = async () => {
     await ensureColumn(p, 'orders', 'currency', 'currency VARCHAR(8) NULL');
     await ensureColumn(p, 'orders', 'fulfilled_at', 'fulfilled_at DATETIME NULL');
     await ensureColumn(p, 'orders', 'expires_at', 'expires_at DATETIME NULL');
+    await ensureColumn(p, 'orders', 'payment_proof_json', 'payment_proof_json JSON NULL');
+    await ensureColumn(p, 'orders', 'payment_proof_token_hash', 'CHAR(64) NULL');
     await ensureColumn(p, 'orders', 'audit_json', 'audit_json JSON NULL');
 };
 
@@ -165,6 +168,32 @@ const seedDemoUser = async () => {
          VALUES (?, 'active', 'family_yearly', ?, 3, ?)`,
         [userId, features, subExpires]
     );
+};
+
+const createUser = async ({username, passwordHash, nickname}) => {
+    const p = getPool();
+    const conn = await p.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [result] = await conn.query(
+            `INSERT INTO users (username, password_hash, nickname, permission_student, permission_educator)
+             VALUES (?, ?, ?, 1, 0)`,
+            [username, passwordHash, nickname || '']
+        );
+        const userId = result.insertId;
+        await conn.query(
+            `INSERT INTO entitlements (user_id, status, plan, features_json, device_limit, subscription_expires_at)
+             VALUES (?, 'inactive', '', ?, 3, NULL)`,
+            [userId, JSON.stringify([])]
+        );
+        await conn.commit();
+        return userId;
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
 };
 
 const findUserByUsername = async username => {
@@ -278,12 +307,32 @@ const unbindDevice = async (userId, deviceId) => {
     );
 };
 
-const createOrder = async ({userId, plan, channel, returnUrl}) => {
+const createOrder = async ({
+    userId,
+    plan,
+    channel,
+    returnUrl,
+    amountCents,
+    currency,
+    paymentProofTokenHash
+}) => {
     const p = getPool();
     const [result] = await p.query(
-        `INSERT INTO orders (user_id, plan, channel, provider, status, return_url)
-         VALUES (?, ?, ?, ?, 'created', ?)`,
-        [userId, plan, channel, channel, returnUrl || null]
+        `INSERT INTO orders (
+            user_id, plan, channel, provider, status, return_url,
+            amount_cents, currency, payment_proof_token_hash
+         )
+         VALUES (?, ?, ?, ?, 'created', ?, ?, ?, ?)`,
+        [
+            userId,
+            plan,
+            channel,
+            channel,
+            returnUrl || null,
+            typeof amountCents === 'number' ? amountCents : null,
+            currency || null,
+            paymentProofTokenHash || null
+        ]
     );
     return result.insertId;
 };
@@ -292,7 +341,7 @@ const findOrderById = async orderId => {
     const p = getPool();
     const [rows] = await p.query(
         `SELECT id, user_id, plan, channel, provider, provider_trade_no, amount_cents, currency,
-                status, return_url, paid_at, fulfilled_at, expires_at, audit_json
+                status, return_url, paid_at, fulfilled_at, expires_at, payment_proof_json, audit_json
          FROM orders WHERE id = ? LIMIT 1`,
         [orderId]
     );
@@ -303,11 +352,51 @@ const listOrdersByUser = async userId => {
     const p = getPool();
     const [rows] = await p.query(
         `SELECT id, user_id, plan, channel, provider, provider_trade_no, amount_cents, currency,
-                status, return_url, paid_at, fulfilled_at, expires_at, audit_json
+                status, return_url, paid_at, fulfilled_at, expires_at, payment_proof_json, audit_json
          FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`,
         [userId]
     );
     return rows;
+};
+
+const listOrders = async ({status, hasPaymentProof, limit} = {}) => {
+    const p = getPool();
+    const where = [];
+    const params = [];
+    if (status) {
+        where.push('status = ?');
+        params.push(status);
+    }
+    if (hasPaymentProof) {
+        where.push('payment_proof_json IS NOT NULL');
+    }
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 200));
+    const sql = `
+        SELECT o.id, o.user_id, u.username, u.nickname, o.plan, o.channel, o.provider,
+               o.provider_trade_no, o.amount_cents, o.currency, o.status, o.return_url,
+               o.paid_at, o.fulfilled_at, o.expires_at, o.payment_proof_json, o.audit_json
+        FROM orders o
+        LEFT JOIN users u ON u.id = o.user_id
+        ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+        ORDER BY o.created_at DESC
+        LIMIT ${safeLimit}
+    `;
+    const [rows] = await p.query(sql, params);
+    return rows;
+};
+
+const findOrderByPaymentProofToken = async ({orderId, paymentProofTokenHash}) => {
+    const p = getPool();
+    const [rows] = await p.query(
+        `SELECT id, user_id, plan, channel, provider, provider_trade_no, amount_cents, currency,
+                status, return_url, paid_at, fulfilled_at, expires_at, payment_proof_json, audit_json
+         FROM orders
+         WHERE id = ?
+           AND payment_proof_token_hash = ?
+         LIMIT 1`,
+        [orderId, paymentProofTokenHash]
+    );
+    return rows[0] || null;
 };
 
 const markOrderPaid = async orderId => {
@@ -318,6 +407,58 @@ const markOrderPaid = async orderId => {
          WHERE id = ?`,
         [orderId]
     );
+};
+
+const submitOrderPaymentProof = async ({
+    orderId,
+    userId,
+    paymentProofTokenHash,
+    method,
+    paidAt,
+    amountCents,
+    currency,
+    transferNo,
+    merchantOrderNo,
+    tradeNoTail,
+    payerNote,
+    attachment
+}) => {
+    const p = getPool();
+    let order = null;
+    if (paymentProofTokenHash) {
+        order = await findOrderByPaymentProofToken({orderId, paymentProofTokenHash});
+    } else if (userId) {
+        order = await findOrderById(orderId);
+    }
+    if (!order || (userId && Number(order.user_id) !== Number(userId))) {
+        const err = new Error('Order not found');
+        err.statusCode = 404;
+        throw err;
+    }
+    if (order.status !== ORDER_STATUS.CREATED) {
+        const err = new Error('Payment proof can only be submitted for created orders');
+        err.statusCode = 409;
+        throw err;
+    }
+    const proof = {
+        method,
+        paidAt,
+        amountCents: typeof amountCents === 'number' ? amountCents : null,
+        currency: currency || null,
+        transferNo: transferNo || '',
+        merchantOrderNo: merchantOrderNo || '',
+        tradeNoTail,
+        payerNote: payerNote || '',
+        attachment: attachment || null,
+        submittedAt: new Date().toISOString()
+    };
+    await p.query(
+        `UPDATE orders
+         SET payment_proof_json = ?
+         WHERE id = ?`,
+        [JSON.stringify(proof), orderId]
+    );
+    return findOrderById(orderId);
 };
 
 const activateEntitlementWithConnection = async (conn, userId, plan) => {
@@ -355,7 +496,7 @@ const fulfillOrderFromPayment = async ({
         await conn.beginTransaction();
         const [rows] = await conn.query(
             `SELECT id, user_id, plan, channel, provider, provider_trade_no, amount_cents, currency,
-                    status, return_url, paid_at, fulfilled_at, expires_at, audit_json
+                    status, return_url, paid_at, fulfilled_at, expires_at, payment_proof_json, audit_json
              FROM orders WHERE id = ? LIMIT 1 FOR UPDATE`,
             [orderId]
         );
@@ -363,6 +504,20 @@ const fulfillOrderFromPayment = async ({
         if (!order) {
             const err = new Error('Order not found');
             err.statusCode = 404;
+            throw err;
+        }
+        if (
+            typeof amountCents === 'number' &&
+            typeof order.amount_cents === 'number' &&
+            order.amount_cents !== amountCents
+        ) {
+            const err = new Error('Payment amount does not match order amount');
+            err.statusCode = 409;
+            throw err;
+        }
+        if (currency && order.currency && currency !== order.currency) {
+            const err = new Error('Payment currency does not match order currency');
+            err.statusCode = 409;
             throw err;
         }
         if (providerTradeNo) {
@@ -379,6 +534,15 @@ const fulfillOrderFromPayment = async ({
             }
         }
         if (order.status === ORDER_STATUS.FULFILLED) {
+            if (
+                providerTradeNo &&
+                order.provider_trade_no &&
+                providerTradeNo !== order.provider_trade_no
+            ) {
+                const err = new Error('Provider trade number does not match fulfilled order');
+                err.statusCode = 409;
+                throw err;
+            }
             await conn.commit();
             return {
                 order,
@@ -440,6 +604,7 @@ module.exports = {
     ping,
     initSchema,
     seedDemoUser,
+    createUser,
     findUserByUsername,
     findUserById,
     listDevices,
@@ -452,7 +617,10 @@ module.exports = {
     createOrder,
     findOrderById,
     listOrdersByUser,
+    listOrders,
+    findOrderByPaymentProofToken,
     markOrderPaid,
+    submitOrderPaymentProof,
     activateEntitlementFromOrder,
     fulfillOrderFromPayment,
     bcrypt
