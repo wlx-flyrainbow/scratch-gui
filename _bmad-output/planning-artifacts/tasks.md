@@ -19,10 +19,11 @@
 - [x] 确认下载页和客户端帮助菜单都指向当前版本对应源码。
 - [x] 检查 AGPL 说明文档与下载页页脚一致。
 - [x] 将 `README.md` 中仍明显指向上游 Scratch 的首屏说明补充知萌开发/发布入口，避免交付文档割裂。
-- [ ] 在国家知识产权局商标局/中国商标网完成“知萌”文字商标近似检索，重点检索第 9/41/42 类。
+- [x] 在国家知识产权公共服务平台商标数据中完成“知萌”文字商标检索，重点检索第 9/41/42 类。
 - [x] 建立商标检索准备清单：知萌、知萌编程、ZHIMENG、zhimeng、智萌、芝萌、萌知等检索词，以及第 9/41/42 类首批申请建议。
 - [x] 完成公开网页商标风险初筛并归档：北京知萌咨询、知萌辰、智萌、智萌体、知 ME、技萌等线索需要官方复核。
-- [ ] 首批真实售卖前提交“知萌”文字商标申请，优先覆盖第 9 类软件、第 41 类教育培训、第 42 类软件服务。
+- [x] 基于实查结果确认：“知萌”在第 9/41/42 类均为高风险，不建议直接提交原计划商标申请。
+- [ ] 首批真实售卖前完成主品牌改名决策，并提交新主品牌文字商标申请，优先覆盖第 9 类软件、第 41 类教育培训、第 42 类软件服务。
 - [ ] 视觉资产稳定后评估 Logo/图形商标申请；第 35 类、第 16 类按营销和纸质资料业务进展扩展。
 - [x] 建立知萌品牌资产清单：Logo、应用图标、官网 favicon、主色、定位语、源码披露链接、客服/支付文案。
 - [x] 建立品牌使用规则：对外产品名统一为“知萌”，Scratch 只用于开源合规和必要技术说明，不作为售卖品牌。
@@ -98,8 +99,9 @@ Acceptance:
 - [x] 新增本地下载清单 `website/releases.local.json` 生成流程，下载页本地验收时优先读取本机 `dist/` 产物。
 - [x] 真库验收覆盖 inactive 用户创建订单、提交付款凭证、人工确认、刷新授权 active。
 - [x] 本地 macOS 与 Windows 打包后检查安装包名称、架构、DMG 校验、下载页按钮和源码链接。
+- [x] 新增签名/公证发布闸门 `npm run release:check-signing`，正式公开分发必须设置 `ZHIMENG_REQUIRE_CODE_SIGNING=1`。
 - [ ] 生产 macOS 包完成 Developer ID 签名、timestamp、公证；Windows 包完成正式代码签名。
-- [ ] 上传正式安装包到 `https://zhimeng.codevalley.cn/downloads/` 并验证四个下载 URL 可访问。
+- [x] 上传正式安装包到 `https://zhimeng.codevalley.cn/downloads/` 并验证四个下载 URL 可访问。
 
 Acceptance:
 
@@ -111,6 +113,13 @@ Acceptance:
 - `npm run dist:desktop:local` 可在本机生成 macOS Apple 芯片版、macOS Intel 芯片版、Windows x64 安装版与便携版，并可通过 `npm run release:update-local-downloads` 接入本地下载页。
 - 目标验收报告不会因 nginx 默认页返回 200 而误判 PASS。
 - 真实下载页和 macOS / Windows 客户端安装包可交付。
+
+2026-05-25 验收记录：
+
+- `website/releases.json` 中 Windows 安装版、Windows 便携版、macOS Apple 芯片版、macOS Intel 芯片版四个 URL 均返回 HTTP 200。
+- 微信、支付宝收款码 URL 均返回 HTTP 200。
+- `npm run release:check` 在生产模板变量加临时高强度 admin token 下通过。
+- `node scripts/verify-zhimeng-public-release.js` 通过，确认 `https://zhimeng.codevalley.cn @ 1.0.0` 可作为公开下载页。
 
 ## Milestone 5: 后续云能力
 

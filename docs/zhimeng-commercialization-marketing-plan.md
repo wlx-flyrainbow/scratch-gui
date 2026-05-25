@@ -17,9 +17,11 @@
 
 当前产品已经具备售卖闭环基础：账号注册/登录、未付费锁定体验、客户端订阅中心、微信/支付宝二维码、付款凭证、运营人工确认、客户端下载页和本地打包链路。
 
-当前最大短板不是主链路工程能力，而是“卖点、信任、转化、交付承诺”还没有围绕赚钱目标收口。
+当前最大短板不是主链路工程能力，而是“卖点、信任、转化、交付承诺和首次创作成功”还没有围绕赚钱目标收口。
 
 战略判断详见：`docs/zhimeng-strategy-survival-space.md`。核心结论是：知萌不应定位为“收费版 Scratch”，而应先成为“中国家庭低成本少儿编程启蒙产品”，再逐步升级为“AI 辅导 + 项目化创作 + 家长可见成长”的长期产品。
+
+2026 年 100 万营收/利润目标的测算、成本结构、套餐升级、月度路径和渠道拆解见：`docs/zhimeng-2026-revenue-1m-plan.md`。核心判断是：营收 100 万不等于利润 100 万；如果目标是经营利润 100 万，需要形成“年卡引流 + 699/1299 元结果型产品赚钱 + 4999 元渠道/机构启动包放量”的收入结构。
 
 ## 2. 产品方案 Review
 
@@ -35,6 +37,7 @@
 - 家长可以用较低成本验证孩子是否适合少儿编程。
 - 桌面客户端专注创作，不依赖复杂网页环境。
 - 账号授权可控，便于后续订阅、设备限制和能力扩展。
+- 首次打开后有明确的新手作品入口，降低孩子不知道从哪开始的流失。
 
 ### 2.2 当前不应宣传的能力
 
@@ -64,12 +67,14 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 
 结论：有必要做，且应作为发布前并行任务推进。
 
-商标检索与首批申请准备见：`docs/zhimeng-trademark-search-prep.md`。
+商标检索与首批申请准备见：`docs/zhimeng-trademark-search-prep.md`。2026-05-25 实查结论见：`docs/zhimeng-trademark-official-search-2026-05-25.md`。
+
+重要调整：不再建议直接申请“知萌”文字商标第 9/41/42 类。实查显示该名称在软件、教育培训、软件服务三个核心类别均存在高风险既有商标。正式售卖前应完成品牌改名决策，否则后续投放、下载包、收款、客服和用户口碑都会沉淀在一个不可控品牌上。
 
 注册节奏：
 
-- 立即做“知萌”文字商标近似检索，优先检索第 9 类、第 41 类、第 42 类。
-- 首批真实售卖前提交“知萌”文字商标申请；文字商标优先于 Logo，因为 Logo 后续可能调整。
+- 已完成“知萌”文字商标第 9/41/42 类检索，结论为高风险。
+- 首批真实售卖前应先确定新主品牌并提交第 9/41/42 类文字商标申请；文字商标优先于 Logo，因为 Logo 后续可能调整。
 - 当前 Logo、应用图标、官网视觉稳定后，再补充 Logo/图形商标申请。
 - 有稳定营收或渠道扩展后，再评估第 35 类、第 16 类扩展保护。
 
@@ -215,6 +220,7 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 - 多久能开通？
 - 不适合谁？
 - 遇到问题找谁？
+- 孩子第一次打开后可以做出什么？
 
 ## 4. 产品与转化优化优先级
 
@@ -233,10 +239,10 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 ### P1：首批种子用户后优化
 
 - 官网增加孩子作品案例。
-- 新增 5-10 个新手项目模板，降低孩子打开软件后不知道做什么的流失。
+- 新增 5-10 个新手项目模板，降低孩子打开软件后不知道做什么的流失。当前已先落地 3 个 starter projects 入口，详见 `docs/zhimeng-starter-projects-retention.md`。
 - 锁定页增加更清晰的价格与开通说明。
 - 订阅中心继续压缩付款和凭证提交步骤，让一屏完成。
-- 运营确认后提供用户通知或客服提醒模板。
+- 运营确认后提供用户通知或客服提醒模板。当前已在 `website/ops.html` 提供已开通提醒、首次创作跟进和反馈收集话术。
 - 收集用户反馈，沉淀 3-5 个真实创作案例和家长评价。
 
 ### P2：验证付费后扩展
@@ -290,6 +296,8 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 - 是否提交凭证。
 - 是否开通。
 - 是否完成第一个作品。
+- 第一个作品类型。
+- 孩子是否愿意继续尝试。
 - 主要阻塞。
 - 反馈摘要。
 
@@ -297,12 +305,13 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 
 - [x] 官网首屏能在 5 秒内说明产品、适龄、价格和下载入口。
 - [x] 官网提供 30 秒演示视频入口和首批种子用户转化区。
+- [x] 官网说明孩子第一次打开后可以做出的 3 个 starter projects。
 - [x] 官网套餐区展示 29 元/月、199 元/年、299 元/2 年，并突出 199 元年卡为推荐套餐。
-- [ ] 官网下载链接全部是真实可用地址。
+- [x] 官网下载链接全部是真实可用地址。
 - [x] 官网不把云保存、分享、社区、背包写成已上线权益。
 - [ ] 客户端锁定页能清楚说明未开通原因和订阅入口。
 - [ ] 订阅中心显示家庭年卡 199 元。
-- [ ] 微信和支付宝二维码均使用真实收款码。
+- [x] 微信和支付宝二维码均使用真实收款码。
 - [x] 提交付款凭证后不会自动解锁。
 - [x] 运营确认后刷新授权可进入完整编辑器。
 - [x] 客服 FAQ 已准备。
@@ -312,7 +321,11 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 - [x] 演示视频脚本与分镜已准备。
 - [x] 演示视频成片已准备。
 - [x] 种子用户跟进表已准备。
+- [x] 客户端解锁后提供“从第一个作品开始”的轻量入口。
+- [x] 运营台提供付款后和首次创作跟进话术。
 - [x] `npm run release:check` 通过。
+- [x] 已新增 `npm run release:check-signing` 签名/公证闸门；正式公开分发时必须设置 `ZHIMENG_REQUIRE_CODE_SIGNING=1`。
+- [ ] 生产 macOS 包完成 Developer ID 签名与公证，Windows 包完成正式代码签名。
 - [x] `npm run test:zhimeng-purchase-flow` 通过。
 - [x] `npm run test:zhimeng-purchase-flow:realdb` 通过。
 - [x] `npm run test:zhimeng-new-user-flow:realdb` 通过。
@@ -325,9 +338,24 @@ PRD 已明确：云保存、作品分享、社区、背包属于后续云能力�
 - 订阅中心布局验收通过：`_bmad-output/test-reports/zhimeng-billing-layout-2026-05-24T15-06-56-025Z.json`。
 - 发布环境检查通过：使用 `deploy/env/zhimeng-prod.env.example` 作为生产模板，并用高强度 `ZHIMENG_ADMIN_TOKEN` 覆盖示例占位后执行 `npm run release:check`。
 - `website/releases.json` 已从 `YOUR-CDN.example` 占位切换为 `https://zhimeng.codevalley.cn/downloads/` 下的 macOS Apple 芯片、macOS Intel、Windows 安装版、Windows 便携版下载路径。
-- 下载链接尚未标记完成：本机 `curl -I` 探测 `https://zhimeng.codevalley.cn/downloads/zhimeng-setup-1.0.0.exe` 直连失败，需在服务器完成静态站部署、安装包上传和 HTTPS 可访问验证后再关闭该项。
+- 下载链接历史阻塞已关闭：2026-05-25 重新探测 `https://zhimeng.codevalley.cn/downloads/` 下四个正式安装包均返回 HTTP 200，且 `node scripts/verify-zhimeng-public-release.js` 通过。
 
-### 6.2 2026-05-24 官网首发转化页验收记录
+### 6.2 2026-05-25 真实首发交付闸门验收记录
+
+- `website/releases.json` 四个正式下载链接均可访问：
+  - Windows 安装版：`zhimeng-setup-1.0.0.exe`，HTTP 200，约 251 MB。
+  - Windows 便携版：`zhimeng-portable-1.0.0.exe`，HTTP 200，约 251 MB。
+  - macOS Apple 芯片版：`zhimeng-mac-arm64-1.0.0.dmg`，HTTP 200，约 307 MB。
+  - macOS Intel 芯片版：`zhimeng-mac-x64-1.0.0.dmg`，HTTP 200，约 312 MB。
+- 真实收款码链接可访问：
+  - 微信收款码：`https://zhimeng.codevalley.cn/assets/siang_wxpay_qrcode.jpg`，HTTP 200。
+  - 支付宝收款码：`https://zhimeng.codevalley.cn/assets/siang_alipay_qrcode.jpg`，HTTP 200。
+- 生产环境模板 `deploy/env/zhimeng-prod.env.example` 保持家庭年卡 `ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS=19900`。
+- 测试环境模板 `deploy/env/zhimeng-test.env.example` 保持 `ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS=1`，用于 0.01 元测试。
+- 使用生产模板和临时高强度 `ZHIMENG_ADMIN_TOKEN` 执行 `npm run release:check` 通过。
+- `node scripts/verify-zhimeng-public-release.js` 通过：`https://zhimeng.codevalley.cn @ 1.0.0`。
+
+### 6.3 2026-05-24 官网首发转化页验收记录
 
 - 官网已加入首批种子用户转化区：说明适合人群、首发价格、下载入口和视频入口。
 - 官网已加入 30 秒演示视频区：`website/assets/videos/zhimeng-demo-30s.mp4` 可从 `website/index.html#demo-video` 加载。
