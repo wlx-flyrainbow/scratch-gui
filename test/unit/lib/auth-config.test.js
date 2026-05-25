@@ -1,5 +1,6 @@
 describe('auth config', () => {
     const originalLeaseDays = process.env.ZHIMENG_LEASE_DAYS;
+    const originalProjectHost = process.env.ZHIMENG_PROJECT_HOST;
 
     afterEach(() => {
         jest.resetModules();
@@ -7,6 +8,11 @@ describe('auth config', () => {
             delete process.env.ZHIMENG_LEASE_DAYS;
         } else {
             process.env.ZHIMENG_LEASE_DAYS = originalLeaseDays;
+        }
+        if (typeof originalProjectHost === 'undefined') {
+            delete process.env.ZHIMENG_PROJECT_HOST;
+        } else {
+            process.env.ZHIMENG_PROJECT_HOST = originalProjectHost;
         }
     });
 
@@ -34,5 +40,10 @@ describe('auth config', () => {
     it('uses configured positive ZHIMENG_LEASE_DAYS value', () => {
         process.env.ZHIMENG_LEASE_DAYS = '14';
         expect(loadConfig().leaseDays).toBe(14);
+    });
+
+    it('trims configured ZHIMENG_PROJECT_HOST value', () => {
+        process.env.ZHIMENG_PROJECT_HOST = ' https://projects.zhimeng.example.com ';
+        expect(loadConfig().projectHost).toBe('https://projects.zhimeng.example.com');
     });
 });

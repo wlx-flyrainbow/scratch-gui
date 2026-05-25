@@ -12,6 +12,7 @@ const authConfig = {
     registerUrl: (process.env.ZHIMENG_REGISTER_URL || '').trim(),
     leaseDays: asNumber(process.env.ZHIMENG_LEASE_DAYS, 7),
     cloudHost: (process.env.ZHIMENG_CLOUD_HOST || '').trim(),
+    projectHost: (process.env.ZHIMENG_PROJECT_HOST || '').trim(),
     /** Backpack API root (no trailing slash); optional — URL ?backpack_host= still works in playground */
     backpackHost: (process.env.ZHIMENG_BACKPACK_HOST || '').trim(),
     appVersion: process.env.npm_package_version || 'dev'

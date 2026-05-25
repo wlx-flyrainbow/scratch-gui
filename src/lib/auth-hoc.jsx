@@ -23,6 +23,23 @@ const hasFeature = (entitlement, feature) => {
     return Array.isArray(features) && features.includes(feature);
 };
 
+const resolveAuthCapabilities = ({entitlement, user, cloudHost, projectHost}) => {
+    const hasSession = Boolean(user);
+    const active = Boolean(entitlement && entitlement.status === 'active');
+    const leaseValid = isLeaseValid(entitlement);
+    const entitlementAllowsCloudSave = hasSession && active && leaseValid && hasFeature(entitlement, 'cloud_save');
+    const cloudSaveEnabled = entitlementAllowsCloudSave && Boolean(projectHost);
+    const cloudDataEnabled = entitlementAllowsCloudSave && Boolean(cloudHost);
+
+    return {
+        active,
+        cloudDataEnabled,
+        cloudSaveEnabled,
+        hasSession,
+        leaseValid
+    };
+};
+
 const isOrderFulfilled = order => order && order.status === 'fulfilled';
 
 const AuthHOC = WrappedComponent => {
@@ -367,17 +384,24 @@ const AuthHOC = WrappedComponent => {
             } = this.props;
             const user = this.props.session && this.props.session.user;
             const entitlement = this.props.entitlement;
-            const hasSession = Boolean(user);
-            const active = Boolean(entitlement && entitlement.status === 'active');
-            const leaseValid = isLeaseValid(entitlement);
-            // Cloud features need active entitlement + valid offline lease; see zhimeng-auth-entitlement-design.md.
-            const cloudEnabled =
-                hasSession && active && leaseValid && hasFeature(entitlement, 'cloud_save');
-            const communityEnabled = cloudEnabled && hasFeature(entitlement, 'community');
-            const shareEnabled = cloudEnabled && hasFeature(entitlement, 'share');
+            const cloudHostResolved = authConfig.cloudHost || this.props.cloudHost || null;
+            const projectHostResolved = authConfig.projectHost || this.props.projectHost || null;
+            const {
+                active,
+                cloudDataEnabled,
+                cloudSaveEnabled,
+                hasSession,
+                leaseValid
+            } = resolveAuthCapabilities({
+                cloudHost: cloudHostResolved,
+                entitlement,
+                projectHost: projectHostResolved,
+                user
+            });
+            const communityEnabled = cloudSaveEnabled && hasFeature(entitlement, 'community');
+            const shareEnabled = cloudSaveEnabled && hasFeature(entitlement, 'share');
             const backpackAllowed =
                 hasSession && active && leaseValid && hasFeature(entitlement, 'backpack');
-            const cloudHostResolved = authConfig.cloudHost || this.props.cloudHost || null;
             const mergedBackpackHost =
                 authConfig.backpackHost || this.props.backpackHost || null;
             const urlBackpackSelfTest =
@@ -400,7 +424,7 @@ const AuthHOC = WrappedComponent => {
                 authNotice = '当前订阅未生效或已到期，付款后需人工确认再刷新授权';
             } else {
                 authStatus = 'signedOut';
-                authNotice = '登录知萌账号后可解锁云保存、分享与社区能力';
+                authNotice = '登录并订阅后可进入完整编程编辑器';
             }
 
             if (!this.state.isReady) return null;
@@ -410,13 +434,13 @@ const AuthHOC = WrappedComponent => {
                     {...componentProps}
                     backpackHost={mergedBackpackHost}
                     backpackVisible={backpackVisibleResolved}
-                    canCreateNew={cloudEnabled}
-                    canSave={cloudEnabled}
+                    canCreateNew={cloudSaveEnabled}
+                    canSave={cloudSaveEnabled}
                     canShare={shareEnabled}
                     cloudHost={cloudHostResolved}
                     enableCommunity={communityEnabled}
-                    hasCloudPermission={cloudEnabled}
-                    showComingSoon={!cloudEnabled}
+                    hasCloudPermission={cloudDataEnabled}
+                    showComingSoon={!cloudSaveEnabled}
                     onLogOut={this.handleLogout}
                     onOpenBilling={this.handleOpenBilling}
                     onRefreshEntitlement={this.handleRefreshEntitlementForUi}
@@ -457,6 +481,7 @@ const AuthHOC = WrappedComponent => {
         onSetEntitlement: PropTypes.func.isRequired,
         onSetPermissions: PropTypes.func.isRequired,
         onSetSession: PropTypes.func.isRequired,
+        projectHost: PropTypes.string,
         session: PropTypes.object
     };
 
@@ -476,3 +501,4 @@ const AuthHOC = WrappedComponent => {
 };
 
 export default AuthHOC;
+export {resolveAuthCapabilities};
