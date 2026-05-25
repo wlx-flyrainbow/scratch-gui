@@ -38,6 +38,24 @@ describe('GUIComponent', () => {
         vm: new VM()
     };
 
+    beforeEach(() => {
+        if (!window.localStorage) {
+            let storage = {};
+            Object.defineProperty(window, 'localStorage', {
+                value: {
+                    clear: () => {
+                        storage = {};
+                    },
+                    getItem: key => storage[key] || null,
+                    setItem: (key, value) => {
+                        storage[key] = value;
+                    }
+                }
+            });
+        }
+        window.localStorage.clear();
+    });
+
     test('shows locked experience instead of editor when app is not unlocked', () => {
         const component = mountWithIntl(
             <GUIComponent
@@ -121,5 +139,36 @@ describe('GUIComponent', () => {
 
         expect(component.text()).toContain('订单已确认，授权刷新后将自动进入完整编辑器。');
         expect(component.text()).not.toContain('付款凭证已提交，等待运营核对到账后开通授权。');
+    });
+
+    test('opens specific starter project tutorials and records completion locally', () => {
+        const onOpenStarterProject = jest.fn();
+        const component = mountWithIntl(
+            <GUIComponent
+                {...baseProps}
+                blocksTabVisible
+                isAppUnlocked
+                onOpenStarterProject={onOpenStarterProject}
+                theme="default"
+            />
+        );
+
+        expect(component.text()).toContain('会说话的小角色');
+        expect(component.text()).toContain('生日祝福动画');
+        expect(component.text()).toContain('接水果小游戏');
+
+        component.find('button').filterWhere(button => (
+            button.text().includes('会说话的小角色')
+        )).first().simulate('click');
+
+        expect(onOpenStarterProject).toHaveBeenCalledWith('talking_character');
+
+        component.find('button').filterWhere(button => (
+            button.text() === '完成了'
+        )).first().simulate('click');
+        component.update();
+
+        expect(component.text()).toContain('已完成 1/3 个');
+        expect(window.localStorage.getItem('zhimengStarterProjectProgress')).toContain('talking_character');
     });
 });

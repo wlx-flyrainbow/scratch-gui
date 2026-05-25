@@ -75,20 +75,15 @@
 }
 
 .starter-guide-item {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-        "num title"
-        "num desc";
-    gap: 0.08rem 0.45rem;
+    display: flex;
+    align-items: stretch;
+    gap: 0.35rem;
     min-width: 0;
     border: 1px solid $ui-black-transparent;
     border-radius: 6px;
-    padding: 0.45rem 0.55rem;
+    padding: 0.25rem;
     background: $ui-white;
     color: $text-primary;
-    text-align: left;
-    cursor: pointer;
 }
 
 .starter-guide-item:hover {
@@ -96,7 +91,24 @@
     background: #fff;
 }
 
-.starter-guide-item span {
+.starter-guide-launch {
+    display: grid;
+    flex: 1;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "num title time"
+        "num desc desc";
+    gap: 0.08rem 0.45rem;
+    min-width: 0;
+    border: 0;
+    padding: 0.2rem 0.25rem;
+    background: transparent;
+    color: $text-primary;
+    text-align: left;
+    cursor: pointer;
+}
+
+.starter-guide-launch span {
     grid-area: num;
     align-self: center;
     color: $looks-secondary;
@@ -104,7 +116,7 @@
     font-weight: 700;
 }
 
-.starter-guide-item strong {
+.starter-guide-launch strong {
     grid-area: title;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -112,7 +124,7 @@
     font-size: 0.82rem;
 }
 
-.starter-guide-item em {
+.starter-guide-launch em {
     grid-area: desc;
     overflow: hidden;
     color: $text-primary-transparent;
@@ -122,8 +134,57 @@
     white-space: nowrap;
 }
 
+.starter-guide-launch small {
+    grid-area: time;
+    align-self: center;
+    color: $text-primary-transparent;
+    font-size: 0.68rem;
+    white-space: nowrap;
+}
+
+.starter-guide-complete {
+    flex: 0 0 auto;
+    align-self: center;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 4px;
+    padding: 0.28rem 0.4rem;
+    background: #f4fff7;
+    color: $looks-secondary;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.starter-guide-complete:disabled {
+    border-color: rgba(52, 168, 83, 0.35);
+    background: #ecfff1;
+    color: #248344;
+    cursor: default;
+}
+
+.is-starter-completed {
+    border-color: rgba(52, 168, 83, 0.45);
+    background: #fbfffc;
+}
+
+.starter-guide-achievement {
+    margin: -0.25rem 0.75rem 0.6rem;
+    border: 1px solid rgba(52, 168, 83, 0.28);
+    border-radius: 6px;
+    padding: 0.38rem 0.55rem;
+    background: #f4fff7;
+    color: #248344;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-align: center;
+}
+
 .starter-guide[open] + .flex-wrapper {
-    height: calc(100% - 4.95rem);
+    height: calc(100% - 5.4rem);
+}
+
+.starter-guide.has-starter-achievement[open] + .flex-wrapper {
+    height: calc(100% - 7.25rem);
 }
 
 .starter-guide:not([open]) + .flex-wrapper {

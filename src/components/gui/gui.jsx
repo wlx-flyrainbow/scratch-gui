@@ -35,6 +35,7 @@ import TelemetryModal from '../telemetry-modal/telemetry-modal.jsx';
 import layout, {STAGE_SIZE_MODES} from '../../lib/layout-constants';
 import {resolveStageSize} from '../../lib/screen-utils';
 import {themeMap} from '../../lib/themes';
+import zhimengStarterProjects from '../../lib/zhimeng-starter-projects';
 
 import styles from './gui.css';
 import addExtensionIcon from './icon--extensions.svg';
@@ -131,6 +132,26 @@ const localDateTimeToIso = value => {
     return new Date(value).toISOString();
 };
 
+const starterProgressStorageKey = 'zhimengStarterProjectProgress';
+
+const loadStarterProgress = () => {
+    if (typeof window === 'undefined' || !window.localStorage) return {};
+    try {
+        return JSON.parse(window.localStorage.getItem(starterProgressStorageKey)) || {};
+    } catch (e) {
+        return {};
+    }
+};
+
+const saveStarterProgress = progress => {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+        window.localStorage.setItem(starterProgressStorageKey, JSON.stringify(progress));
+    } catch (e) {
+        // Ignore storage failures; the starter entry should still open.
+    }
+};
+
 // Cache this value to only retrieve it once the first time.
 // Assume that it doesn't change for a session.
 let isRendererSupported = null;
@@ -200,7 +221,7 @@ const GUIComponent = props => {
         onOpenBilling,
         onOpenExternalBilling,
         onOpenLogin,
-        onOpenTipsLibrary,
+        onOpenStarterProject,
         onPaymentMethodChange,
         onRefreshBillingOrder,
         onRefreshEntitlement,
@@ -244,6 +265,48 @@ const GUIComponent = props => {
         tabPanel: classNames(tabStyles.reactTabsTabPanel, styles.tabPanel),
         tabPanelSelected: classNames(tabStyles.reactTabsTabPanelSelected, styles.isSelected),
         tabSelected: classNames(tabStyles.reactTabsTabSelected, styles.isSelected)
+    };
+
+    const [starterProgress, setStarterProgress] = React.useState(loadStarterProgress);
+    const completedStarterCount = zhimengStarterProjects.filter(project => (
+        starterProgress[project.id] && starterProgress[project.id].completed
+    )).length;
+
+    const updateStarterProgress = (project, patch) => {
+        const nextProgress = Object.assign({}, starterProgress, {
+            [project.id]: Object.assign({}, starterProgress[project.id], patch)
+        });
+        setStarterProgress(nextProgress);
+        saveStarterProgress(nextProgress);
+    };
+
+    const getStarterProjectFromEvent = event => (
+        zhimengStarterProjects.find(project => (
+            project.id === event.currentTarget.getAttribute('data-project-id')
+        ))
+    );
+
+    const handleOpenStarterProject = event => {
+        const project = getStarterProjectFromEvent(event);
+        if (!project) return;
+        updateStarterProgress(project, {
+            started: true,
+            startedAt: (
+                starterProgress[project.id] &&
+                starterProgress[project.id].startedAt
+            ) || new Date().toISOString()
+        });
+        onOpenStarterProject(project.id);
+    };
+
+    const handleCompleteStarterProject = event => {
+        const project = getStarterProjectFromEvent(event);
+        if (!project) return;
+        updateStarterProgress(project, {
+            completed: true,
+            completedAt: new Date().toISOString(),
+            title: project.title
+        });
     };
 
     const handlePaymentProofSubmit = event => {
@@ -717,42 +780,62 @@ const GUIComponent = props => {
                 {isAppUnlocked ? (
                     <Box className={styles.bodyWrapper}>
                         <details
-                            className={styles.starterGuide}
+                            className={classNames(
+                                styles.starterGuide,
+                                completedStarterCount > 0 && styles.hasStarterAchievement
+                            )}
                             open
                         >
                             <summary>
                                 <span>{'从第一个作品开始'}</span>
-                                <strong>{'适合孩子第一次打开知萌'}</strong>
+                                <strong>
+                                    {completedStarterCount > 0 ?
+                                        `已完成 ${completedStarterCount}/3 个` :
+                                        '适合孩子第一次打开知萌'}
+                                </strong>
                             </summary>
                             <div className={styles.starterGuideContent}>
-                                <button
-                                    className={styles.starterGuideItem}
-                                    type="button"
-                                    onClick={onOpenTipsLibrary}
-                                >
-                                    <span>{'01'}</span>
-                                    <strong>{'会说话的小角色'}</strong>
-                                    <em>{'先让角色动起来，说一句话'}</em>
-                                </button>
-                                <button
-                                    className={styles.starterGuideItem}
-                                    type="button"
-                                    onClick={onOpenTipsLibrary}
-                                >
-                                    <span>{'02'}</span>
-                                    <strong>{'生日祝福动画'}</strong>
-                                    <em>{'换背景、加角色、做表达'}</em>
-                                </button>
-                                <button
-                                    className={styles.starterGuideItem}
-                                    type="button"
-                                    onClick={onOpenTipsLibrary}
-                                >
-                                    <span>{'03'}</span>
-                                    <strong>{'接水果小游戏'}</strong>
-                                    <em>{'第一次理解规则和互动'}</em>
-                                </button>
+                                {zhimengStarterProjects.map(project => {
+                                    const progress = starterProgress[project.id] || {};
+                                    return (
+                                        <div
+                                            className={classNames(
+                                                styles.starterGuideItem,
+                                                progress.completed && styles.isStarterCompleted
+                                            )}
+                                            key={project.id}
+                                        >
+                                            <button
+                                                className={styles.starterGuideLaunch}
+                                                data-project-id={project.id}
+                                                type="button"
+                                                onClick={handleOpenStarterProject} // eslint-disable-line
+                                            >
+                                                <span>{project.number}</span>
+                                                <strong>{project.title}</strong>
+                                                <em>{project.description}</em>
+                                                <small>{project.time}</small>
+                                            </button>
+                                            <button
+                                                className={styles.starterGuideComplete}
+                                                data-project-id={project.id}
+                                                disabled={progress.completed}
+                                                type="button"
+                                                onClick={handleCompleteStarterProject} // eslint-disable-line
+                                            >
+                                                {progress.completed ? '已完成' : '完成了'}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
+                            {completedStarterCount > 0 ? (
+                                <div className={styles.starterGuideAchievement}>
+                                    {completedStarterCount === zhimengStarterProjects.length ?
+                                        '三个第一个作品都完成了，可以继续挑战新的主题。' :
+                                        `已完成 ${completedStarterCount} 个第一个作品，继续保持。`}
+                                </div>
+                            ) : null}
                         </details>
                         <Box className={styles.flexWrapper}>
                             <Box className={styles.editorWrapper}>
@@ -995,7 +1078,7 @@ GUIComponent.propTypes = {
     onOpenBilling: PropTypes.func,
     onOpenExternalBilling: PropTypes.func,
     onOpenLogin: PropTypes.func,
-    onOpenTipsLibrary: PropTypes.func,
+    onOpenStarterProject: PropTypes.func,
     onPaymentMethodChange: PropTypes.func,
     onRefreshBillingOrder: PropTypes.func,
     onRefreshEntitlement: PropTypes.func,
@@ -1053,7 +1136,7 @@ GUIComponent.defaultProps = {
     isShared: false,
     isTotallyNormal: false,
     loading: false,
-    onOpenTipsLibrary: () => {},
+    onOpenStarterProject: () => {},
     onPaymentMethodChange: () => {},
     showComingSoon: false,
     stageSizeMode: STAGE_SIZE_MODES.large

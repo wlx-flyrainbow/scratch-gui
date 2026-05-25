@@ -17,13 +17,15 @@ import {
     COSTUMES_TAB_INDEX,
     SOUNDS_TAB_INDEX
 } from '../reducers/editor-tab';
+import {
+    activateDeck
+} from '../reducers/cards';
 
 import {
     closeCostumeLibrary,
     closeBackdropLibrary,
     closeTelemetryModal,
     openExtensionLibrary,
-    openTipsLibrary,
     closeDebugModal
 } from '../reducers/modals';
 
@@ -43,6 +45,7 @@ import systemPreferencesHOC from '../lib/system-preferences-hoc.jsx';
 
 import GUIComponent from '../components/gui/gui.jsx';
 import {setIsScratchDesktop} from '../lib/isScratchDesktop.js';
+import {getZhimengStarterProject} from '../lib/zhimeng-starter-projects';
 
 const {RequestMetadata, setMetadata, unsetMetadata} = storage.scratchFetch;
 
@@ -196,7 +199,12 @@ const mapDispatchToProps = dispatch => ({
     onRequestCloseCostumeLibrary: () => dispatch(closeCostumeLibrary()),
     onRequestCloseDebugModal: () => dispatch(closeDebugModal()),
     onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal()),
-    onOpenTipsLibrary: () => dispatch(openTipsLibrary())
+    onOpenStarterProject: projectId => {
+        const starterProject = getZhimengStarterProject(projectId);
+        if (!starterProject) return;
+        dispatch(activateTab(BLOCKS_TAB_INDEX));
+        dispatch(activateDeck(starterProject.deckId));
+    }
 });
 
 const ConnectedGUI = injectIntl(connect(
