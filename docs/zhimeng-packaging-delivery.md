@@ -34,12 +34,19 @@
    ZHIMENG_REQUIRE_CODE_SIGNING=1 npm run release:check-signing
    npm run dist:desktop:prod
    npm run test:zhimeng-desktop-bundle
-   npm run test:zhimeng-mac-release
+   ZHIMENG_REQUIRE_MAC_SIGNED=1 npm run test:zhimeng-mac-release
    ```
 
    该流程会防止把连接本机 `localhost:3001` 的测试包发布给用户。macOS 对外包还必须通过 Developer ID 签名和 Apple notarization；Windows 对外包必须使用正式代码签名证书。未通过时不要上架到正式下载目录。
 
-5. 上传 `dist/` 中的 macOS arm64 DMG、macOS x64 DMG、Windows NSIS 安装包与 portable 包到对象存储/CDN。
+5. 上传 `dist/` 中的 macOS arm64 DMG、macOS x64 DMG、Windows NSIS 安装包与 portable 包到对象存储/CDN。上传后先下载回本机复查 macOS 包：
+
+   ```bash
+   ZHIMENG_REQUIRE_MAC_SIGNED=1 ZHIMENG_MAC_RELEASE_DMG_PATHS=/path/to/downloaded-arm64.dmg:/path/to/downloaded-x64.dmg npm run test:zhimeng-mac-release
+   ```
+
+   `ZHIMENG_MAC_RELEASE_DMG_PATHS` 用冒号分隔多个 DMG 路径。该检查会挂载 DMG，并对其中的 `.app` 执行 `codesign` 与 `spctl`。
+
 6. 用真实下载地址更新下载页版本信息：
 
    ```bash
