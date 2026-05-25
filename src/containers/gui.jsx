@@ -23,6 +23,7 @@ import {
     closeBackdropLibrary,
     closeTelemetryModal,
     openExtensionLibrary,
+    openTipsLibrary,
     closeDebugModal
 } from '../reducers/modals';
 
@@ -194,7 +195,8 @@ const mapDispatchToProps = dispatch => ({
     onRequestCloseBackdropLibrary: () => dispatch(closeBackdropLibrary()),
     onRequestCloseCostumeLibrary: () => dispatch(closeCostumeLibrary()),
     onRequestCloseDebugModal: () => dispatch(closeDebugModal()),
-    onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal())
+    onRequestCloseTelemetryModal: () => dispatch(closeTelemetryModal()),
+    onOpenTipsLibrary: () => dispatch(openTipsLibrary())
 });
 
 const ConnectedGUI = injectIntl(connect(

@@ -200,6 +200,7 @@ const GUIComponent = props => {
         onOpenBilling,
         onOpenExternalBilling,
         onOpenLogin,
+        onOpenTipsLibrary,
         onPaymentMethodChange,
         onRefreshBillingOrder,
         onRefreshEntitlement,
@@ -715,6 +716,44 @@ const GUIComponent = props => {
                 ) : null}
                 {isAppUnlocked ? (
                     <Box className={styles.bodyWrapper}>
+                        <details
+                            className={styles.starterGuide}
+                            open
+                        >
+                            <summary>
+                                <span>{'从第一个作品开始'}</span>
+                                <strong>{'适合孩子第一次打开知萌'}</strong>
+                            </summary>
+                            <div className={styles.starterGuideContent}>
+                                <button
+                                    className={styles.starterGuideItem}
+                                    type="button"
+                                    onClick={onOpenTipsLibrary}
+                                >
+                                    <span>{'01'}</span>
+                                    <strong>{'会说话的小角色'}</strong>
+                                    <em>{'先让角色动起来，说一句话'}</em>
+                                </button>
+                                <button
+                                    className={styles.starterGuideItem}
+                                    type="button"
+                                    onClick={onOpenTipsLibrary}
+                                >
+                                    <span>{'02'}</span>
+                                    <strong>{'生日祝福动画'}</strong>
+                                    <em>{'换背景、加角色、做表达'}</em>
+                                </button>
+                                <button
+                                    className={styles.starterGuideItem}
+                                    type="button"
+                                    onClick={onOpenTipsLibrary}
+                                >
+                                    <span>{'03'}</span>
+                                    <strong>{'接水果小游戏'}</strong>
+                                    <em>{'第一次理解规则和互动'}</em>
+                                </button>
+                            </div>
+                        </details>
                         <Box className={styles.flexWrapper}>
                             <Box className={styles.editorWrapper}>
                                 <Tabs
@@ -956,6 +995,7 @@ GUIComponent.propTypes = {
     onOpenBilling: PropTypes.func,
     onOpenExternalBilling: PropTypes.func,
     onOpenLogin: PropTypes.func,
+    onOpenTipsLibrary: PropTypes.func,
     onPaymentMethodChange: PropTypes.func,
     onRefreshBillingOrder: PropTypes.func,
     onRefreshEntitlement: PropTypes.func,
@@ -1013,6 +1053,7 @@ GUIComponent.defaultProps = {
     isShared: false,
     isTotallyNormal: false,
     loading: false,
+    onOpenTipsLibrary: () => {},
     onPaymentMethodChange: () => {},
     showComingSoon: false,
     stageSizeMode: STAGE_SIZE_MODES.large
