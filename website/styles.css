@@ -303,6 +303,56 @@ h1 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.starter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.starter-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.starter-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.starter-number {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 900;
+}
+
+.starter-time {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.5rem;
+  color: #1f6b31;
+  background: var(--green-soft);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.starter-card h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.08rem;
+}
+
+.starter-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
 .feature-block,
 .plan-card,
 .process-step,
@@ -836,6 +886,59 @@ h1 {
   padding: 1.25rem;
 }
 
+.ops-profit-dashboard {
+  padding: 1.25rem;
+}
+
+.profit-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.profit-grid div {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.profit-grid span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.profit-grid strong {
+  color: var(--text);
+  font-size: 1.08rem;
+}
+
+.profit-offer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.profit-offer div {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+  border-radius: 10px;
+  background: #fff8dd;
+}
+
+.profit-offer strong {
+  color: #6f4b00;
+}
+
+.profit-offer span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .ops-state-pill {
   flex: 0 0 auto;
   border-radius: 999px;
@@ -1098,6 +1201,85 @@ h1 {
   grid-column: 1 / -1;
 }
 
+.ops-business-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+.ops-business-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ops-business-head div:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.ops-business-head strong {
+  color: var(--text);
+}
+
+.ops-business-head span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.ops-profit-pill {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  color: #1f6b31;
+  background: var(--green-soft);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.ops-business-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.ops-business-form input,
+.ops-business-form select,
+.ops-business-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.58rem 0.7rem;
+  color: var(--text);
+  font: inherit;
+  background: #fff;
+}
+
+.ops-business-check {
+  align-content: center;
+}
+
+.ops-business-check input {
+  width: auto;
+  margin-right: 0.45rem;
+}
+
+.ops-business-note {
+  grid-column: span 3;
+}
+
+.ops-business-form button {
+  align-self: end;
+}
+
 .ops-dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -1273,6 +1455,7 @@ footer.site-footer a {
   }
 
   .feature-grid,
+  .starter-grid,
   .pricing-grid,
   .process-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1334,6 +1517,7 @@ footer.site-footer a {
   }
 
   .feature-grid,
+  .starter-grid,
   .pricing-grid,
   .process-grid,
   .faq-grid,
@@ -1366,14 +1550,21 @@ footer.site-footer a {
 
   .ops-setup-card,
   .ops-grid,
+  .profit-grid,
+  .profit-offer,
   .ops-order-workflow,
   .ops-proof-grid,
+  .ops-business-form,
   .ops-copy-grid,
   .ops-confirm-form {
     grid-template-columns: 1fr;
   }
 
   .ops-note-field {
+    grid-column: auto;
+  }
+
+  .ops-business-note {
     grid-column: auto;
   }
 

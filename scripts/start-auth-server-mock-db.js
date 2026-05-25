@@ -165,7 +165,8 @@ const mockDb = {
             amount_cents: typeof amountCents === 'number' ? amountCents : null,
             currency: currency || null,
             payment_proof_json: null,
-            payment_proof_token_hash: paymentProofTokenHash || null
+            payment_proof_token_hash: paymentProofTokenHash || null,
+            audit_json: null
         });
         return id;
     },
@@ -236,6 +237,24 @@ const mockDb = {
             payerNote: payerNote || '',
             attachment: attachment || null,
             submittedAt: new Date().toISOString()
+        });
+        return row;
+    },
+    updateOrderBusiness: (orderId, business) => {
+        const row = orders.get(Number(orderId));
+        if (!row) {
+            const err = new Error('Order not found');
+            err.statusCode = 404;
+            throw err;
+        }
+        const audit = row.audit_json ? JSON.parse(row.audit_json) : {};
+        row.audit_json = JSON.stringify({
+            ...audit,
+            business: {
+                ...(audit.business || {}),
+                ...business,
+                updatedAt: new Date().toISOString()
+            }
         });
         return row;
     },

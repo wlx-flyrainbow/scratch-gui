@@ -461,6 +461,39 @@ const submitOrderPaymentProof = async ({
     return findOrderById(orderId);
 };
 
+const updateOrderBusiness = async (orderId, business) => {
+    const p = getPool();
+    const order = await findOrderById(orderId);
+    if (!order) {
+        const err = new Error('Order not found');
+        err.statusCode = 404;
+        throw err;
+    }
+    let audit = {};
+    if (typeof order.audit_json === 'object' && order.audit_json) {
+        audit = order.audit_json;
+    } else if (order.audit_json) {
+        try {
+            audit = JSON.parse(order.audit_json) || {};
+        } catch (e) {
+            audit = {};
+        }
+    }
+    const currentBusiness = audit.business && typeof audit.business === 'object' ? audit.business : {};
+    const nextAudit = Object.assign({}, audit, {
+        business: Object.assign({}, currentBusiness, business, {
+            updatedAt: new Date().toISOString()
+        })
+    });
+    await p.query(
+        `UPDATE orders
+         SET audit_json = ?
+         WHERE id = ?`,
+        [JSON.stringify(nextAudit), orderId]
+    );
+    return findOrderById(orderId);
+};
+
 const activateEntitlementWithConnection = async (conn, userId, plan) => {
     const features = JSON.stringify(ENTITLEMENT_FEATURES);
     const subExpires = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000));
@@ -621,6 +654,7 @@ module.exports = {
     findOrderByPaymentProofToken,
     markOrderPaid,
     submitOrderPaymentProof,
+    updateOrderBusiness,
     activateEntitlementFromOrder,
     fulfillOrderFromPayment,
     bcrypt

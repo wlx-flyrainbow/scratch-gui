@@ -357,8 +357,25 @@ const toOrderPayload = order => ({
     payment_account_label: process.env.ZHIMENG_PAYMENT_ACCOUNT_LABEL || '知萌官方收款',
     payment_note: buildPaymentNote(order.id),
     payment_methods: buildPaymentMethods(order.id),
-    payment_proof: parseJsonValue(order.payment_proof_json)
+    payment_proof: parseJsonValue(order.payment_proof_json),
+    business: (parseJsonValue(order.audit_json) || {}).business || null
 });
+
+const safeMoneyCents = value => {
+    if (value === null || typeof value === 'undefined' || value === '') {
+        return null;
+    }
+    const parsed = Math.round(Number(value));
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const pickBodyValue = (body, snakeKey, camelKey) => (
+    Object.prototype.hasOwnProperty.call(body, snakeKey) ? body[snakeKey] : body[camelKey]
+);
+
+const safeText = (value, limit = 160) => String(value || '')
+    .trim()
+    .slice(0, limit);
 
 const sendServerError = (res, err) => {
     const message = isProduction() ? 'Server error' : (err.message || 'Server error');
@@ -841,6 +858,39 @@ const createApp = async () => {
                 order_id: `o_${numericId}`,
                 status: result.order.status,
                 idempotent: result.idempotent
+            });
+        } catch (err) {
+            if (err.statusCode) {
+                return res.status(err.statusCode).json({message: err.message});
+            }
+            return sendServerError(res, err);
+        }
+    });
+
+    app.post('/admin/order/:id/business', requireAdmin, async (req, res) => {
+        try {
+            const numericId = parseOrderId(req.params.id);
+            if (!numericId) {
+                return res.status(400).json({message: 'Invalid order id'});
+            }
+            const body = req.body || {};
+            const business = {
+                source: safeText(body.source, 64),
+                packageType: safeText(body.package_type || body.packageType, 64),
+                commissionCents: safeMoneyCents(pickBodyValue(body, 'commission_cents', 'commissionCents')),
+                acquisitionCents: safeMoneyCents(pickBodyValue(body, 'acquisition_cents', 'acquisitionCents')),
+                deliveryCents: safeMoneyCents(pickBodyValue(body, 'delivery_cents', 'deliveryCents')),
+                serviceCents: safeMoneyCents(pickBodyValue(body, 'service_cents', 'serviceCents')),
+                refundRiskCents: safeMoneyCents(pickBodyValue(body, 'refund_risk_cents', 'refundRiskCents')),
+                starterCompleted: Boolean(body.starter_completed || body.starterCompleted),
+                firstProjectType: safeText(body.first_project_type || body.firstProjectType, 64),
+                followupStatus: safeText(body.followup_status || body.followupStatus, 64),
+                note: safeText(body.note, 500)
+            };
+            const order = await db.updateOrderBusiness(numericId, business);
+            return res.json({
+                ok: true,
+                order: toOrderPayload(order)
             });
         } catch (err) {
             if (err.statusCode) {

@@ -51,6 +51,32 @@
       </form>
     </section>
 
+    <section class="card ops-profit-dashboard" aria-labelledby="profit-heading">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">利润看板</div>
+          <h2 id="profit-heading">每一单都要算利润</h2>
+        </div>
+        <div class="ops-state-pill is-ok">经营口径</div>
+      </div>
+      <div id="profit-summary" class="profit-grid">
+        <div><span>已确认收入</span><strong>¥0.00</strong></div>
+        <div><span>预估成本</span><strong>¥0.00</strong></div>
+        <div><span>预估利润</span><strong>¥0.00</strong></div>
+        <div><span>利润率</span><strong>0%</strong></div>
+      </div>
+      <div class="profit-offer">
+        <div>
+          <strong>699 元 7 天项目陪跑包验证</strong>
+          <span>目标：先找 20 个家庭测试，至少 5 单成交；每单记录来源、佣金、交付成本和孩子是否完成第一个作品。</span>
+        </div>
+        <div>
+          <strong>利润纪律</strong>
+          <span>199 年卡不买贵流量；陪跑包必须群交付；渠道佣金和人工成本要逐单记录。</span>
+        </div>
+      </div>
+    </section>
+
     <section class="card ops-dashboard" aria-labelledby="orders-heading">
       <div class="section-header">
         <div>
@@ -101,6 +127,27 @@
           </div>
           <p id="ops-copy-waiting">已经收到你的付款凭证。知萌首发阶段采用人工确认到账，我们会核对真实收款记录。确认后你回到客户端点击「刷新授权」，就可以进入完整编程编辑器。</p>
         </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>已开通提醒</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-activated">复制</button>
+          </div>
+          <p id="ops-copy-activated">知萌账号已经为你开通。请回到客户端点击「刷新授权」，进入完整编辑器后建议先完成「会说话的小角色」这个第一个作品。如果打开或授权有问题，直接把截图发我。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>首次创作跟进</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-first-work">复制</button>
+          </div>
+          <p id="ops-copy-first-work">孩子今天有没有完成第一个作品？如果还不知道从哪开始，可以先点客户端里的「从第一个作品开始」，按“角色说一句话、换背景、做小游戏”这条顺序试。第一次不用做复杂，先让孩子看到自己做出来的画面。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>反馈收集</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-feedback">复制</button>
+          </div>
+          <p id="ops-copy-feedback">方便的话，发我三类反馈：孩子有没有愿意继续玩、哪一步卡住了、完成了什么小作品。截图或一句话都可以，这会帮助我们把知萌打磨得更适合孩子第一次学编程。</p>
+        </article>
       </div>
       <p id="ops-copy-status" class="copy-status" role="status"></p>
     </section>
@@ -147,6 +194,7 @@
   var confirmOkBtn = document.getElementById('ops-confirm-ok');
   var confirmCancelBtn = document.getElementById('ops-confirm-cancel');
   var copyStatusEl = document.getElementById('ops-copy-status');
+  var profitSummaryEl = document.getElementById('profit-summary');
 
   function defaultApiBase() {
     var params = new URLSearchParams(window.location.search);
@@ -216,6 +264,83 @@
       bank: '银行转账',
       other: '其他'
     }[method] || method || '-';
+  }
+
+  function planLabel(plan) {
+    return {
+      family_yearly: '家庭年卡',
+      bootcamp_7d: '7 天项目陪跑包',
+      camp_30d: '30 天作品营',
+      channel_starter: '渠道/机构启动包'
+    }[plan] || plan || '-';
+  }
+
+  function centsToYuan(cents) {
+    return (Number(cents || 0) / 100).toFixed(2);
+  }
+
+  function explicitYuan(cents) {
+    return Number.isFinite(Number(cents)) ? centsToYuan(cents) : '';
+  }
+
+  function yuanToCents(text) {
+    var value = String(text || '').trim();
+    if (!value) return null;
+    if (!/^\d+(\.\d{1,2})?$/.test(value)) return null;
+    return Math.round(Number(value) * 100);
+  }
+
+  function businessCost(order) {
+    var revenue = Number(order.amount_cents || 0);
+    var business = order.business || {};
+    function explicit(key, fallback) {
+      return Number.isFinite(Number(business[key])) ? Number(business[key]) : fallback;
+    }
+    var packageType = business.packageType || order.plan;
+    var defaultDelivery = {
+      bootcamp_7d: 10000,
+      camp_30d: 26000,
+      channel_starter: 80000
+    }[packageType] || 0;
+    var defaultService = packageType === 'family_yearly' ? 1500 : 0;
+    return {
+      paymentFee: Math.round(revenue * 0.008),
+      refundRisk: explicit('refundRiskCents', Math.round(revenue * 0.05)),
+      commission: explicit('commissionCents', 0),
+      acquisition: explicit('acquisitionCents', 0),
+      delivery: explicit('deliveryCents', defaultDelivery),
+      service: explicit('serviceCents', defaultService)
+    };
+  }
+
+  function sumCosts(cost) {
+    return cost.paymentFee + cost.refundRisk + cost.commission +
+      cost.acquisition + cost.delivery + cost.service;
+  }
+
+  function renderProfitDashboard(orders) {
+    var confirmed = orders.filter(function (order) {
+      return order.status === 'paid' || order.status === 'fulfilled';
+    });
+    var revenue = confirmed.reduce(function (sum, order) {
+      return sum + Number(order.amount_cents || 0);
+    }, 0);
+    var costs = confirmed.reduce(function (sum, order) {
+      return sum + sumCosts(businessCost(order));
+    }, 0);
+    var profit = revenue - costs;
+    var margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+    var starterDone = confirmed.filter(function (order) {
+      return order.business && order.business.starterCompleted;
+    }).length;
+    profitSummaryEl.innerHTML = [
+      '<div><span>已确认收入</span><strong>' + escapeHtml(formatAmount(revenue, 'CNY')) + '</strong></div>',
+      '<div><span>预估成本</span><strong>' + escapeHtml(formatAmount(costs, 'CNY')) + '</strong></div>',
+      '<div><span>预估利润</span><strong>' + escapeHtml(formatAmount(profit, 'CNY')) + '</strong></div>',
+      '<div><span>利润率</span><strong>' + margin + '%</strong></div>',
+      '<div><span>已确认订单</span><strong>' + confirmed.length + ' 单</strong></div>',
+      '<div><span>完成第一个作品</span><strong>' + starterDone + ' 单</strong></div>'
+    ].join('');
   }
 
   function adminFetch(path, options) {
@@ -325,7 +450,7 @@
           '<div class="ops-amount">' + escapeHtml(formatAmount(order.amount_cents, order.currency)) + '</div>',
         '</div>',
         '<div class="ops-grid">',
-          '<div><span>套餐</span><strong>' + escapeHtml(order.plan || '-') + '</strong></div>',
+          '<div><span>套餐</span><strong>' + escapeHtml(planLabel(order.plan)) + '</strong></div>',
           '<div><span>付款渠道</span><strong>' + escapeHtml(methodLabel(order.channel)) + '</strong></div>',
           '<div><span>当前状态</span><strong>待核对到账</strong></div>',
         '</div>',
@@ -344,7 +469,8 @@
             '<label class="ops-note-field">确认备注<textarea name="note" rows="2" placeholder="例如：微信商家账单已核对"></textarea></label>',
             '<button class="btn btn-primary compact-btn" type="submit">确认到账，开通授权</button>',
           '</form>',
-        '</div>'
+        '</div>',
+        renderBusinessForm(order)
       ].join('');
       var proof = order.payment_proof || {};
       var tradeInput = item.querySelector('[name="tradeNo"]');
@@ -363,8 +489,69 @@
         event.preventDefault();
         confirmOrder(order, item);
       });
+      item.querySelector('.ops-business-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        saveBusiness(order, item);
+      });
       listEl.appendChild(item);
     });
+  }
+
+  function renderBusinessForm(order) {
+    var business = order.business || {};
+    var costs = businessCost(order);
+    var estimatedProfit = Number(order.amount_cents || 0) - sumCosts(costs);
+    return [
+      '<form class="ops-business-form">',
+        '<div class="ops-business-head">',
+          '<div><strong>利润与留存记录</strong><span>用于判断这单到底赚不赚钱，以及孩子是否真的开始创作。</span></div>',
+          '<div class="ops-profit-pill">预估利润 ' + escapeHtml(formatAmount(estimatedProfit, order.currency)) + '</div>',
+        '</div>',
+        '<label>来源<select name="source">',
+          optionHtml('', '未记录', business.source),
+          optionHtml('private', '私域私聊', business.source),
+          optionHtml('group', '微信群/社群', business.source),
+          optionHtml('referral', '老用户转介绍', business.source),
+          optionHtml('kol', 'KOL/老师推荐', business.source),
+          optionHtml('ads', '付费投放', business.source),
+          optionHtml('channel', '渠道/机构', business.source),
+        '</select></label>',
+        '<label>套餐类型<select name="packageType">',
+          optionHtml('family_yearly', '家庭年卡 199', business.packageType || order.plan),
+          optionHtml('bootcamp_7d', '7 天项目陪跑包 699', business.packageType || order.plan),
+          optionHtml('camp_30d', '30 天作品营 1299', business.packageType || order.plan),
+          optionHtml('channel_starter', '渠道/机构启动包 4999', business.packageType || order.plan),
+        '</select></label>',
+        '<label>佣金成本<input name="commission" type="text" inputmode="decimal" placeholder="例如 60" value="' + escapeHtml(explicitYuan(business.commissionCents)) + '" /></label>',
+        '<label>获客成本<input name="acquisition" type="text" inputmode="decimal" placeholder="广告或达人合作成本" value="' + escapeHtml(explicitYuan(business.acquisitionCents)) + '" /></label>',
+        '<label>交付成本<input name="delivery" type="text" inputmode="decimal" placeholder="' + escapeHtml(centsToYuan(costs.delivery)) + '" value="' + escapeHtml(explicitYuan(business.deliveryCents)) + '" /></label>',
+        '<label>客服成本<input name="service" type="text" inputmode="decimal" placeholder="' + escapeHtml(centsToYuan(costs.service)) + '" value="' + escapeHtml(explicitYuan(business.serviceCents)) + '" /></label>',
+        '<label>退款风险<input name="refundRisk" type="text" inputmode="decimal" placeholder="' + escapeHtml(centsToYuan(costs.refundRisk)) + '" value="' + escapeHtml(explicitYuan(business.refundRiskCents)) + '" /></label>',
+        '<label>第一个作品<select name="firstProjectType">',
+          optionHtml('', '未记录', business.firstProjectType),
+          optionHtml('talking_character', '会说话的小角色', business.firstProjectType),
+          optionHtml('birthday_animation', '生日祝福动画', business.firstProjectType),
+          optionHtml('catch_game', '接水果小游戏', business.firstProjectType),
+        '</select></label>',
+        '<label>跟进状态<select name="followupStatus">',
+          optionHtml('', '未记录', business.followupStatus),
+          optionHtml('paid_waiting', '已付款待确认', business.followupStatus),
+          optionHtml('activated', '已开通待首次作品', business.followupStatus),
+          optionHtml('starter_done', '已完成第一个作品', business.followupStatus),
+          optionHtml('bootcamp_pitch', '已推荐 7 天陪跑包', business.followupStatus),
+          optionHtml('bootcamp_paid', '已购买 7 天陪跑包', business.followupStatus),
+        '</select></label>',
+        '<label class="ops-business-check"><input name="starterCompleted" type="checkbox" ' + (business.starterCompleted ? 'checked' : '') + ' /> 已完成第一个作品</label>',
+        '<label class="ops-business-note">经营备注<textarea name="businessNote" rows="2" placeholder="例如：朋友转介绍，无佣金；已推荐 699 陪跑包">' + escapeHtml(business.note || '') + '</textarea></label>',
+        '<button class="btn btn-secondary compact-btn" type="submit">保存经营记录</button>',
+      '</form>'
+    ].join('');
+  }
+
+  function optionHtml(value, label, selected) {
+    return '<option value="' + escapeHtml(value) + '"' +
+      (String(value) === String(selected || '') ? ' selected' : '') +
+      '>' + escapeHtml(label) + '</option>';
   }
 
   function loadOrders() {
@@ -376,9 +563,14 @@
     }
     refreshBtn.disabled = true;
     refreshBtn.textContent = '正在刷新...';
-    return adminFetch('/admin/orders?status=created&has_payment_proof=1')
-      .then(function (body) {
-        var orders = body.orders || [];
+    return Promise.all([
+      adminFetch('/admin/orders?limit=200'),
+      adminFetch('/admin/orders?status=created&has_payment_proof=1')
+    ])
+      .then(function (responses) {
+        var allOrders = responses[0].orders || [];
+        var orders = responses[1].orders || [];
+        renderProfitDashboard(allOrders);
         renderOrders(orders);
         setupCard.classList.add('is-collapsed');
         showSuccess(orders.length ? '已加载待确认订单，请逐笔核对到账记录。' : '暂无待确认订单。');
@@ -390,6 +582,38 @@
       .finally(function () {
         refreshBtn.disabled = false;
         refreshBtn.textContent = '刷新待确认订单';
+      });
+  }
+
+  function saveBusiness(order, item) {
+    var form = item.querySelector('.ops-business-form');
+    var payload = {
+      source: form.querySelector('[name="source"]').value,
+      package_type: form.querySelector('[name="packageType"]').value,
+      commission_cents: yuanToCents(form.querySelector('[name="commission"]').value),
+      acquisition_cents: yuanToCents(form.querySelector('[name="acquisition"]').value),
+      delivery_cents: yuanToCents(form.querySelector('[name="delivery"]').value),
+      service_cents: yuanToCents(form.querySelector('[name="service"]').value),
+      refund_risk_cents: yuanToCents(form.querySelector('[name="refundRisk"]').value),
+      starter_completed: form.querySelector('[name="starterCompleted"]').checked,
+      first_project_type: form.querySelector('[name="firstProjectType"]').value,
+      followup_status: form.querySelector('[name="followupStatus"]').value,
+      note: form.querySelector('[name="businessNote"]').value
+    };
+    form.querySelector('button[type="submit"]').disabled = true;
+    adminFetch('/admin/order/' + encodeURIComponent(order.order_id) + '/business', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+      .then(function () {
+        showSuccess(order.order_id + ' 经营记录已保存。');
+        return loadOrders();
+      })
+      .catch(function (err) {
+        showErr(err.message || '经营记录保存失败');
+      })
+      .finally(function () {
+        form.querySelector('button[type="submit"]').disabled = false;
       });
   }
 
