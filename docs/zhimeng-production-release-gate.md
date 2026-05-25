@@ -23,6 +23,8 @@
 - 宝塔 PM2/Node 服务需要确认使用生产 env 启动并持久化。
 - 生产 MySQL 迁移和健康检查需要以真实 env 执行。
 - `npm run release:check` 需要在生产 env 下通过。
+- 正式公开分发前必须通过 `ZHIMENG_REQUIRE_CODE_SIGNING=1 npm run release:check-signing`。
+- macOS 包需要 Developer ID 签名与 notarization；Windows 包需要正式代码签名证书。
 - 需要走一遍真实线上新用户购买、运营确认、客户端授权刷新闭环。
 
 ## 2. 必填生产变量

@@ -22,7 +22,14 @@
 
 ## 2. 服务器目录
 
-建议在宝塔 SSH 终端执行：
+建议在宝塔 SSH 终端执行仓库内脚本：
+
+```bash
+cd /www/wwwroot/zhimeng-app/scratch-gui
+bash deploy/scripts/bootstrap-server.sh --yes
+```
+
+等价手工命令：
 
 ```bash
 mkdir -p /www/wwwroot/zhimeng-app
@@ -119,15 +126,13 @@ npm run db:migrate
 先发布测试站：
 
 ```bash
-rsync -av --delete --exclude='.user.ini' website/ /www/wwwroot/zhimeng-test/
-mkdir -p /www/wwwroot/zhimeng-test/downloads
+bash deploy/scripts/deploy-static.sh test
 ```
 
 发布正式站：
 
 ```bash
-rsync -av --delete --exclude='.user.ini' website/ /www/wwwroot/zhimeng/
-mkdir -p /www/wwwroot/zhimeng/downloads
+bash deploy/scripts/deploy-static.sh prod
 ```
 
 安装包先放：
@@ -163,27 +168,30 @@ curl -fsSI https://zhimeng.codevalley.cn/downloads/zhimeng-mac-x64-1.0.0.dmg
 curl -fsS https://zhimeng.codevalley.cn/releases.json
 ```
 
+也可以在本地或服务器仓库中执行一键公网验收：
+
+```bash
+bash deploy/scripts/verify-public.sh prod
+```
+
+正式环境的脚本默认会把后端 `/health` 作为失败条件，避免官网可访问但客户端注册/登录不可用。测试环境如需同样严格：
+
+```bash
+ZHIMENG_VERIFY_REQUIRE_HEALTH=1 npm run release:verify-public
+```
+
 ## 8. 启动后端
 
 测试环境：
 
 ```bash
-cd /www/wwwroot/zhimeng-app/scratch-gui
-set -a
-. /www/server/zhimeng/env/zhimeng-test.env
-set +a
-pm2 start backend/server.js --name zhimeng-api-test --update-env
-pm2 save
+bash deploy/scripts/deploy-api.sh test
 ```
 
 正式环境：
 
 ```bash
-set -a
-. /www/server/zhimeng/env/zhimeng-prod.env
-set +a
-pm2 start backend/server.js --name zhimeng-api-prod --update-env
-pm2 save
+bash deploy/scripts/deploy-api.sh prod
 ```
 
 重启：
@@ -237,16 +245,27 @@ npm run dist:mac:x64
 npm run dist:win
 ```
 
-正式包：
+正式包优先使用一键脚本，避免误把 `localhost:3001` 打进用户安装包：
 
 ```bash
-set -a
-. /www/server/zhimeng/env/zhimeng-prod.env
-set +a
-npm run dist:mac:arm64
-npm run dist:mac:x64
-npm run dist:win
+ZHIMENG_REQUIRE_CODE_SIGNING=1 npm run release:check-signing
+npm run dist:desktop:prod
+npm run test:zhimeng-desktop-bundle
 ```
+
+生产 macOS 包必须使用 Apple Developer ID 证书签名并完成 notarization 后再上传到正式下载目录。未签名/未公证的 DMG 会触发 Gatekeeper 的“无法验证开发者”，不应作为正式包交付。完成签名后执行：
+
+```bash
+ZHIMENG_REQUIRE_MAC_SIGNED=1 npm run test:zhimeng-mac-release
+```
+
+若当前只做熟人种子用户小范围验证，且暂未取得 Apple Developer ID 或 Windows 代码签名证书，可以临时执行：
+
+```bash
+ZHIMENG_ALLOW_UNSIGNED_SEED_RELEASE=1 npm run release:check-signing
+```
+
+这种模式只能作为种子验证，不应进入正式下载目录的“已签名/已公证”口径；客服需要提前说明 macOS/Windows 可能出现系统安全提示。
 
 生成后上传到对应站点的 `downloads/`，再运行：
 
@@ -269,6 +288,7 @@ curl https://zhimeng-test.codevalley.cn/health
 curl -I https://zhimeng-test.codevalley.cn/
 curl -I https://zhimeng-test.codevalley.cn/pay.html
 curl -I https://zhimeng-test.codevalley.cn/ops.html
+bash deploy/scripts/verify-public.sh test
 ```
 
 人工流程：
@@ -292,10 +312,13 @@ curl -I https://zhimeng-test.codevalley.cn/ops.html
 - `https://zhimeng.codevalley.cn/` 可访问。
 - `https://zhimeng.codevalley.cn/releases.json` 中四个下载 URL 都是正式 HTTPS 地址。
 - `https://zhimeng.codevalley.cn/health` 返回 `ok: true`。
+- `bash deploy/scripts/verify-public.sh prod` 通过，且 `/health` 必须为 200。
+- 或直接执行 `bash deploy/scripts/verify-public.sh prod`。
 - 正式二维码能展示。
 - 正式运营口令不与测试环境相同。
 - 正式数据库为空或仅包含已确认迁移数据。
 - macOS 正式包完成签名与公证后再对外下载。
+- Windows 正式包完成代码签名后再对外下载。
 
 ## 13. 回滚
 

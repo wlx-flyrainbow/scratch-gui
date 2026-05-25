@@ -50,7 +50,7 @@ const checkPackageMetadata = () => {
     requireEqual('package.homepage', pkg.homepage, 'https://github.com/wlx-flyrainbow/scratch-gui#readme');
     requireEqual('build.appId', build.appId, 'com.zhimeng.desktop');
     requireEqual('build.productName', build.productName, '知萌');
-    requireEqual('build.mac.icon', mac.icon, 'build/static/app-icon.png');
+    requireEqual('build.mac.icon', mac.icon, 'static/app-icon.icns');
     requireEqual('build.win.icon', win.icon, 'build/static/favicon.ico');
 
     const macTargets = Array.isArray(mac.target) ? mac.target : [];
@@ -170,6 +170,7 @@ const checkWebsite = pkg => {
 
 const checkStaticAssets = () => {
     requireFile('static/app-icon.png');
+    requireFile('static/app-icon.icns');
     requireFile('static/favicon.ico');
     requireFile('docs/agpl-source-disclosure.md');
     requireFile('LICENSE');

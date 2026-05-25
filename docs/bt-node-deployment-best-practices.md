@@ -232,6 +232,13 @@ rsync -a --delete --exclude='.user.ini' --exclude='downloads/' website/ /www/www
 - `website/releases.json` 中展示给用户看的版本和下载 URL。
 - `/downloads/` 目录里的真实安装包文件名。
 
+如果前端是桌面客户端，还必须把“构建期环境”纳入发布门槛。登录、注册、支付这类 API 地址通常会被打包进客户端 bundle，不能用本地测试包替代正式包。正式包验收至少要确认：
+
+- bundle 中的 API base 是正式 HTTPS 域名。
+- bundle 中不包含 `localhost`、`127.0.0.1` 或示例计费域名。
+- macOS 包使用 `.icns` 图标，且图标外圈带透明区域，避免 Launchpad/Finder 中出现生硬白底。
+- macOS 站外分发包完成 Developer ID 签名与 notarization；否则 Gatekeeper 会提示无法验证开发者。
+
 推荐文件命名：
 
 ```text
@@ -259,6 +266,13 @@ curl -fsSI https://example.com/downloads/<app>-setup-<version>.exe
 curl -fsSI https://example.com/downloads/<app>-portable-<version>.exe
 curl -fsSI https://example.com/downloads/<app>-mac-arm64-<version>.dmg
 curl -fsSI https://example.com/downloads/<app>-mac-x64-<version>.dmg
+```
+
+项目内建议提供同类脚本：
+
+```bash
+npm run test:<app>-desktop-bundle
+ZHIMENG_REQUIRE_MAC_SIGNED=1 npm run test:<app>-mac-release
 ```
 
 本地有 `releases.local.json` 这类调试清单时，要确认它指向的也是实际存在的本地安装包；否则本地页面验收会出现“页面版本对、下载断链”的假象。
@@ -602,12 +616,13 @@ nginx -t
 
 ## 8. 推荐的下一步工程化
 
-为了把部署从“人工操作”升级为“可重复交付”，建议后续补齐：
+为了把部署从“人工操作”升级为“可重复交付”，建议每个项目都沉淀以下脚本。知萌仓库已提供对应实现，可作为后续项目模板：
 
 - `deploy/scripts/bootstrap-server.sh`：安装 Node、pm2、目录初始化。
 - `deploy/scripts/deploy-static.sh`：同步静态站并保护 `.user.ini`、`downloads/`。
 - `deploy/scripts/deploy-api.sh`：拉代码、安装依赖、迁移数据库、重启 PM2。
 - `deploy/scripts/verify-public.sh`：公网验收。
+- 项目内也应提供可本地执行的公网验收脚本，例如知萌的 `npm run release:verify-public`，用于检查正式页面内容、发布清单、视频资源和安装包下载地址。
 - `deploy/nginx/*.conf`：每个域名一份完整 HTTP + HTTPS 模板。
 - `deploy/env/*.example`：不含真实密钥的环境模板。
 
@@ -620,4 +635,23 @@ nginx -t
 ./deploy/scripts/verify-public.sh prod
 ```
 
+知萌也提供 npm 包装命令：
+
+```bash
+npm run deploy:static:test
+npm run deploy:static:prod
+npm run deploy:api:test
+npm run deploy:api:prod
+npm run deploy:verify:test
+npm run deploy:verify:prod
+```
+
 这样后续项目只需要替换项目名、域名、端口和路径，而不是重新摸一遍宝塔面板。
+
+验收脚本至少要做到：
+
+- 首页、支付页、运营页不是只返回 `200`，还要包含当前产品名和关键页面文案。
+- `releases.json` 的版本、渠道和四个下载地址与当前发布版本一致。
+- 四个安装包地址使用正式 HTTPS 域名，且 `HEAD` 返回正常大小的文件。
+- 视频、Logo、二维码等关键静态资源可访问。
+- 后端 `/health` 可以作为强校验或警告校验，避免静态站部署先于后端准备时阻塞静态发布。
