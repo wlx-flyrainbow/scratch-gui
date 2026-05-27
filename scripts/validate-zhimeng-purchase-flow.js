@@ -20,7 +20,7 @@ const reportDir = path.resolve(__dirname, '../_bmad-output/test-reports');
 const adminToken = process.env.ZHIMENG_ADMIN_TOKEN;
 const username = process.env.ZHIMENG_FLOW_USERNAME || 'demo';
 const password = process.env.ZHIMENG_FLOW_PASSWORD || '123456';
-const nickname = process.env.ZHIMENG_FLOW_NICKNAME || '知萌新用户验收账号';
+const nickname = process.env.ZHIMENG_FLOW_NICKNAME || '新祥编程新用户验收账号';
 const newUserFlow = ['1', 'true', 'yes', 'on'].includes(
     String(process.env.ZHIMENG_FLOW_NEW_USER || '').toLowerCase()
 );
@@ -68,7 +68,7 @@ const pushStep = (steps, id, pass, detail) => {
 
 const toMarkdown = result => {
     const lines = [
-        '# 知萌购买闭环验收报告',
+        '# 新祥编程购买闭环验收报告',
         '',
         `- 时间: ${result.timestamp}`,
         `- 后端地址: ${result.baseUrl}`,
@@ -138,7 +138,7 @@ const seedInactiveRealDbUser = async () => {
     const [result] = await pool.query(
         `INSERT INTO users (username, password_hash, nickname, permission_student, permission_educator)
          VALUES (?, ?, ?, 1, 0)`,
-        [username, passwordHash, '知萌购买闭环验收账号']
+        [username, passwordHash, '新祥编程购买闭环验收账号']
     );
     await pool.query(
         `INSERT INTO entitlements (user_id, status, plan, features_json, device_limit, subscription_expires_at)
@@ -342,6 +342,18 @@ const runFlow = async baseUrl => {
         entitlementActive,
         `GET /entitlement -> ${responses.entitlementAfter.status}, ` +
             `status=${responses.entitlementAfter.json && responses.entitlementAfter.json.status}`
+    );
+
+    const expiresAt = responses.entitlementAfter.json && responses.entitlementAfter.json.expires_at ?
+        new Date(responses.entitlementAfter.json.expires_at).getTime() :
+        0;
+    const remainingMs = expiresAt - Date.now();
+    pushStep(
+        steps,
+        'family_yearly_extends_365_days',
+        remainingMs >= (364 * 24 * 60 * 60 * 1000) &&
+            remainingMs <= (366 * 24 * 60 * 60 * 1000),
+        `expires_at=${responses.entitlementAfter.json && responses.entitlementAfter.json.expires_at}`
     );
 
     return {

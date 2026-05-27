@@ -59,5 +59,5 @@ ZHIMENG_PAYMENT_MODE=manual_qr \
 ZHIMENG_PAYMENT_API_BASE=http://127.0.0.1:3001 \
 ZHIMENG_WECHAT_PAYMENT_QR_URL=http://127.0.0.1:4173/assets/siang_wxpay_qrcode.jpg \
 ZHIMENG_ALIPAY_PAYMENT_QR_URL=http://127.0.0.1:4173/assets/siang_alipay_qrcode.jpg \
-ZHIMENG_PAYMENT_ACCOUNT_LABEL=知萌官方收款 \
+ZHIMENG_PAYMENT_ACCOUNT_LABEL=新祥编程官方收款 \
 npm run test:zhimeng-purchase-flow

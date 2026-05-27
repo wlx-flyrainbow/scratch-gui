@@ -66,8 +66,8 @@ class ZhimengLoginForm extends React.Component {
                 onSubmit={this.handleSubmit}
             >
                 <div className={styles.authHero}>
-                    <div className={styles.authBadge}>{'知萌账号'}</div>
-                    <h2>{isRegister ? '创建知萌账号' : '欢迎回来'}</h2>
+                    <div className={styles.authBadge}>{'新祥编程账号'}</div>
+                    <h2>{isRegister ? '创建新祥编程账号' : '欢迎回来'}</h2>
                     <p>
                         {isRegister ?
                             '注册后即可查看订阅状态，完成开通后进入完整编程编辑器。' :

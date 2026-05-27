@@ -90,11 +90,12 @@ describe('GUIComponent', () => {
             />
         );
 
-        expect(component.text()).toContain('知萌订阅中心');
+        expect(component.text()).toContain('新祥编程订阅');
+        expect(component.text()).toContain('开通完整编程编辑器');
         expect(component.text()).toContain('zm_20260523_001');
         expect(component.text()).toContain('提交付款凭证');
-        expect(component.find('img[alt="知萌收款二维码"]').prop('src')).toBe('https://example.com/qr.png');
-        expect(component.text()).toContain('付款渠道');
+        expect(component.find('img[alt="新祥编程微信收款二维码"]').prop('src')).toBe('https://example.com/qr.png');
+        expect(component.text()).toContain('付款方式');
         expect(component.text()).toContain('微信');
         expect(component.find('input[name="transfer_no"]').exists()).toBe(true);
         expect(component.find('input[name="trade_no_tail"]').exists()).toBe(true);
@@ -118,7 +119,7 @@ describe('GUIComponent', () => {
             preventDefault: jest.fn()
         });
 
-        expect(onOpenBilling).toHaveBeenCalledWith('alipay');
+        expect(onOpenBilling).toHaveBeenCalledWith('alipay', 'family_yearly');
     });
 
     test('shows fulfilled order guidance while entitlement refresh is pending', () => {

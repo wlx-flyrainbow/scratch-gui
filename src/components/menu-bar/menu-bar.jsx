@@ -176,11 +176,15 @@ AboutButton.propTypes = {
 };
 
 const formatEntitlementStatus = (authStatus, entitlement) => {
+    if (authStatus === 'leaseExpired') return '需刷新授权';
+    if (authStatus === 'expired' || (entitlement && entitlement.status === 'expired')) return '已到期';
+    if (authStatus === 'frozen' || (entitlement && entitlement.status === 'frozen')) return '已冻结';
+    if (authStatus === 'deviceLimit' || (entitlement && entitlement.status === 'deviceLimit')) {
+        return '设备已满';
+    }
     if (authStatus === 'active' || (entitlement && entitlement.status === 'active')) {
         return '已开通';
     }
-    if (authStatus === 'leaseExpired') return '需刷新授权';
-    if (entitlement && entitlement.status === 'expired') return '已过期';
     if (entitlement && entitlement.status === 'pending') return '待确认';
     return '未开通';
 };
@@ -188,6 +192,17 @@ const formatEntitlementStatus = (authStatus, entitlement) => {
 const formatEntitlementDate = entitlement => {
     if (!entitlement || !entitlement.expires_at) return '未生效';
     return entitlement.expires_at;
+};
+
+const formatDeviceCount = entitlement => {
+    const fallbackCount = entitlement && entitlement.device_count ?
+        Number(entitlement.device_count) :
+        0;
+    const deviceCount = entitlement && Array.isArray(entitlement.devices) ?
+        entitlement.devices.length :
+        fallbackCount;
+    const limit = entitlement && entitlement.device_limit ? entitlement.device_limit : 3;
+    return `${Number.isFinite(deviceCount) ? deviceCount : 0}/${limit}`;
 };
 
 class MenuBar extends React.Component {
@@ -468,7 +483,7 @@ class MenuBar extends React.Component {
                         <div className={classNames(styles.menuBarItem)}>
                             <img
                                 id="logo_img"
-                                alt="知萌"
+                                alt="新祥编程"
                                 className={classNames(styles.scratchLogo, {
                                     [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
                                 })}
@@ -829,6 +844,10 @@ class MenuBar extends React.Component {
                                                 <span>{'到期时间'}</span>
                                                 <strong>{formatEntitlementDate(this.props.entitlement)}</strong>
                                             </div>
+                                            <div className={styles.zhimengAccountMeta}>
+                                                <span>{'已绑定设备'}</span>
+                                                <strong>{formatDeviceCount(this.props.entitlement)}</strong>
+                                            </div>
                                         </div>
                                     </MenuSection>
                                     <MenuSection>
@@ -862,7 +881,7 @@ class MenuBar extends React.Component {
                                     key="join"
                                     onMouseUp={this.props.onOpenRegistration}
                                 >
-                                    {'注册知萌'}
+                                    {'注册新祥编程'}
                                 </div>
                                 <div
                                     className={classNames(

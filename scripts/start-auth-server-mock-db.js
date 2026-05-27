@@ -5,10 +5,11 @@ const entitlements = new Map();
 const refreshTokens = new Map();
 const userDevices = new Map();
 const orders = new Map();
+const entitlementEvents = [];
 let nextOrderId = 1;
 let nextUserId = 2;
 
-const nowPlusDays = days => new Date(Date.now() + (days * 24 * 60 * 60 * 1000));
+const planDurationDays = plan => (plan === 'bootcamp_7d' ? 7 : 365);
 
 const ensureSeed = () => {
     if (users.has(1)) return;
@@ -16,7 +17,7 @@ const ensureSeed = () => {
         id: 1,
         username: 'demo',
         password_hash: '123456',
-        nickname: '知萌体验账号',
+        nickname: '新祥编程体验账号',
         permission_student: 1,
         permission_educator: 0
     });
@@ -26,7 +27,11 @@ const ensureSeed = () => {
         plan: '',
         features_json: JSON.stringify([]),
         device_limit: 3,
-        subscription_expires_at: null
+        subscription_expires_at: null,
+        status_reason: null,
+        status_note: null,
+        status_operator: null,
+        status_updated_at: null
     });
     userDevices.set(1, []);
 };
@@ -71,7 +76,11 @@ const mockDb = {
             plan: '',
             features_json: JSON.stringify([]),
             device_limit: 3,
-            subscription_expires_at: null
+            subscription_expires_at: null,
+            status_reason: null,
+            status_note: null,
+            status_operator: null,
+            status_updated_at: null
         });
         userDevices.set(id, []);
         return id;
@@ -114,6 +123,11 @@ const mockDb = {
     bindDevice: (userId, deviceId, deviceName) => {
         const uid = Number(userId);
         const row = entitlements.get(uid);
+        if (row && row.status === 'frozen') {
+            const err = new Error('Account frozen');
+            err.statusCode = 403;
+            throw err;
+        }
         const limit = row && row.device_limit ? row.device_limit : 3;
         const list = userDevices.get(uid) || [];
         const existing = list.find(d => d.device_id === deviceId);
@@ -140,6 +154,48 @@ const mockDb = {
         const uid = Number(userId);
         const list = userDevices.get(uid) || [];
         userDevices.set(uid, list.filter(d => d.device_id !== deviceId));
+    },
+    updateEntitlementStatus: ({userId, status, operator, reason, note, action}) => {
+        const uid = Number(userId);
+        const current = entitlements.get(uid) || {};
+        let nextStatus = status;
+        if (status === 'unfreeze') {
+            const expiresAt = current.subscription_expires_at ?
+                new Date(current.subscription_expires_at).getTime() :
+                0;
+            nextStatus = expiresAt > Date.now() ? 'active' : 'inactive';
+        }
+        entitlements.set(uid, {
+            ...current,
+            user_id: uid,
+            status: nextStatus,
+            status_reason: reason || null,
+            status_note: note || null,
+            status_operator: operator || '',
+            status_updated_at: new Date().toISOString()
+        });
+        entitlementEvents.push({
+            user_id: uid,
+            action: action || status,
+            operator: operator || '',
+            reason: reason || '',
+            note: note || null
+        });
+        return mergeUserRow(uid);
+    },
+    unbindDeviceByAdmin: ({userId, deviceId, operator, reason, note}) => {
+        const uid = Number(userId);
+        const list = userDevices.get(uid) || [];
+        userDevices.set(uid, list.filter(d => d.device_id !== deviceId));
+        entitlementEvents.push({
+            user_id: uid,
+            action: 'device_unbind',
+            operator: operator || '',
+            reason: reason || '',
+            note: note || null,
+            payload: {deviceId}
+        });
+        return true;
     },
     createOrder: ({
         userId,
@@ -293,17 +349,28 @@ const mockDb = {
     },
     activateEntitlementFromOrder: (userId, plan) => {
         const uid = Number(userId);
+        const current = entitlements.get(uid) || {};
+        const now = Date.now();
+        const currentExpiresAt = current.subscription_expires_at ?
+            new Date(current.subscription_expires_at).getTime() :
+            0;
+        const baseTime = currentExpiresAt > now ? currentExpiresAt : now;
+        const nextPlan = current.plan === 'family_yearly' && plan === 'bootcamp_7d' && currentExpiresAt > now ?
+            current.plan :
+            (plan || 'family_yearly');
         entitlements.set(uid, {
+            ...current,
             user_id: uid,
-            status: 'active',
-            plan: plan || 'family_yearly',
+            status: current.status === 'frozen' ? 'frozen' : 'active',
+            plan: nextPlan,
             features_json: JSON.stringify(['cloud_save', 'share', 'community', 'backpack']),
             device_limit: 3,
-            subscription_expires_at: nowPlusDays(365)
+            subscription_expires_at: new Date(baseTime + (planDurationDays(plan) * 24 * 60 * 60 * 1000))
         });
     },
     bcrypt: {
-        compareSync: (password, stored) => password === stored
+        compareSync: (password, stored) => password === stored,
+        hashSync: password => password
     }
 };
 

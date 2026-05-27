@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>知萌 — 订单确认</title>
-  <meta name="description" content="知萌运营订单确认工作台。" />
+  <title>新祥编程 — 订单确认</title>
+  <meta name="description" content="新祥编程运营订单确认工作台。" />
   <link rel="icon" href="assets/logo.png" type="image/png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -13,10 +13,10 @@
     <header class="ops-hero">
       <div class="ops-hero-brand">
         <div class="logo-wrap logo-wrap-small">
-          <img class="logo" src="assets/logo.png" width="256" height="256" alt="知萌" />
+          <img class="logo" src="assets/logo.png" width="256" height="256" alt="新祥编程" />
         </div>
         <div>
-          <div class="eyebrow">知萌运营工作台</div>
+          <div class="eyebrow">新祥编程运营工作台</div>
           <h1>订单确认</h1>
           <p class="subtitle">核对到账后，一键为用户开通完整编辑器。</p>
         </div>
@@ -51,6 +51,38 @@
       </form>
     </section>
 
+    <section class="card ops-account-admin" aria-labelledby="account-admin-heading">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">账号管理</div>
+          <h2 id="account-admin-heading">授权、冻结与设备解绑</h2>
+        </div>
+        <div class="ops-state-pill">最多 3 台设备</div>
+      </div>
+      <form id="account-search-form" class="ops-account-form">
+        <label>
+          <span>账号</span>
+          <input id="account-username" type="text" autocomplete="off" required placeholder="输入新祥编程账号" />
+        </label>
+        <label>
+          <span>操作人</span>
+          <input id="account-operator" type="text" autocomplete="off" placeholder="例如：王老师" />
+        </label>
+        <label>
+          <span>原因</span>
+          <input id="account-reason" type="text" autocomplete="off" placeholder="冻结、解冻或解绑原因" />
+        </label>
+        <label class="ops-account-note">
+          <span>备注</span>
+          <input id="account-note" type="text" autocomplete="off" placeholder="可选，记录沟通背景" />
+        </label>
+        <button class="btn btn-primary compact-btn" type="submit">查询账号</button>
+      </form>
+      <div id="account-result" class="ops-account-result" aria-live="polite">
+        <div class="empty-state">输入账号后，可查看授权状态、到期时间和已绑定设备。</div>
+      </div>
+    </section>
+
     <section class="card ops-profit-dashboard" aria-labelledby="profit-heading">
       <div class="section-header">
         <div>
@@ -77,6 +109,38 @@
       </div>
     </section>
 
+    <section class="card ops-bootcamp-sop" aria-labelledby="bootcamp-sop-heading">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">交付 SOP</div>
+          <h2 id="bootcamp-sop-heading">7 天项目陪跑交付</h2>
+        </div>
+        <div class="ops-state-pill is-ok">防止卖了交付不动</div>
+      </div>
+      <div class="bootcamp-sop-grid">
+        <article>
+          <span>Day 0</span>
+          <strong>开通与建群</strong>
+          <p>确认到账后开通授权，发新手入口，约定 7 天目标：完成 3 个入门作品。</p>
+        </article>
+        <article>
+          <span>Day 1-2</span>
+          <strong>第一个作品</strong>
+          <p>引导完成“会说话的小角色”，重点让孩子看到自己做出了画面。</p>
+        </article>
+        <article>
+          <span>Day 3-5</span>
+          <strong>第二、三个作品</strong>
+          <p>推进生日祝福动画和接水果小游戏，只处理卡点，不做重课。</p>
+        </article>
+        <article>
+          <span>Day 6-7</span>
+          <strong>收尾与复购判断</strong>
+          <p>收作品截图、家长反馈和续学意向，判断是否推荐 30 天作品营。</p>
+        </article>
+      </div>
+    </section>
+
     <section class="card ops-dashboard" aria-labelledby="orders-heading">
       <div class="section-header">
         <div>
@@ -87,6 +151,42 @@
       </div>
       <div id="orders-empty" class="empty-state">暂无已提交付款凭证的订单。</div>
       <div id="orders-list" class="ops-list"></div>
+    </section>
+
+    <section class="card ops-daily-review" aria-labelledby="daily-review-heading">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">每日复盘</div>
+          <h2 id="daily-review-heading">首批 20 个家庭推进表</h2>
+        </div>
+        <div class="ops-state-pill is-ok">每天收盘前填写</div>
+      </div>
+      <div class="daily-review-grid">
+        <article>
+          <h3>今天必须看</h3>
+          <ul>
+            <li>触达、下载、注册、下单、付款各有多少？</li>
+            <li>陪跑包有几单意向、几单成交？</li>
+            <li>孩子完成了几个作品？有没有截图或原话？</li>
+            <li>哪一单有退款或流失风险？</li>
+          </ul>
+        </article>
+        <article>
+          <h3>明天必须做</h3>
+          <ul>
+            <li>优先跟进已下载未注册、已下单未付款的家庭。</li>
+            <li>优先推动陪跑包用户完成下一个作品。</li>
+            <li>把高频问题转成官网、客户端或话术优化。</li>
+          </ul>
+        </article>
+      </div>
+      <div class="daily-review-template">
+        <div class="ops-copy-card-head">
+          <h3>复盘模板</h3>
+          <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-daily-review-copy">复制</button>
+        </div>
+        <p id="ops-daily-review-copy">【新祥编程日复盘】今日触达：__ 家；下载：__；注册：__；创建订单：__；付款：__；陪跑包意向：__；陪跑包成交：__；完成第一个作品：__；完成 3 个作品：__；今日收入：__；预估利润：__；最大阻塞：__；明日第一动作：__。</p>
+      </div>
     </section>
 
     <section class="card ops-copy-kit" aria-labelledby="ops-copy-heading">
@@ -104,35 +204,56 @@
             <h3>朋友圈版</h3>
             <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-moments">复制</button>
           </div>
-          <p id="ops-copy-moments">我最近在做一个少儿创意编程启蒙产品「知萌」。它适合 6-10 岁孩子在电脑上用积木编程做故事、动画和小游戏。首发家庭年卡 199 元/年，适合想让孩子先低成本试试编程、但还不确定要不要报课的家庭。现在招募首批种子用户，感兴趣可以私信我，我发下载和开通方式。</p>
+          <p id="ops-copy-moments">我最近在做一个少儿创意编程启蒙产品「新祥编程」。它适合 6-10 岁孩子在电脑上用积木编程做故事、动画和小游戏。首发家庭年卡 199 元/年，适合想让孩子先低成本试试编程、但还不确定要不要报课的家庭。现在招募首批种子用户，感兴趣可以私信我，我发下载和开通方式。</p>
         </article>
         <article class="ops-copy-card">
           <div class="ops-copy-card-head">
             <h3>微信群版</h3>
             <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-group">复制</button>
           </div>
-          <p id="ops-copy-group">大家好，我最近在做「知萌」，一款少儿创意编程启蒙桌面客户端。孩子可以用积木编程做故事、动画和小游戏。首发家庭年卡 199 元/年，主要想验证下载、注册、付款、开通和孩子首次创作流程。家里有 6-10 岁孩子、愿意体验反馈的家长可以私聊我。</p>
+          <p id="ops-copy-group">大家好，我最近在做「新祥编程」，一款少儿创意编程启蒙桌面客户端。孩子可以用积木编程做故事、动画和小游戏。首发家庭年卡 199 元/年，主要想验证下载、注册、付款、开通和孩子首次创作流程。家里有 6-10 岁孩子、愿意体验反馈的家长可以私聊我。</p>
         </article>
         <article class="ops-copy-card">
           <div class="ops-copy-card-head">
             <h3>一对一私聊版</h3>
             <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-private">复制</button>
           </div>
-          <p id="ops-copy-private">你好，我最近在做一个少儿创意编程启蒙产品，叫「知萌」。它不是直播课，也不是一上来几千块的课程，而是家庭年卡 199 元/年的桌面创作工具。流程是：下载客户端 -> 注册账号 -> 订阅解锁 -> 扫码付款 -> 提交凭证 -> 运营确认后刷新授权。如果你愿意试一下，我可以发你下载地址。</p>
+          <p id="ops-copy-private">你好，我最近在做一个少儿创意编程启蒙产品，叫「新祥编程」。它不是直播课，也不是一上来几千块的课程，而是家庭年卡 199 元/年的桌面创作工具。流程是：下载客户端 -> 注册账号 -> 订阅解锁 -> 扫码付款 -> 提交凭证 -> 运营确认后刷新授权。如果你愿意试一下，我可以发你下载地址。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>家长首次邀请</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-parent-invite">复制</button>
+          </div>
+          <p id="ops-copy-parent-invite">你好，我最近在做一个少儿创意编程启蒙产品，叫「新祥编程」。它适合 6-10 岁孩子在电脑上用积木编程做故事、动画和小游戏。首发有两个选择：家庭年卡 199 元/年，开通完整编程编辑器；7 天项目陪跑包 699 元/期，适合希望孩子这一周真正做出 3 个入门作品的家庭。如果你愿意试一下，我发你下载和开通步骤。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>下载开通步骤</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-start-steps">复制</button>
+          </div>
+          <p id="ops-copy-start-steps">操作步骤：1. 打开新祥编程官网并按电脑系统下载安装包；2. Mac M1/M2/M3/M4 选 Apple 芯片版，老款 Intel Mac 选 Intel 版，Windows 优先选安装版；3. 打开客户端注册或登录账号；4. 点击「订阅解锁」，选择家庭年卡或 7 天项目陪跑包；5. 扫码付款并提交付款凭证；6. 运营确认到账后，回到客户端点击「刷新授权」。首发阶段是人工确认，不是扫码后自动开通。</p>
+        </article>
+        <article class="ops-copy-card">
+          <div class="ops-copy-card-head">
+            <h3>7 天陪跑包推荐</h3>
+            <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-bootcamp">复制</button>
+          </div>
+          <p id="ops-copy-bootcamp">如果希望孩子这周真正做出作品，可以选择新祥编程 7 天项目陪跑包：我们按 3 个入门作品陪孩子走一遍，群内答疑，不做长期一对一课。首期 699 元/期，适合想先看到孩子能不能坐下来创作的家庭。</p>
         </article>
         <article class="ops-copy-card">
           <div class="ops-copy-card-head">
             <h3>已提交凭证待确认</h3>
             <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-waiting">复制</button>
           </div>
-          <p id="ops-copy-waiting">已经收到你的付款凭证。知萌首发阶段采用人工确认到账，我们会核对真实收款记录。确认后你回到客户端点击「刷新授权」，就可以进入完整编程编辑器。</p>
+          <p id="ops-copy-waiting">已经收到你的付款凭证。新祥编程首发阶段采用人工确认到账，我们会核对真实收款记录。确认后你回到客户端点击「刷新授权」，就可以进入完整编程编辑器。</p>
         </article>
         <article class="ops-copy-card">
           <div class="ops-copy-card-head">
             <h3>已开通提醒</h3>
             <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-activated">复制</button>
           </div>
-          <p id="ops-copy-activated">知萌账号已经为你开通。请回到客户端点击「刷新授权」，进入完整编辑器后建议先完成「会说话的小角色」这个第一个作品。如果打开或授权有问题，直接把截图发我。</p>
+          <p id="ops-copy-activated">新祥编程账号已经为你开通。请回到客户端点击「刷新授权」，进入完整编辑器后建议先完成「会说话的小角色」这个第一个作品。如果打开或授权有问题，直接把截图发我。</p>
         </article>
         <article class="ops-copy-card">
           <div class="ops-copy-card-head">
@@ -146,7 +267,7 @@
             <h3>反馈收集</h3>
             <button class="text-btn ops-copy-btn" type="button" data-copy-target="ops-copy-feedback">复制</button>
           </div>
-          <p id="ops-copy-feedback">方便的话，发我三类反馈：孩子有没有愿意继续玩、哪一步卡住了、完成了什么小作品。截图或一句话都可以，这会帮助我们把知萌打磨得更适合孩子第一次学编程。</p>
+          <p id="ops-copy-feedback">方便的话，发我三类反馈：孩子有没有愿意继续玩、哪一步卡住了、完成了什么小作品。截图或一句话都可以，这会帮助我们把新祥编程打磨得更适合孩子第一次学编程。</p>
         </article>
       </div>
       <p id="ops-copy-status" class="copy-status" role="status"></p>
@@ -160,7 +281,7 @@
   <div id="ops-confirm-dialog" class="ops-dialog-backdrop" hidden>
     <section class="ops-dialog" role="dialog" aria-modal="true" aria-labelledby="ops-confirm-title">
       <div class="ops-dialog-brand">
-        <img src="assets/logo.png" width="48" height="48" alt="知萌" />
+        <img src="assets/logo.png" width="48" height="48" alt="新祥编程" />
         <div>
           <div class="eyebrow">到账确认</div>
           <h2 id="ops-confirm-title">确认开通授权？</h2>
@@ -195,6 +316,12 @@
   var confirmCancelBtn = document.getElementById('ops-confirm-cancel');
   var copyStatusEl = document.getElementById('ops-copy-status');
   var profitSummaryEl = document.getElementById('profit-summary');
+  var accountForm = document.getElementById('account-search-form');
+  var accountUsernameInput = document.getElementById('account-username');
+  var accountOperatorInput = document.getElementById('account-operator');
+  var accountReasonInput = document.getElementById('account-reason');
+  var accountNoteInput = document.getElementById('account-note');
+  var accountResultEl = document.getElementById('account-result');
 
   function defaultApiBase() {
     var params = new URLSearchParams(window.location.search);
@@ -266,6 +393,16 @@
     }[method] || method || '-';
   }
 
+  function entitlementStatusLabel(status) {
+    return {
+      active: '已开通',
+      inactive: '未开通',
+      expired: '已到期',
+      frozen: '已冻结',
+      pending: '待确认'
+    }[status] || status || '未知';
+  }
+
   function planLabel(plan) {
     return {
       family_yearly: '家庭年卡',
@@ -333,13 +470,25 @@
     var starterDone = confirmed.filter(function (order) {
       return order.business && order.business.starterCompleted;
     }).length;
+    var bootcampOrders = confirmed.filter(function (order) {
+      var business = order.business || {};
+      return (business.packageType || order.plan) === 'bootcamp_7d';
+    });
+    var bootcampCompletedProjects = bootcampOrders.reduce(function (sum, order) {
+      var projects = order.business && Array.isArray(order.business.completedProjects) ?
+        order.business.completedProjects :
+        [];
+      return sum + projects.length;
+    }, 0);
     profitSummaryEl.innerHTML = [
       '<div><span>已确认收入</span><strong>' + escapeHtml(formatAmount(revenue, 'CNY')) + '</strong></div>',
       '<div><span>预估成本</span><strong>' + escapeHtml(formatAmount(costs, 'CNY')) + '</strong></div>',
       '<div><span>预估利润</span><strong>' + escapeHtml(formatAmount(profit, 'CNY')) + '</strong></div>',
       '<div><span>利润率</span><strong>' + margin + '%</strong></div>',
       '<div><span>已确认订单</span><strong>' + confirmed.length + ' 单</strong></div>',
-      '<div><span>完成第一个作品</span><strong>' + starterDone + ' 单</strong></div>'
+      '<div><span>完成第一个作品</span><strong>' + starterDone + ' 单</strong></div>',
+      '<div><span>陪跑包成交</span><strong>' + bootcampOrders.length + ' 单</strong></div>',
+      '<div><span>陪跑作品完成</span><strong>' + bootcampCompletedProjects + ' 个</strong></div>'
     ].join('');
   }
 
@@ -359,6 +508,148 @@
       }
       return res.json();
     });
+  }
+
+  function accountActionPayload() {
+    var operator = accountOperatorInput.value.trim() ||
+      localStorage.getItem('zhimengOpsOperator') ||
+      'ops';
+    localStorage.setItem('zhimengOpsOperator', operator);
+    return {
+      operator: operator,
+      reason: accountReasonInput.value.trim(),
+      note: accountNoteInput.value.trim()
+    };
+  }
+
+  function renderDeviceList(devices) {
+    if (!devices.length) {
+      return '<div class="empty-state">暂无绑定设备。</div>';
+    }
+    return devices.map(function (device) {
+      return [
+        '<article class="ops-device-row">',
+          '<div>',
+            '<strong>' + escapeHtml(device.device_name || '未命名设备') + '</strong>',
+            '<span>' + escapeHtml(device.device_id || '-') + '</span>',
+          '</div>',
+          '<small>最近使用：' + escapeHtml(formatDateTime(device.last_seen_at)) + '</small>',
+          '<button class="btn btn-secondary compact-btn" type="button" data-account-action="unbind-device" data-device-id="' +
+            escapeHtml(device.device_id || '') + '">解绑</button>',
+        '</article>'
+      ].join('');
+    }).join('');
+  }
+
+  function renderAccount(data) {
+    var entitlement = data.entitlement || {};
+    var devices = Array.isArray(entitlement.devices) ? entitlement.devices : [];
+    var status = entitlement.status || 'inactive';
+    accountResultEl.innerHTML = [
+      '<div class="ops-account-summary">',
+        '<div>',
+          '<span>账号</span>',
+          '<strong>' + escapeHtml(data.user && data.user.username || '-') + '</strong>',
+        '</div>',
+        '<div>',
+          '<span>状态</span>',
+          '<strong>' + escapeHtml(entitlementStatusLabel(status)) + '</strong>',
+        '</div>',
+        '<div>',
+          '<span>套餐</span>',
+          '<strong>' + escapeHtml(planLabel(entitlement.plan)) + '</strong>',
+        '</div>',
+        '<div>',
+          '<span>到期时间</span>',
+          '<strong>' + escapeHtml(formatDateTime(entitlement.expires_at)) + '</strong>',
+        '</div>',
+        '<div>',
+          '<span>绑定设备</span>',
+          '<strong>' + devices.length + '/' + (entitlement.device_limit || 3) + '</strong>',
+        '</div>',
+        '<div>',
+          '<span>状态原因</span>',
+          '<strong>' + escapeHtml(entitlement.status_reason || '-') + '</strong>',
+        '</div>',
+      '</div>',
+      '<div class="ops-account-actions">',
+        status === 'frozen' ?
+          '<button class="btn btn-primary compact-btn" type="button" data-account-action="unfreeze">解冻账号</button>' :
+          '<button class="btn btn-secondary compact-btn" type="button" data-account-action="freeze">冻结账号</button>',
+        '<button class="btn btn-secondary compact-btn" type="button" data-account-action="reload">重新查询</button>',
+      '</div>',
+      '<div class="ops-account-devices">',
+        '<div class="ops-proof-title">已绑定设备</div>',
+        renderDeviceList(devices),
+      '</div>'
+    ].join('');
+    Array.prototype.forEach.call(accountResultEl.querySelectorAll('[data-account-action]'), function (button) {
+      button.addEventListener('click', function () {
+        var action = button.getAttribute('data-account-action');
+        if (action === 'reload') {
+          loadAccount();
+          return;
+        }
+        mutateAccount(action, button.getAttribute('data-device-id'));
+      });
+    });
+  }
+
+  function loadAccount() {
+    clearMessages();
+    var username = accountUsernameInput.value.trim();
+    if (!getApiBase() || !tokenInput.value.trim()) {
+      setupCard.classList.remove('is-collapsed');
+      showErr('请先输入运营口令，再查询账号。');
+      return Promise.resolve();
+    }
+    if (!username) {
+      showErr('请先输入新祥编程账号。');
+      return Promise.resolve();
+    }
+    return adminFetch('/admin/user/' + encodeURIComponent(username))
+      .then(function (data) {
+        renderAccount(data);
+        setupCard.classList.add('is-collapsed');
+        showSuccess('已加载账号 ' + username + '。');
+      })
+      .catch(function (err) {
+        showErr(err.message || '账号查询失败');
+      });
+  }
+
+  function mutateAccount(action, deviceId) {
+    var username = accountUsernameInput.value.trim();
+    var payload = accountActionPayload();
+    var path = '/admin/user/' + encodeURIComponent(username);
+    if (action === 'freeze') {
+      path += '/freeze';
+      payload.reason = payload.reason || '运营冻结';
+    } else if (action === 'unfreeze') {
+      path += '/unfreeze';
+      payload.reason = payload.reason || '运营解冻';
+    } else if (action === 'unbind-device') {
+      if (!deviceId) {
+        showErr('缺少要解绑的设备 ID。');
+        return;
+      }
+      path += '/device/unbind';
+      payload.device_id = deviceId;
+      payload.reason = payload.reason || '运营解绑旧设备';
+    } else {
+      return;
+    }
+    adminFetch(path, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+      .then(function () {
+        showSuccess('账号操作已完成。');
+        return loadAccount();
+      })
+      .catch(function (err) {
+        showErr(err.message || '账号操作失败');
+      });
   }
 
   function escapeHtml(value) {
@@ -540,17 +831,55 @@
           optionHtml('starter_done', '已完成第一个作品', business.followupStatus),
           optionHtml('bootcamp_pitch', '已推荐 7 天陪跑包', business.followupStatus),
           optionHtml('bootcamp_paid', '已购买 7 天陪跑包', business.followupStatus),
+          optionHtml('bootcamp_day1', '陪跑 Day 1-2', business.followupStatus),
+          optionHtml('bootcamp_day3', '陪跑 Day 3-5', business.followupStatus),
+          optionHtml('bootcamp_wrap', '陪跑收尾复盘', business.followupStatus),
+          optionHtml('upsell_ready', '可推荐 30 天作品营', business.followupStatus),
+          optionHtml('refund_risk', '有退款/流失风险', business.followupStatus),
         '</select></label>',
+        '<label>陪跑进度<select name="bootcampDay">',
+          optionHtml('', '未开始/非陪跑包', business.bootcampDay),
+          optionHtml('0', 'Day 0 开通建群', business.bootcampDay),
+          optionHtml('1', 'Day 1', business.bootcampDay),
+          optionHtml('2', 'Day 2', business.bootcampDay),
+          optionHtml('3', 'Day 3', business.bootcampDay),
+          optionHtml('4', 'Day 4', business.bootcampDay),
+          optionHtml('5', 'Day 5', business.bootcampDay),
+          optionHtml('6', 'Day 6', business.bootcampDay),
+          optionHtml('7', 'Day 7 收尾', business.bootcampDay),
+        '</select></label>',
+        '<fieldset class="ops-business-projects">',
+          '<legend>已完成作品</legend>',
+          projectCheckbox('talking_character', '会说话的小角色', business.completedProjects),
+          projectCheckbox('birthday_animation', '生日祝福动画', business.completedProjects),
+          projectCheckbox('catch_fruit_game', '接水果小游戏', business.completedProjects),
+        '</fieldset>',
+        '<label>风险等级<select name="riskLevel">',
+          optionHtml('', '未记录', business.riskLevel),
+          optionHtml('low', '低风险', business.riskLevel),
+          optionHtml('medium', '需跟进', business.riskLevel),
+          optionHtml('high', '高风险/可能退款', business.riskLevel),
+        '</select></label>',
+        '<label>下次跟进<input name="nextFollowupAt" type="datetime-local" value="' + escapeHtml(business.nextFollowupAt || '') + '" /></label>',
         '<label class="ops-business-check"><input name="starterCompleted" type="checkbox" ' + (business.starterCompleted ? 'checked' : '') + ' /> 已完成第一个作品</label>',
+        '<label class="ops-business-delivery">交付备注<textarea name="deliveryNote" rows="2" placeholder="例如：Day 2 已完成小角色，家长反馈孩子愿意继续；明晚推进生日祝福动画。">' + escapeHtml(business.deliveryNote || '') + '</textarea></label>',
         '<label class="ops-business-note">经营备注<textarea name="businessNote" rows="2" placeholder="例如：朋友转介绍，无佣金；已推荐 699 陪跑包">' + escapeHtml(business.note || '') + '</textarea></label>',
         '<button class="btn btn-secondary compact-btn" type="submit">保存经营记录</button>',
       '</form>'
     ].join('');
   }
 
+  function projectCheckbox(value, label, selected) {
+    var completed = Array.isArray(selected) ? selected : [];
+    return '<label><input name="completedProject" type="checkbox" value="' + escapeHtml(value) + '"' +
+      (completed.indexOf(value) >= 0 ? ' checked' : '') +
+      ' /> ' + escapeHtml(label) + '</label>';
+  }
+
   function optionHtml(value, label, selected) {
+    var selectedValue = selected === null || typeof selected === 'undefined' ? '' : String(selected);
     return '<option value="' + escapeHtml(value) + '"' +
-      (String(value) === String(selected || '') ? ' selected' : '') +
+      (String(value) === selectedValue ? ' selected' : '') +
       '>' + escapeHtml(label) + '</option>';
   }
 
@@ -598,6 +927,16 @@
       starter_completed: form.querySelector('[name="starterCompleted"]').checked,
       first_project_type: form.querySelector('[name="firstProjectType"]').value,
       followup_status: form.querySelector('[name="followupStatus"]').value,
+      bootcamp_day: form.querySelector('[name="bootcampDay"]').value,
+      completed_projects: Array.prototype.map.call(
+        form.querySelectorAll('[name="completedProject"]:checked'),
+        function (input) {
+          return input.value;
+        }
+      ),
+      risk_level: form.querySelector('[name="riskLevel"]').value,
+      next_followup_at: form.querySelector('[name="nextFollowupAt"]').value,
+      delivery_note: form.querySelector('[name="deliveryNote"]').value,
       note: form.querySelector('[name="businessNote"]').value
     };
     form.querySelector('button[type="submit"]').disabled = true;
@@ -708,6 +1047,7 @@
   apiInput.value = localStorage.getItem('zhimengOpsApiBase') || defaultApiBase();
   tokenInput.value = localStorage.getItem('zhimengOpsAdminToken') ||
     new URLSearchParams(window.location.search).get('ops_token') || '';
+  accountOperatorInput.value = localStorage.getItem('zhimengOpsOperator') || '';
   if (tokenInput.value) {
     setupCard.classList.add('is-collapsed');
   }
@@ -725,6 +1065,11 @@
 
   toggleSettingsBtn.addEventListener('click', function () {
     setupCard.classList.toggle('is-collapsed');
+  });
+
+  accountForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    loadAccount();
   });
 
   Array.prototype.forEach.call(document.querySelectorAll('.ops-copy-btn'), function (button) {

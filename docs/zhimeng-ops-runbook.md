@@ -1,4 +1,4 @@
-# 知萌上线运维 Runbook
+# 新祥编程上线运维 Runbook
 
 ## 发布前闸门
 
@@ -11,6 +11,7 @@
 7. 构建 macOS 与 Windows 包：`npm run dist:mac:arm64`、`npm run dist:mac:x64`、`npm run dist:win`
 8. 上传 macOS Apple 芯片版、macOS Intel 芯片版、Windows 安装包与便携包到 CDN，设置 `.env.production` 中的 `ZHIMENG_MACOS_ARM64_URL` / `ZHIMENG_MACOS_X64_URL` / `ZHIMENG_WINDOWS_NSIS_URL` / `ZHIMENG_WINDOWS_PORTABLE_URL`，执行 `npm run release:update-downloads`。
 9. 确认 `website/releases.json` 指向真实 CDN 地址，并记录版本 tag。
+10. 使用 `ops.html` 查询测试账号，验证状态、到期时间、设备数、冻结/解冻和设备解绑均可用。
 
 本地桌面 UI 验收请使用 `npm run electron-dev:full` 启动完整栈；只启动 `npm run electron-dev` 时不会自动启动认证后端，注册/登录会报网络连接失败。
 
@@ -38,6 +39,13 @@
 
 若已部署静态站，可打开 `ops.html`，输入 API 地址和 `ZHIMENG_ADMIN_TOKEN`，查看已提交付款凭证的订单并人工确认到账。确认页会要求填写操作人、真实交易号、确认金额和币种；确认前仍必须核对商户/银行实际到账记录。
 
+`ops.html` 也负责账号管理：
+
+- 查询账号授权状态、套餐、到期时间、设备数和历史订单。
+- 冻结账号：适用于付款争议、异常使用、退款处理中等场景。冻结后客户端联网刷新会立即锁定；离线客户端最多受 7 天租约影响。
+- 解冻账号：若订阅仍未到期会恢复 `active`；若已过期或未开通会恢复 `inactive`。
+- 解绑设备：一个账号最多 3 台设备，第 4 台会锁定。用户更换电脑时由运营解绑旧设备，客户端不提供自助解绑。
+
 ```bash
 curl -H "X-Zhimeng-Admin-Token: $ZHIMENG_ADMIN_TOKEN" \
   https://api.example.com/admin/user/<username>
@@ -51,6 +59,28 @@ curl -H "X-Zhimeng-Admin-Token: $ZHIMENG_ADMIN_TOKEN" \
 curl -H "X-Zhimeng-Admin-Token: $ZHIMENG_ADMIN_TOKEN" \
   https://api.example.com/admin/order/o_<id>/payment-proof-attachment/<attachment_id> \
   --output payment-proof.jpg
+```
+
+冻结、解冻和解绑设备：
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-Zhimeng-Admin-Token: $ZHIMENG_ADMIN_TOKEN" \
+  -d '{"operator":"ops","reason":"payment dispute","note":"退款处理中"}' \
+  https://api.example.com/admin/user/<username>/freeze
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-Zhimeng-Admin-Token: $ZHIMENG_ADMIN_TOKEN" \
+  -d '{"operator":"ops","reason":"dispute resolved"}' \
+  https://api.example.com/admin/user/<username>/unfreeze
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-Zhimeng-Admin-Token: $ZHIMENG_ADMIN_TOKEN" \
+  -d '{"device_id":"zm_xxx","operator":"ops","reason":"user changed computer"}' \
+  https://api.example.com/admin/user/<username>/device/unbind
 ```
 
 人工确认订单：

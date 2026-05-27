@@ -63,6 +63,8 @@ describe('MenuBar Component', () => {
         const menuBar = mountWithIntl(getComponent({
             authStatus: 'inactive',
             entitlement: {
+                devices: [{device_id: 'd1'}],
+                device_limit: 3,
                 expires_at: '2026-12-31T00:00:00.000Z',
                 plan: 'family_yearly',
                 status: 'inactive'
@@ -90,9 +92,62 @@ describe('MenuBar Component', () => {
         expect(menuBar.text()).toContain('未开通');
         expect(menuBar.text()).toContain('family_yearly');
         expect(menuBar.text()).toContain('2026-12-31T00:00:00.000Z');
+        expect(menuBar.text()).toContain('已绑定设备');
+        expect(menuBar.text()).toContain('1/3');
         expect(menuBar.text()).toContain('订阅解锁');
         expect(menuBar.text()).toContain('刷新授权');
         expect(menuBar.text()).toContain('退出登录');
         expect(menuBar.text()).not.toContain('My Stuff');
+    });
+
+    test('logged-in account menu distinguishes frozen and device-limit states', () => {
+        const frozenMenu = mountWithIntl(getComponent({
+            authStatus: 'frozen',
+            entitlement: {
+                device_limit: 3,
+                devices: [],
+                status: 'frozen'
+            },
+            onRefreshEntitlement: jest.fn(),
+            storeOverrides: {
+                menus: {
+                    ...menuInitialState,
+                    accountMenu: true
+                },
+                session: {
+                    session: {
+                        user: {
+                            username: 'frozen_user'
+                        }
+                    }
+                }
+            }
+        }));
+        expect(frozenMenu.text()).toContain('已冻结');
+
+        const limitMenu = mountWithIntl(getComponent({
+            authStatus: 'deviceLimit',
+            entitlement: {
+                device_limit: 3,
+                devices: [{device_id: 'a'}, {device_id: 'b'}, {device_id: 'c'}],
+                status: 'deviceLimit'
+            },
+            onRefreshEntitlement: jest.fn(),
+            storeOverrides: {
+                menus: {
+                    ...menuInitialState,
+                    accountMenu: true
+                },
+                session: {
+                    session: {
+                        user: {
+                            username: 'limit_user'
+                        }
+                    }
+                }
+            }
+        }));
+        expect(limitMenu.text()).toContain('设备已满');
+        expect(limitMenu.text()).toContain('3/3');
     });
 });

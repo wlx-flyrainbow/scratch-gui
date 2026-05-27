@@ -78,6 +78,11 @@ const paymentChannelLabel = channel => ({
     wechat: '微信'
 }[channel] || '微信');
 
+const billingPlanLabel = plan => ({
+    bootcamp_7d: '7 天项目陪跑包',
+    family_yearly: '家庭年卡'
+}[plan] || plan || '家庭年卡');
+
 const paymentChannelConfig = channel => ({
     alipay: {
         label: '支付宝',
@@ -126,6 +131,16 @@ const orderStatusLabel = status => ({
     fulfilled: '已开通',
     paid: '已付款'
 }[status] || '待付款');
+
+const authStatusLabel = status => ({
+    active: '已开通',
+    deviceLimit: '设备已满',
+    expired: '已到期',
+    frozen: '已冻结',
+    inactive: '待开通',
+    leaseExpired: '需刷新',
+    signedOut: '待登录'
+}[status] || '待开通');
 
 const localDateTimeToIso = value => {
     if (!value) return '';
@@ -326,7 +341,8 @@ const GUIComponent = props => {
     const handleCreateOrderSubmit = event => {
         event.preventDefault();
         const channel = event.currentTarget.elements.channel.value;
-        onOpenBilling(channel);
+        const plan = event.currentTarget.elements.plan.value;
+        onOpenBilling(channel, plan);
     };
     const handlePaymentMethodChange = event => {
         onPaymentMethodChange(event.currentTarget.value);
@@ -351,6 +367,7 @@ const GUIComponent = props => {
     const billingQrCodeUrl = selectedPaymentMethodConfig.qr_code_url ||
         (billingOrder && selectedPaymentMethod === billingOrder.channel ? billingOrder.qr_code_url : null) ||
         (billingOrder ? switchQrChannel(billingOrder.qr_code_url, selectedPaymentMethod) : null);
+    const canSubscribeFromLock = authStatus !== 'frozen' && authStatus !== 'deviceLimit';
 
     if (isRendererSupported === null) {
         isRendererSupported = Renderer.isSupported();
@@ -431,7 +448,7 @@ const GUIComponent = props => {
                 {loginModalOpen ? (
                     <Modal
                         className={styles.zhimengAuthModal}
-                        contentLabel={'登录知萌账号'}
+                        contentLabel={'登录新祥编程账号'}
                         id="zhimeng-login"
                         onRequestClose={onCloseLogin}
                     >
@@ -447,7 +464,7 @@ const GUIComponent = props => {
                 {billingModalOpen ? (
                     <Modal
                         className={styles.zhimengBillingModal}
-                        contentLabel={'知萌订阅中心'}
+                        contentLabel={'新祥编程订阅中心'}
                         id="zhimeng-billing"
                         onRequestClose={onCloseBilling}
                     >
@@ -460,7 +477,7 @@ const GUIComponent = props => {
                                         src={zhimengLogo}
                                     />
                                     <div>
-                                        <div className={styles.zhimengModalEyebrow}>{'知萌订阅'}</div>
+                                        <div className={styles.zhimengModalEyebrow}>{'新祥编程订阅'}</div>
                                         <div className={styles.zhimengModalTitle}>{'开通完整编程编辑器'}</div>
                                         <div className={styles.zhimengModalDescription}>
                                             {'扫码付款后提交凭证，运营确认到账后刷新授权即可进入完整编辑器。'}
@@ -473,7 +490,7 @@ const GUIComponent = props => {
                                         authStatus === 'active' ? styles.isActive : null
                                     )}
                                 >
-                                    {authStatus === 'active' ? '已开通' : '待开通'}
+                                    {authStatusLabel(authStatus)}
                                 </div>
                             </div>
                             {billingError ? (
@@ -510,7 +527,7 @@ const GUIComponent = props => {
                                             </div>
                                             <div>
                                                 <span>{'套餐'}</span>
-                                                <strong>{billingOrder.plan || 'family_yearly'}</strong>
+                                                <strong>{billingPlanLabel(billingOrder.plan)}</strong>
                                             </div>
                                         </div>
                                     </div>
@@ -535,7 +552,7 @@ const GUIComponent = props => {
                                             <div className={styles.qrPanel}>
                                                 {billingQrCodeUrl ? (
                                                     <img
-                                                        alt={`知萌${billingChannel}收款二维码`}
+                                                        alt={`新祥编程${billingChannel}收款二维码`}
                                                         src={billingQrCodeUrl}
                                                     />
                                                 ) : (
@@ -679,12 +696,29 @@ const GUIComponent = props => {
                                             <div className={styles.planName}>{'家庭年卡'}</div>
                                             <p>{'适合孩子持续学习，用积木编程讲故事、做动画和小游戏。'}</p>
                                         </div>
-                                        <div className={styles.planPrice}>{'开通后解锁'}</div>
+                                        <div className={styles.planPrice}>{'¥199/年'}</div>
+                                    </div>
+                                    <div className={styles.planCard}>
+                                        <div>
+                                            <div className={styles.planName}>{'7 天项目陪跑包'}</div>
+                                            <p>{'适合希望孩子 7 天内完成 3 个入门作品的家庭，运营群内轻陪跑。'}</p>
+                                        </div>
+                                        <div className={styles.planPrice}>{'¥699/期'}</div>
                                     </div>
                                     <form
                                         className={styles.createOrderForm}
                                         onSubmit={handleCreateOrderSubmit} // eslint-disable-line react/jsx-no-bind
                                     >
+                                        <label>
+                                            <span>{'选择套餐'}</span>
+                                            <select
+                                                defaultValue="family_yearly"
+                                                name="plan"
+                                            >
+                                                <option value="family_yearly">{'家庭年卡 ¥199/年'}</option>
+                                                <option value="bootcamp_7d">{'7 天项目陪跑包 ¥699/期'}</option>
+                                            </select>
+                                        </label>
                                         <label>
                                             <span>{'选择付款方式'}</span>
                                             <select
@@ -750,7 +784,7 @@ const GUIComponent = props => {
                     <div className={styles.authNotice}>
                         <span>{authNotice}</span>
                         <div className={styles.authNoticeActions}>
-                            {onOpenBilling ? (
+                            {onOpenBilling && canSubscribeFromLock ? (
                                 <button
                                     className={styles.authNoticeButton}
                                     onClick={onOpenBilling}
@@ -791,7 +825,7 @@ const GUIComponent = props => {
                                 <strong>
                                     {completedStarterCount > 0 ?
                                         `已完成 ${completedStarterCount}/3 个` :
-                                        '适合孩子第一次打开知萌'}
+                                        '适合孩子第一次打开新祥编程'}
                                 </strong>
                             </summary>
                             <div className={styles.starterGuideContent}>
@@ -968,7 +1002,7 @@ const GUIComponent = props => {
                                         src={zhimengLogo}
                                     />
                                     <div>
-                                        <div className={styles.lockedBrand}>{'知萌'}</div>
+                                        <div className={styles.lockedBrand}>{'新祥编程'}</div>
                                         <div className={styles.lockedBrandSub}>{'少儿创意编程启蒙'}</div>
                                     </div>
                                 </div>
@@ -988,7 +1022,7 @@ const GUIComponent = props => {
                                             {'登录账号'}
                                         </button>
                                     ) : null}
-                                    {onOpenBilling ? (
+                                    {onOpenBilling && canSubscribeFromLock ? (
                                         <button
                                             className={styles.zhimengSecondaryButton}
                                             onClick={onOpenBilling}

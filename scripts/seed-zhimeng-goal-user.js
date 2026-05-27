@@ -20,7 +20,7 @@ const main = async () => {
     const [result] = await pool.query(
         `INSERT INTO users (username, password_hash, nickname, permission_student, permission_educator)
          VALUES (?, ?, ?, 1, 0)`,
-        [username, passwordHash, '知萌目标验收账号']
+        [username, passwordHash, '新祥编程目标验收账号']
     );
     await pool.query(
         `INSERT INTO entitlements (user_id, status, plan, features_json, device_limit, subscription_expires_at)
