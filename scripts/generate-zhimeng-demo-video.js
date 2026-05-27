@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable */
 
 const fs = require('fs');
 const path = require('path');
@@ -103,7 +104,7 @@ function header (opacity = 1) {
     <g opacity="${opacity}">
       ${roundedRect(90, 76, 120, 120, 30, '#ffffff', '#ded8f1', 2)}
       <image href="data:image/png;base64,${logoBase64}" x="93" y="79" width="114" height="114" preserveAspectRatio="xMidYMid slice"/>
-      ${textBlock(['知萌'], 238, 125, {size: 58, weight: 950})}
+      ${textBlock(['新祥编程'], 238, 125, {size: 58, weight: 950})}
       ${textBlock(['少儿创意编程启蒙'], 240, 172, {size: 28, weight: 800, fill: '#646078'})}
       ${pill('6-10 岁', 1640, 106, 180, '#e8f5e9', '#1f6b31')}
     </g>
@@ -146,7 +147,7 @@ function editorMock (x, y, scale, time, opacity = 1) {
     <g opacity="${opacity}">
       ${roundedRect(x, y, sw, sh, 24 * scale, '#ffffff', '#ded8f1', 2)}
       ${roundedRect(x, y, sw, 72 * scale, 24 * scale, '#7b58db')}
-      ${textBlock(['知萌作品'], x + 490 * scale, y + 47 * scale, {size: 25 * scale, weight: 900, fill: '#ffffff'})}
+      ${textBlock(['新祥编程作品'], x + 490 * scale, y + 47 * scale, {size: 25 * scale, weight: 900, fill: '#ffffff'})}
       ${roundedRect(x + 22 * scale, y + 96 * scale, 248 * scale, 532 * scale, 18 * scale, '#f6f9ff', '#e1e6f2', 2)}
       ${block(48, 132, 165, '移动 10 步', '#3f8cf5')}
       ${block(48, 198, 190, '右转 15 度', '#3f8cf5')}
@@ -212,7 +213,7 @@ function sceneIntro (time, opacity) {
         fill: '#18162f',
         lineHeight: 105
       })}
-      ${textBlock(['知萌把入口收窄到孩子能理解的创作：', '一个角色、一个故事、一个小游戏。'], 94, y + 250, {
+      ${textBlock(['新祥编程把入口收窄到孩子能理解的创作：', '一个角色、一个故事、一个小游戏。'], 94, y + 250, {
         size: 38,
         weight: 800,
         fill: '#646078',
@@ -289,7 +290,7 @@ function sceneDownload (time, opacity) {
       ${pill('macOS Apple 芯片', 900, 435, 330, '#f8f6ff', '#6b4dff', opacity)}
       ${pill('macOS Intel 芯片', 1260, 435, 330, '#f8f6ff', '#6b4dff', opacity)}
       ${roundedRect(940, 575 + (1 - p) * 22, 550, 130, 24, '#fff3cf', 'none', 0, opacity)}
-      ${textBlock(['打开客户端后', '注册或登录知萌账号'], 990, 625 + (1 - p) * 22, {
+      ${textBlock(['打开客户端后', '注册或登录新祥编程账号'], 990, 625 + (1 - p) * 22, {
         size: 32,
         weight: 900,
         fill: '#8a5b00',
@@ -315,7 +316,7 @@ function scenePayment (time, opacity) {
         lineHeight: 54
       })}
       ${roundedRect(910, 210, 700, 625, 34, '#ffffff', '#ded8f1', 3)}
-      ${textBlock(['知萌订阅中心'], 1260, 285, {size: 38, weight: 950, anchor: 'middle', fill: '#6b4dff'})}
+      ${textBlock(['新祥编程订阅中心'], 1260, 285, {size: 38, weight: 950, anchor: 'middle', fill: '#6b4dff'})}
       ${textBlock(['应付金额'], 970, 365, {size: 30, weight: 800, fill: '#646078'})}
       ${textBlock(['¥199/年'], 970, 432, {size: 62, weight: 950})}
       ${pill('微信/支付宝', 1360, 350, 180, '#e8f5e9', '#1f6b31')}
@@ -342,7 +343,7 @@ function sceneFinal (time, opacity) {
         weight: 950,
         lineHeight: 80
       })}
-      ${textBlock(['如果你家有 6-10 岁孩子，', '想先低成本试试编程创作，', '可以从知萌开始。'], 1185, 568, {
+      ${textBlock(['如果你家有 6-10 岁孩子，', '想先低成本试试编程创作，', '可以从新祥编程开始。'], 1185, 568, {
         size: 34,
         weight: 800,
         fill: '#646078',

@@ -28,6 +28,18 @@ const isHttpsUrl = raw => {
     }
 };
 
+const downloadFilename = raw => {
+    try {
+        const parsed = new URL(raw);
+        const filename = parsed.pathname.split('/').pop() || '';
+        return decodeURIComponent(filename);
+    } catch (e) {
+        return '';
+    }
+};
+
+const hasLegacyDownloadFilename = raw => /^zhimeng-/i.test(downloadFilename(raw));
+
 const checkRequiredUrl = key => {
     const raw = value(key);
     if (isPlaceholder(raw)) {
@@ -146,6 +158,10 @@ const checkDownloadUrl = (id, url) => {
     }
     if (!isHttpsUrl(url)) {
         addFailure(id, `${id} must use https://`);
+        return;
+    }
+    if (hasLegacyDownloadFilename(url)) {
+        addFailure(id, `${id} must not point to legacy zhimeng-* package filenames`);
     }
 };
 

@@ -1,7 +1,7 @@
 {
   "name": "scratch-gui",
   "version": "1.0.0",
-  "description": "知萌 - 少儿创意编程启蒙桌面应用",
+  "description": "新祥编程 - 少儿创意编程启蒙桌面应用",
   "author": "Massachusetts Institute of Technology",
   "license": "AGPL-3.0-only",
   "homepage": "https://github.com/wlx-flyrainbow/scratch-gui#readme",
@@ -71,7 +71,7 @@
   },
   "build": {
     "appId": "com.zhimeng.desktop",
-    "productName": "知萌",
+    "productName": "新祥编程",
     "npmRebuild": false,
     "directories": {
       "buildResources": "build"

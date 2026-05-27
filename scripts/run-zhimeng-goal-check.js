@@ -73,7 +73,7 @@ const ensureDir = target => {
 
 const toMarkdown = result => {
     const lines = [];
-    lines.push('# 知萌目标自动化检查报告');
+    lines.push('# 新祥编程目标自动化检查报告');
     lines.push('');
     lines.push(`- 时间: ${result.timestamp}`);
     lines.push(`- 前端地址: ${result.frontendBase}`);
@@ -164,7 +164,7 @@ const main = async () => {
         if (!frontendHttpPass) pass = false;
 
         const frontendContentPass = frontendHttpPass &&
-            includesAll(responses.frontendHome.text, ['知萌', '下载 Windows 客户端']) &&
+            includesAll(responses.frontendHome.text, ['新祥编程', '下载桌面客户端', 'Windows 安装版']) &&
             hasAgplSourceLink(responses.frontendHome.text) &&
             !responses.frontendHome.text.includes('purchase.html');
         pushStep(
@@ -172,8 +172,8 @@ const main = async () => {
             'frontend_home_content',
             Boolean(frontendContentPass),
             frontendContentPass ?
-                '首页包含知萌品牌、Windows 下载入口和 AGPL/源码链接，且未推荐 purchase.html' :
-                '首页缺少知萌品牌、Windows 下载入口、AGPL/源码链接，或仍推荐 purchase.html'
+                '首页包含新祥编程品牌、桌面客户端下载入口和 AGPL/源码链接，且未推荐 purchase.html' :
+                '首页缺少新祥编程品牌、桌面客户端下载入口、AGPL/源码链接，或仍推荐 purchase.html'
         );
         if (!frontendContentPass) pass = false;
     } catch (err) {
@@ -190,7 +190,7 @@ const main = async () => {
             includesAll(responses.frontendPurchase.text, [
                 '本地订单验收工具',
                 '客服辅助',
-                '正式购买请在知萌客户端'
+                '正式购买请在新祥编程客户端'
             ]);
         pushStep(
             steps,
@@ -212,7 +212,7 @@ const main = async () => {
             url: joinUrl(frontendBase, '/pay.html')
         });
         const payPass = responses.frontendPay.status === 200 &&
-            includesAll(responses.frontendPay.text, ['知萌订单支付', '扫码付款', '我已付款']);
+            includesAll(responses.frontendPay.text, ['新祥编程订单支付', '扫码付款', '我已付款']);
         pushStep(
             steps,
             'frontend_pay_content',

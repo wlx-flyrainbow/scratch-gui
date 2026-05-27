@@ -51,6 +51,18 @@ const parseContentLength = response => {
     return Number.isFinite(parsed) ? parsed : null;
 };
 
+const downloadFilename = raw => {
+    try {
+        const parsed = new URL(raw);
+        const filename = parsed.pathname.split('/').pop() || '';
+        return decodeURIComponent(filename);
+    } catch (e) {
+        return '';
+    }
+};
+
+const hasLegacyDownloadFilename = raw => /^zhimeng-/i.test(downloadFilename(raw));
+
 const expectStatus = (id, response, expectedStatus = 200) => {
     if (response.status !== expectedStatus) {
         addFailure(id, `${response.method} ${response.url} -> ${response.status}`);
@@ -109,7 +121,7 @@ const checkHome = async () => {
     const response = await request('GET', joinUrl('/'));
     if (!expectStatus('home.status', response)) return;
     expectTextIncludes('home.content', response.text, [
-        '知萌',
+        '新祥编程',
         '下载桌面客户端',
         'macOS Apple 芯片版',
         'macOS Intel 芯片版',
@@ -118,6 +130,7 @@ const checkHome = async () => {
         'AGPLv3'
     ]);
     expectTextExcludes('home.content', response.text, [
+        '知萌',
         'Scratch 3.0 GUI',
         '当前版本 5.2.16',
         'purchase.html'
@@ -128,12 +141,14 @@ const checkHome = async () => {
 const checkStaticPages = async () => {
     const pay = await request('GET', joinUrl('/pay.html'));
     if (expectStatus('pay.status', pay)) {
-        expectTextIncludes('pay.content', pay.text, ['知萌订单支付', '扫码付款', '我已付款']);
+        expectTextIncludes('pay.content', pay.text, ['新祥编程订单支付', '扫码付款', '我已付款']);
+        expectTextExcludes('pay.content', pay.text, ['知萌']);
     }
 
     const ops = await request('GET', joinUrl('/ops.html'));
     if (expectStatus('ops.status', ops)) {
         expectTextIncludes('ops.content', ops.text, ['订单确认', '运营口令', '待确认订单']);
+        expectTextExcludes('ops.content', ops.text, ['知萌']);
     }
 };
 
@@ -190,6 +205,9 @@ const checkDownloads = async releases => {
         }
         if (!item.url.includes(expectedVersion)) {
             addFailure(item.id, `download URL does not include version ${expectedVersion}: ${item.url}`);
+        }
+        if (hasLegacyDownloadFilename(item.url)) {
+            addFailure(item.id, `download URL points to legacy zhimeng-* package filename: ${item.url}`);
         }
         await expectHeadAsset({
             id: item.id,

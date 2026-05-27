@@ -9,7 +9,7 @@
 - `npm run dist:desktop:prod` 生成正式分发包：构建期固定注入 `https://zhimeng.codevalley.cn` 作为认证、订阅和付款 API 地址，并在打包前校验产物不再包含 `localhost:3001`。
 - 品牌信息：
   - `build.appId = com.zhimeng.desktop`
-  - `build.productName = 知萌`
+  - `build.productName = 新祥编程`
 
 ## 分发建议
 
@@ -87,10 +87,10 @@ python3 -m http.server 4173 --bind 127.0.0.1 --directory website
 
 打开 `http://127.0.0.1:4173/index.html`，页面会优先读取 `website/releases.local.json`，四个下载按钮会指向本机 `dist/` 产物：
 
-- macOS Apple 芯片版：`dist/知萌-1.0.0-arm64.dmg`
-- macOS Intel 芯片版：`dist/知萌-1.0.0.dmg`
-- Windows 安装版：`dist/知萌 Setup 1.0.0.exe`
-- Windows 便携版：`dist/知萌 1.0.0.exe`
+- macOS Apple 芯片版：`dist/新祥编程-1.0.0-arm64.dmg`
+- macOS Intel 芯片版：`dist/新祥编程-1.0.0.dmg`
+- Windows 安装版：`dist/新祥编程 Setup 1.0.0.exe`
+- Windows 便携版：`dist/新祥编程 1.0.0.exe`
 
 注意：本地包用于流程验收；生产 macOS 包需启用 Developer ID 签名、timestamp 与 notarization，Windows 包需使用正式代码签名证书。Apple 官方要求站外分发的 macOS 软件使用 Developer ID，并通过 notarization 让 Gatekeeper 能确认软件来源和完整性；Electron Builder 也要求 macOS 自动更新和正式分发包走代码签名。
 
@@ -157,7 +157,7 @@ npm run test:zhimeng-new-user-flow:realdb
 
 ## 验收清单
 
-- [ ] 安装包显示“知萌”品牌名
+- [ ] 安装包显示“新祥编程”品牌名
 - [ ] 安装图标正确
 - [ ] 启动窗口标题正确
 - [ ] 下载页可访问并可下载 macOS Apple 芯片版、macOS Intel 芯片版、Windows 安装版、Windows 便携版

@@ -13,7 +13,7 @@ const messages = defineMessages({
     defaultProjectTitle: {
         id: 'gui.zhimeng.defaultProjectTitle',
         description: 'Default title for project',
-        defaultMessage: '知萌作品'
+        defaultMessage: '新祥编程作品'
     }
 });
 

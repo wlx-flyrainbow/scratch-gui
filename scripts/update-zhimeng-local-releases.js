@@ -19,10 +19,10 @@ const findFile = (id, predicate) => {
 
 const macArm64 = findFile('macOS arm64 DMG', name => name.endsWith('.dmg') && name.includes('arm64'));
 const macX64 = findFile('macOS x64 DMG', name => name.endsWith('.dmg') && !name.includes('arm64'));
-const windowsNsis = findFile('Windows NSIS installer', name => /^知萌 Setup .*\.exe$/.test(name));
+const windowsNsis = findFile('Windows NSIS installer', name => /^新祥编程 Setup .*\.exe$/.test(name));
 const windowsPortable = findFile(
     'Windows portable EXE',
-    name => /^知萌 .*\.exe$/.test(name) && !/^知萌 Setup /.test(name)
+    name => /^新祥编程 .*\.exe$/.test(name) && !/^新祥编程 Setup /.test(name)
 );
 
 const release = {

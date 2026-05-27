@@ -13,6 +13,7 @@ const windowIconPath = () => {
 let mainWindow;
 let isQuitting = false;
 const authFilePath = path.join(app.getPath('userData'), 'zhimeng-auth.json');
+const deviceFilePath = path.join(app.getPath('userData'), 'zhimeng-device.json');
 const sourceUrl = 'https://github.com/wlx-flyrainbow/scratch-gui';
 
 const readAuthBundle = () => {
@@ -46,6 +47,20 @@ const clearAuthBundle = () => {
     }
 };
 
+const readDeviceIdentity = () => {
+    try {
+        if (!fs.existsSync(deviceFilePath)) return null;
+        const payload = fs.readFileSync(deviceFilePath, 'utf8');
+        return payload ? JSON.parse(payload) : null;
+    } catch (error) {
+        return null;
+    }
+};
+
+const writeDeviceIdentity = identity => {
+    fs.writeFileSync(deviceFilePath, JSON.stringify(identity || {}), 'utf8');
+};
+
 /**
  * Create and initialize the desktop main window.
  */
@@ -55,7 +70,7 @@ const createWindow = function () {
         height: 800,
         minWidth: 1024,
         minHeight: 640,
-        title: '知萌',
+        title: '新祥编程',
         icon: windowIconPath(),
         webPreferences: {
             nodeIntegration: false,
@@ -70,7 +85,7 @@ const createWindow = function () {
     mainWindow.loadFile(path.join(__dirname, 'build/index.html'));
     mainWindow.on('page-title-updated', event => {
         event.preventDefault();
-        mainWindow.setTitle('知萌');
+        mainWindow.setTitle('新祥编程');
     });
 
     // 创建菜单
@@ -157,6 +172,11 @@ ipcMain.handle('zhimeng-auth:save', (event, bundle) => {
 });
 ipcMain.handle('zhimeng-auth:clear', () => {
     clearAuthBundle();
+    return true;
+});
+ipcMain.handle('zhimeng-device:load', () => readDeviceIdentity());
+ipcMain.handle('zhimeng-device:save', (event, identity) => {
+    writeDeviceIdentity(identity);
     return true;
 });
 

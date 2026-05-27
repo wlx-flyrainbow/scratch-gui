@@ -45,11 +45,11 @@ const checkPackageMetadata = () => {
     const files = build.files || [];
 
     requireEqual('package.name', pkg.name, 'scratch-gui');
-    requireEqual('package.description', pkg.description, '知萌 - 少儿创意编程启蒙桌面应用');
+    requireEqual('package.description', pkg.description, '新祥编程 - 少儿创意编程启蒙桌面应用');
     requireEqual('package.license', pkg.license, 'AGPL-3.0-only');
     requireEqual('package.homepage', pkg.homepage, 'https://github.com/wlx-flyrainbow/scratch-gui#readme');
     requireEqual('build.appId', build.appId, 'com.zhimeng.desktop');
-    requireEqual('build.productName', build.productName, '知萌');
+    requireEqual('build.productName', build.productName, '新祥编程');
     requireEqual('build.mac.icon', mac.icon, 'static/app-icon.icns');
     requireEqual('build.win.icon', win.icon, 'build/static/favicon.ico');
 
@@ -85,8 +85,8 @@ const checkPackageMetadata = () => {
 
 const checkElectronShell = () => {
     const main = readText('electron-main.js');
-    requireIncludes('electron-main.windowTitle', main, "title: '知萌'");
-    requireIncludes('electron-main.pageTitleLock', main, "mainWindow.setTitle('知萌')");
+    requireIncludes('electron-main.windowTitle', main, "title: '新祥编程'");
+    requireIncludes('electron-main.pageTitleLock', main, "mainWindow.setTitle('新祥编程')");
     requireIncludes('electron-main.winIcon', main, 'favicon.ico');
     requireIncludes('electron-main.appIcon', main, 'app-icon.png');
     requireIncludes('electron-main.sourceUrl', main, 'https://github.com/wlx-flyrainbow/scratch-gui');
@@ -102,20 +102,20 @@ const checkElectronShell = () => {
 
 const checkRuntimeBranding = () => {
     const webpackConfig = readText('webpack.config.js');
-    requireIncludes('webpack.mainTitle', webpackConfig, "title: '知萌'");
+    requireIncludes('webpack.mainTitle', webpackConfig, "title: '新祥编程'");
     if (webpackConfig.includes("title: 'Scratch 3.0 GUI'")) {
         addFailure('webpack.mainTitle', 'main runtime title must not remain Scratch 3.0 GUI');
     }
 
     const menuBar = readText('src/components/menu-bar/menu-bar.jsx');
-    requireIncludes('menu-bar.logoAlt', menuBar, 'alt="知萌"');
+    requireIncludes('menu-bar.logoAlt', menuBar, 'alt="新祥编程"');
     requireIncludes('menu-bar.logoAsset', menuBar, '../../../static/app-icon.png');
     if (menuBar.includes('alt="Scratch"') || menuBar.includes('logo: scratchLogo')) {
-        addFailure('menu-bar.logo', 'menu bar default logo must be 知萌, not Scratch');
+        addFailure('menu-bar.logo', 'menu bar default logo must be 新祥编程, not Scratch');
     }
 
     const titledHoc = readText('src/lib/titled-hoc.jsx');
-    requireIncludes('titled-hoc.defaultProjectTitle', titledHoc, "defaultMessage: '知萌作品'");
+    requireIncludes('titled-hoc.defaultProjectTitle', titledHoc, "defaultMessage: '新祥编程作品'");
     if (titledHoc.includes('Scratch Project')) {
         addFailure('titled-hoc.defaultProjectTitle', 'default project title must not remain Scratch Project');
     }
@@ -124,7 +124,7 @@ const checkRuntimeBranding = () => {
 const checkWebsite = pkg => {
     const index = readText('website/index.html');
     [
-        '知萌',
+        '新祥编程',
         '下载桌面客户端',
         'macOS Apple 芯片版',
         'macOS Intel 芯片版',
@@ -202,11 +202,11 @@ const checkDistArtifactsIfPresent = () => {
         return;
     }
 
-    const hasZhimengName = exeFiles.some(name => /知萌|zhimeng/i.test(name));
+    const hasZhimengName = exeFiles.some(name => /新祥编程|zhimeng/i.test(name));
     if (!hasZhimengName) {
         addFailure(
             'dist.windows.name',
-            `Windows artifacts should include 知萌 or zhimeng in the file name: ${exeFiles.join(', ')}`
+            `Windows artifacts should include 新祥编程 or zhimeng in the file name: ${exeFiles.join(', ')}`
         );
     }
 };
