@@ -1,8 +1,8 @@
-# 知萌产品化改造 TASKS
+# 新祥编程产品化改造 TASKS（原知萌）
 
 **Source PRD:** `_bmad-output/planning-artifacts/prd.md`
 **Date:** 2026-05-23
-**Goal:** 将知萌从 Scratch GUI 分叉推进为可上线售卖的桌面产品，优先完成客户端内置购买闭环。
+**Goal:** 将新祥编程从 Scratch GUI 分叉推进为可上线售卖的桌面产品，优先完成客户端内置购买闭环；“知萌”仅作为历史项目代号和商标风险记录保留。
 
 ## Execution Order
 
@@ -15,10 +15,10 @@
 
 ## Milestone 0: 品牌与合规
 
-- [x] 确认 Electron 窗口标题、产品名、图标、下载页品牌均为知萌。
+- [x] 确认 Electron 窗口标题、产品名、图标、下载页品牌均为新祥编程。
 - [x] 确认下载页和客户端帮助菜单都指向当前版本对应源码。
 - [x] 检查 AGPL 说明文档与下载页页脚一致。
-- [x] 将 `README.md` 中仍明显指向上游 Scratch 的首屏说明补充知萌开发/发布入口，避免交付文档割裂。
+- [x] 将 `README.md` 中仍明显指向上游 Scratch 的首屏说明补充新祥编程开发/发布入口，避免交付文档割裂。
 - [x] 在国家知识产权公共服务平台商标数据中完成“知萌”文字商标检索，重点检索第 9/41/42 类。
 - [x] 建立商标检索准备清单：知萌、知萌编程、ZHIMENG、zhimeng、智萌、芝萌、萌知等检索词，以及第 9/41/42 类首批申请建议。
 - [x] 完成公开网页商标风险初筛并归档：北京知萌咨询、知萌辰、智萌、智萌体、知 ME、技萌等线索需要官方复核。
@@ -27,25 +27,31 @@
 - [x] 对“构芽”逐条复核同音和近似风险：未发现相同文字商标，主要风险来自同音“购丫 / 购芽 / 够芽”，其中第 42 类“购丫”覆盖 4220 软件服务项目。
 - [x] 完成三字备用候选筛选，“构芽盒”在第 9/41/42 类精准和同音均未发现结果，可作为同步防守申请或备用替换名称。
 - [x] 完成公司名“新知祥”纳入产品品牌的分析：如必须包含公司字，推荐“构祥芽”；如优先传播效率，推荐“新知祥出品｜构芽”。
-- [ ] 决定是否接受“构芽”的第 42 类同音近似风险，并确认是否以“构芽”作为新主品牌。
-- [ ] 决定是否采用“构祥芽”作为含公司字的新主品牌，并同步防守“构芽 / 构芽盒”。
-- [ ] 决定是否同步提交“构芽盒”第 9/41/42 类文字商标作为备用防守。
-- [ ] 首批真实售卖前完成主品牌改名决策，并提交新主品牌文字商标申请，优先覆盖第 9 类软件、第 41 类教育培训、第 42 类软件服务。
+- [x] 根据口语反馈完成顺口优先二轮筛选：“构祥芽 / 构芽”因拗口和理解成本高降级为历史候选，当时推荐继续复核“巧创盒”，备选“妙创盒”。
+- [x] 团队内部决定采用“新祥编程”作为新主品牌，历史候选“巧创盒 / 妙创盒”降级为备选记录。
+- [x] 完成“新祥编程”第 9/41/42 类初筛：完整文字未发现相同或同音结果；“新祥”和 `XINXIANG` 单独方向风险较高，不作为主推。
+- [x] 团队决定不使用拼音简称；英文备用标识统一为 `NewSiang`。
+- [x] 完成 `NewSiang` 第 9/41/42 类初筛：未发现相同或同音结果。
+- [ ] 对“新祥编程”第 9/41/42 类近似结果逐条复核，重点看“新祥”“新翔编程”“鑫祥编程”“欣祥编程”“XINXIANG”等在 0901、4101、4220 上的状态和指定项目。
+- [ ] 如 `NewSiang` 进入公开下载页、安装包、域名或英文物料，完成 `NewSiang` 第 9/41/42 类近似结果逐条复核。
+- [x] 首批真实售卖前完成主品牌改名决策。
+- [ ] 提交“新祥编程”文字商标申请，优先覆盖第 9 类软件、第 41 类教育培训、第 42 类软件服务。
 - [ ] 视觉资产稳定后评估 Logo/图形商标申请；第 35 类、第 16 类按营销和纸质资料业务进展扩展。
-- [x] 建立知萌品牌资产清单：Logo、应用图标、官网 favicon、主色、定位语、源码披露链接、客服/支付文案。
-- [x] 建立品牌使用规则：对外产品名统一为“知萌”，Scratch 只用于开源合规和必要技术说明，不作为售卖品牌。
+- [x] 建立品牌资产清单：Logo、应用图标、官网 favicon、主色、定位语、源码披露链接、客服/支付文案。
+- [x] 建立品牌使用规则：“知萌”仅作为历史项目代号和商标风险记录保留；Scratch 只用于开源合规和必要技术说明，不作为售卖品牌。
+- [x] 官网、客户端、安装包、付款页、运营后台、客服 FAQ 的对外展示统一切换为“新祥编程”；英文环境仅使用 `NewSiang`，不使用拼音简称。
 
 Acceptance:
 
-- `package.json`、Electron 窗口、官网下载页、帮助菜单均体现知萌。
+- `package.json`、Electron 窗口、官网下载页、帮助菜单均体现新祥编程；英文环境仅出现 `NewSiang`。
 - AGPL 源码链接可从官网和客户端找到。
 - 有商标近似检索记录、申请类别决策和品牌资产清单；真实售卖前不带着商标未知风险大规模投放。
 
 ## Milestone 1: 账号授权产品化
 
 - [x] 新增未授权锁定体验：未登录、未订阅、待确认、已过期、租约过期时不渲染完整编辑器。
-- [x] 锁定体验展示知萌品牌、产品说明、登录入口、订阅入口、刷新授权和错误提示。
-- [x] 将右上角“加入 Scratch / 登录”改为知萌账号入口。
+- [x] 锁定体验展示新祥编程品牌、产品说明、登录入口、订阅入口、刷新授权和错误提示。
+- [x] 将右上角“加入 Scratch / 登录”改为新祥编程账号入口。
 - [x] 将当前裸登录表单改为正式登录弹窗。
 - [x] 客户端内置注册账号，注册成功后自动登录并保持未订阅锁定态。
 - [x] 未登录、未订阅、待确认、已过期、租约过期时，顶部提示条显示状态文案和操作按钮。
@@ -95,7 +101,7 @@ Acceptance:
 
 ## Milestone 4: 发布交付与验收闸门
 
-- [x] 修正 `scripts/run-zhimeng-goal-check.js`，前端检查必须断言真实知萌页面内容，不能只看 HTTP 200。
+- [x] 修正 `scripts/run-zhimeng-goal-check.js`，前端检查必须断言真实新祥编程页面内容，不能只看 HTTP 200。
 - [x] `release:check` 覆盖生产 API、账单地址、注册链接、二维码、套餐价格、下载链接、admin token、CORS。
 - [x] `website/releases.json` 发布前必须配置真实 macOS Apple 芯片版、macOS Intel 芯片版、Windows NSIS 和 portable 下载地址。
 - [x] 新增自包含购买闭环验收脚本：inactive 登录、创建订单、提交付款凭证、运营列表、人工确认、刷新授权 active。
@@ -108,7 +114,7 @@ Acceptance:
 - [x] 本地 macOS 与 Windows 打包后检查安装包名称、架构、DMG 校验、下载页按钮和源码链接。
 - [x] 新增签名/公证发布闸门 `npm run release:check-signing`，正式公开分发必须设置 `ZHIMENG_REQUIRE_CODE_SIGNING=1`。
 - [ ] 生产 macOS 包完成 Developer ID 签名、timestamp、公证；Windows 包完成正式代码签名。
-- [x] 上传正式安装包到 `https://zhimeng.codevalley.cn/downloads/` 并验证四个下载 URL 可访问。
+- [ ] 上传“新祥编程”正式安装包到 `https://zhimeng.codevalley.cn/downloads/` 并验证四个下载 URL 可访问。
 
 Acceptance:
 
@@ -127,6 +133,26 @@ Acceptance:
 - 微信、支付宝收款码 URL 均返回 HTTP 200。
 - `npm run release:check` 在生产模板变量加临时高强度 admin token 下通过。
 - `node scripts/verify-zhimeng-public-release.js` 通过，确认 `https://zhimeng.codevalley.cn @ 1.0.0` 可作为公开下载页。
+
+2026-05-27 RC0 种子发布验收记录：
+
+- `npm run dist:desktop:local` 通过，已生成 macOS Apple 芯片、macOS Intel、Windows 安装版和 Windows 便携版本地产物。
+- `npm run release:update-local-downloads` 通过，`website/releases.local.json` 已指向本地 `dist/` 产物。
+- `npm run test:zhimeng-package-metadata`、`npm run test:zhimeng-desktop-bundle`、`npm run test:zhimeng-mac-release` 通过；macOS 校验存在未签名/Gatekeeper 警告，符合 RC0 未正式签名状态。
+- `npm run test:backend`、`npm run test:zhimeng-purchase-flow`、`npm run test:zhimeng-new-user-flow:realdb`、`npm run test:zhimeng-purchase-flow:realdb`、`npm run test:zhimeng-billing-layout` 通过。
+- 已修复未配置 `ZHIMENG_BILLING_URL` 时后端 `pay_url` 退到示例域名的问题，本地 RC 兜底付款页改为同源 `/pay.html`。
+- 验收报告见 `docs/zhimeng-rc0-seed-release-acceptance-2026-05-27.md`。
+
+2026-05-27 RC1 品牌切换验收记录：
+
+- 官网、客户端、安装包产品名、付款页、运营后台、客服 FAQ、私域文案、海报和演示视频均已切换为“新祥编程”。
+- `npm run dist:desktop:local` 通过，已生成 `新祥编程-1.0.0-arm64.dmg`、`新祥编程-1.0.0.dmg`、`新祥编程 Setup 1.0.0.exe`、`新祥编程 1.0.0.exe`。
+- `npm run release:update-local-downloads` 通过，`website/releases.local.json` 已指向新祥编程本地安装包。
+- `website/releases.json` 与 `deploy/env/zhimeng-prod.env.example` 已切到新祥编程命名安装包；`npm run release:check` 在生产模板变量加临时高强度 admin token 下通过。
+- `npm run release:verify-public` 当前仍失败，因为线上首页、付款页和 `releases.json` 尚未部署新祥编程版本，服务器下载目录也尚未上传新命名安装包。
+- `npm run test:zhimeng-package-metadata`、`npm run test:zhimeng-desktop-bundle`、`npm run test:zhimeng-mac-release` 通过；macOS 仍有未签名/Gatekeeper 警告，属于 RC 阶段已知限制。
+- `npm run test:backend`、`npm run test:zhimeng-purchase-flow`、`npm run test:zhimeng-billing-layout` 和关键单元测试通过。
+- 验收报告见 `docs/zhimeng-rc1-brand-migration-acceptance-2026-05-27.md`。
 
 ## Milestone 5: 后续云能力
 
