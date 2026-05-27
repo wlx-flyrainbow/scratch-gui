@@ -9,13 +9,14 @@ import {
     register,
     refresh,
     fetchEntitlement,
+    bindDevice,
     logout,
     createOrder,
     getOrderStatus,
     submitPaymentProof
 } from './auth/api';
 import {buildLease, isLeaseValid} from './auth/lease';
-import {loadAuthBundle, saveAuthBundle, clearAuthBundle} from './auth/storage';
+import {loadAuthBundle, saveAuthBundle, clearAuthBundle, loadDeviceIdentity} from './auth/storage';
 import {setEntitlement, setPermissions, setSession, clearSession} from '../reducers/session';
 
 const hasFeature = (entitlement, feature) => {
@@ -72,6 +73,7 @@ const AuthHOC = WrappedComponent => {
             this.handleRefreshEntitlementForUi = this.handleRefreshEntitlementForUi.bind(this);
             this.handleRegister = this.handleRegister.bind(this);
             this.handleSubmitPaymentProof = this.handleSubmitPaymentProof.bind(this);
+            this.bindCurrentDevice = this.bindCurrentDevice.bind(this);
             this.renderLogin = this.renderLogin.bind(this);
         }
 
@@ -99,6 +101,7 @@ const AuthHOC = WrappedComponent => {
                         const refreshed = await refresh(refreshToken);
                         accessToken = refreshed.access_token;
                         entitlement = await fetchEntitlement(accessToken);
+                        entitlement = await this.bindCurrentDevice(accessToken, entitlement);
                     } catch (err) {
                         if (err.status === 401) {
                             await clearAuthBundle();
@@ -153,8 +156,48 @@ const AuthHOC = WrappedComponent => {
             await this.applyAuthResult(result);
         }
 
+        async bindCurrentDevice (accessToken, entitlement) {
+            if (!accessToken || !entitlement) return entitlement;
+            try {
+                const device = await loadDeviceIdentity();
+                const bound = await bindDevice(accessToken, {
+                    device_id: device.device_id,
+                    device_name: device.device_name
+                });
+                return {
+                    ...entitlement,
+                    device_count: bound && bound.device_count
+                };
+            } catch (err) {
+                if (err.status === 409) {
+                    this.setState({
+                        authActionError: '当前账号最多可绑定 3 台设备，请联系运营解绑旧设备后再使用。'
+                    });
+                    return {
+                        ...entitlement,
+                        status: 'deviceLimit',
+                        device_limit: entitlement.device_limit || 3
+                    };
+                }
+                if (err.status === 403) {
+                    this.setState({
+                        authActionError: '当前账号已被冻结，请联系运营处理。'
+                    });
+                    return {
+                        ...entitlement,
+                        status: 'frozen'
+                    };
+                }
+                throw err;
+            }
+        }
+
         async applyAuthResult (result) {
-            const leasedEntitlement = buildLease(result.entitlement || {}, authConfig.leaseDays);
+            const entitlement = await this.bindCurrentDevice(
+                result.access_token,
+                result.entitlement || {}
+            );
+            const leasedEntitlement = buildLease(entitlement || {}, authConfig.leaseDays);
             const session = {user: {...result.user, token: result.access_token}};
             await saveAuthBundle({
                 tokens: {
@@ -169,7 +212,9 @@ const AuthHOC = WrappedComponent => {
             this.props.onSetPermissions(result.permissions || {});
             this.props.onSetEntitlement(leasedEntitlement);
             this.setState({
-                authActionError: null,
+                authActionError: leasedEntitlement.status === 'deviceLimit' ?
+                    '当前账号最多可绑定 3 台设备，请联系运营解绑旧设备后再使用。' :
+                    (leasedEntitlement.status === 'frozen' ? '当前账号已被冻结，请联系运营处理。' : null),
                 loginModalOpen: false
             });
         }
@@ -216,10 +261,13 @@ const AuthHOC = WrappedComponent => {
                 this.setState({authActionError: null});
                 const bundle = await loadAuthBundle();
                 const refreshToken = bundle && bundle.tokens && bundle.tokens.refresh_token;
-                if (!refreshToken) throw new Error('登录状态已失效，请重新登录知萌账号。');
+                if (!refreshToken) throw new Error('登录状态已失效，请重新登录新祥编程账号。');
                 const refreshed = await refresh(refreshToken);
                 const accessToken = refreshed.access_token;
-                const entitlement = await fetchEntitlement(accessToken);
+                const entitlement = await this.bindCurrentDevice(
+                    accessToken,
+                    await fetchEntitlement(accessToken)
+                );
                 const leasedEntitlement = buildLease(entitlement, authConfig.leaseDays);
                 const session = {
                     user: {
@@ -252,14 +300,15 @@ const AuthHOC = WrappedComponent => {
             });
         }
 
-        async handleOpenBilling (channel = 'wechat') {
+        async handleOpenBilling (channel = 'wechat', plan = 'family_yearly') {
             const user = this.props.session && this.props.session.user;
             if (!user || !user.token) {
                 this.setState({loginModalOpen: true});
                 return null;
             }
             const paymentChannel = ['wechat', 'alipay'].includes(channel) ? channel : 'wechat';
-            if (this.state.billingOrder) {
+            const selectedPlan = ['family_yearly', 'bootcamp_7d'].includes(plan) ? plan : 'family_yearly';
+            if (this.state.billingOrder && this.state.billingOrder.plan === selectedPlan) {
                 this.setState({
                     billingModalOpen: true,
                     billingPaymentMethod: paymentChannel
@@ -276,7 +325,7 @@ const AuthHOC = WrappedComponent => {
             });
             try {
                 const created = await createOrder(user.token, {
-                    plan: 'family_yearly',
+                    plan: selectedPlan,
                     channel: paymentChannel,
                     return_url: authConfig.billingUrl
                 });
@@ -412,6 +461,7 @@ const AuthHOC = WrappedComponent => {
             const backpackVisibleResolved =
                 Boolean(mergedBackpackHost) && (urlBackpackSelfTest || backpackAllowed);
             const appUnlocked = hasSession && active && leaseValid;
+            const entitlementStatus = entitlement && entitlement.status;
             let authStatus = 'locked';
             let authNotice = '';
             if (hasSession && active && leaseValid) {
@@ -419,6 +469,15 @@ const AuthHOC = WrappedComponent => {
             } else if (hasSession && active) {
                 authStatus = 'leaseExpired';
                 authNotice = '授权租约已过期，请联网刷新授权';
+            } else if (hasSession && entitlementStatus === 'expired') {
+                authStatus = 'expired';
+                authNotice = '当前订阅已到期，请续费后刷新授权';
+            } else if (hasSession && entitlementStatus === 'frozen') {
+                authStatus = 'frozen';
+                authNotice = '当前账号已被冻结，请联系运营处理';
+            } else if (hasSession && entitlementStatus === 'deviceLimit') {
+                authStatus = 'deviceLimit';
+                authNotice = '当前账号最多可绑定 3 台设备，请联系运营解绑旧设备';
             } else if (hasSession) {
                 authStatus = 'inactive';
                 authNotice = '当前订阅未生效或已到期，付款后需人工确认再刷新授权';

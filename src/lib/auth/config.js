@@ -8,7 +8,7 @@ const asNumber = (value, fallback) => {
 
 const authConfig = {
     apiBaseUrl: process.env.ZHIMENG_AUTH_API_BASE || 'http://localhost:3001',
-    billingUrl: process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com',
+    billingUrl: (process.env.ZHIMENG_BILLING_URL || '').trim(),
     registerUrl: (process.env.ZHIMENG_REGISTER_URL || '').trim(),
     leaseDays: asNumber(process.env.ZHIMENG_LEASE_DAYS, 7),
     cloudHost: (process.env.ZHIMENG_CLOUD_HOST || '').trim(),

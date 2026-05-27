@@ -1,4 +1,4 @@
-# 知萌：环境变量示例
+# 新祥编程：环境变量示例
 
 本地跑认证后端时，可在项目根目录复制 `.env.example` 为 `.env`（或执行 `npm run env:init`），`backend/server.js` 会自动读取 `.env`。
 
@@ -15,9 +15,10 @@ ZHIMENG_PAYMENT_API_BASE=https://api.zhimeng.example.com
 ZHIMENG_WECHAT_PAYMENT_QR_URL=https://cdn.zhimeng.example.com/pay/wechat-qr.png
 ZHIMENG_ALIPAY_PAYMENT_QR_URL=https://cdn.zhimeng.example.com/pay/alipay-qr.png
 ZHIMENG_PAYMENT_QR_URL=https://cdn.zhimeng.example.com/pay/wechat-qr.png
-ZHIMENG_PAYMENT_ACCOUNT_LABEL=知萌官方收款
+ZHIMENG_PAYMENT_ACCOUNT_LABEL=新祥编程官方收款
 ZHIMENG_PAYMENT_CURRENCY=CNY
 ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS=19900
+ZHIMENG_PLAN_BOOTCAMP_7D_AMOUNT_CENTS=69900
 ZHIMENG_PAYMENT_PROOF_STORAGE_DIR=./data/payment-proofs
 ZHIMENG_PAYMENT_PROOF_MAX_BYTES=5242880
 ZHIMENG_CLOUD_HOST=cloud.zhimeng.example.com
@@ -66,6 +67,7 @@ ZHIMENG_MYSQL_CONNECT_TIMEOUT=10000
 - `ZHIMENG_PAYMENT_ACCOUNT_LABEL`：订单页展示的收款账号名称
 - `ZHIMENG_PAYMENT_CURRENCY`：订单币种，默认 `CNY`
 - `ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS`：`family_yearly` 套餐金额，单位为分
+- `ZHIMENG_PLAN_BOOTCAMP_7D_AMOUNT_CENTS`：`bootcamp_7d` 7 天项目陪跑包金额，单位为分
 - `ZHIMENG_PAYMENT_PROOF_STORAGE_DIR`：付款截图本地私有存储目录；不要指向公开静态资源目录
 - `ZHIMENG_PAYMENT_PROOF_MAX_BYTES`：单张付款截图大小上限，默认 `5242880`（5MB）
 - `ZHIMENG_CLOUD_HOST`：Scratch 云变量 WebSocket 主机（不含 `ws://` / `wss://`；暂不启用云变量时可留空）

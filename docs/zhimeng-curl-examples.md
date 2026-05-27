@@ -59,3 +59,27 @@ curl -s -X POST http://localhost:3001/entitlement/device/bind \
   -H "Content-Type: application/json" \
   -d "{\"device_id\":\"dev-001\",\"device_name\":\"Test PC\"}"
 ```
+
+同一账号最多绑定 3 台设备。第 4 台返回 `409 Device limit exceeded`；用户自助解绑暂不开放，由运营在 `ops.html` 或后台接口处理。
+
+## 运营查询、冻结和解绑设备
+
+```bash
+curl -s http://localhost:3001/admin/user/demo \
+  -H "X-Zhimeng-Admin-Token: ADMIN_TOKEN"
+
+curl -s -X POST http://localhost:3001/admin/user/demo/freeze \
+  -H "X-Zhimeng-Admin-Token: ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"operator\":\"ops\",\"reason\":\"payment dispute\",\"note\":\"退款处理中\"}"
+
+curl -s -X POST http://localhost:3001/admin/user/demo/unfreeze \
+  -H "X-Zhimeng-Admin-Token: ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"operator\":\"ops\",\"reason\":\"resolved\"}"
+
+curl -s -X POST http://localhost:3001/admin/user/demo/device/unbind \
+  -H "X-Zhimeng-Admin-Token: ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"device_id\":\"dev-001\",\"operator\":\"ops\",\"reason\":\"changed computer\"}"
+```

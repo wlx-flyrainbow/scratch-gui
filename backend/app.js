@@ -70,6 +70,9 @@ const getPlanAmountCents = plan => {
     if (plan === 'family_yearly') {
         return Number(process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS || 19900);
     }
+    if (plan === 'bootcamp_7d') {
+        return Number(process.env.ZHIMENG_PLAN_BOOTCAMP_7D_AMOUNT_CENTS || 69900);
+    }
     return Number(process.env.ZHIMENG_DEFAULT_PLAN_AMOUNT_CENTS || 0);
 };
 
@@ -110,8 +113,13 @@ const getQrCodeUrl = (channel, base, orderId) => {
     return process.env.ZHIMENG_PAYMENT_QR_URL || `${base}/qr/${orderId}`;
 };
 
-const buildPaymentUrls = (orderId, paymentProofToken, channel) => {
-    const base = (process.env.ZHIMENG_BILLING_URL || 'https://billing.zhimeng.example.com')
+const buildPaymentUrls = (orderId, paymentProofToken, channel, fallbackBase) => {
+    const base = (
+        process.env.ZHIMENG_BILLING_URL ||
+        fallbackBase ||
+        process.env.ZHIMENG_AUTH_API_BASE ||
+        'http://localhost:3001'
+    )
         .replace(/\/$/, '');
     const qrCodeUrl = getQrCodeUrl(channel, base, orderId);
     const apiBase = process.env.ZHIMENG_PAYMENT_API_BASE || process.env.ZHIMENG_AUTH_API_BASE || '';
@@ -123,6 +131,15 @@ const buildPaymentUrls = (orderId, paymentProofToken, channel) => {
         }),
         qr_code_url: qrCodeUrl
     };
+};
+
+const requestBaseUrl = req => {
+    const host = req.get('host');
+    if (!host) return '';
+    const forwardedProto = String(req.get('x-forwarded-proto') || '')
+        .split(',')[0]
+        .trim();
+    return `${forwardedProto || req.protocol || 'http'}://${host}`;
 };
 
 const buildPaymentMethods = orderId => ({
@@ -253,13 +270,28 @@ const parseFeatures = row => {
     return [];
 };
 
+const toIsoValue = value => {
+    if (!value) return null;
+    return value instanceof Date ? value.toISOString() : value;
+};
+
+const resolveEntitlementStatus = row => {
+    const rawStatus = row.status || 'inactive';
+    if (rawStatus === 'frozen') return 'frozen';
+    if (rawStatus === 'active' && row.subscription_expires_at) {
+        const expiresAt = row.subscription_expires_at instanceof Date ?
+            row.subscription_expires_at.getTime() :
+            new Date(row.subscription_expires_at).getTime();
+        if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+            return 'expired';
+        }
+    }
+    return rawStatus;
+};
+
 const toUserPayload = (row, devices) => {
     const features = parseFeatures(row);
-    const expiresAt = row.subscription_expires_at ?
-        (row.subscription_expires_at instanceof Date ?
-            row.subscription_expires_at.toISOString() :
-            row.subscription_expires_at) :
-        null;
+    const expiresAt = toIsoValue(row.subscription_expires_at);
     return {
         id: String(row.id),
         username: row.username,
@@ -269,11 +301,15 @@ const toUserPayload = (row, devices) => {
             educator: Boolean(row.permission_educator)
         },
         entitlement: {
-            status: row.status || 'inactive',
+            status: resolveEntitlementStatus(row),
             plan: row.plan || '',
             features,
             device_limit: typeof row.device_limit === 'number' ? row.device_limit : 3,
             expires_at: expiresAt,
+            status_reason: row.status_reason || '',
+            status_note: row.status_note || '',
+            status_operator: row.status_operator || '',
+            status_updated_at: toIsoValue(row.status_updated_at),
             devices: devices || []
         }
     };
@@ -372,6 +408,17 @@ const safeMoneyCents = value => {
 const pickBodyValue = (body, snakeKey, camelKey) => (
     Object.prototype.hasOwnProperty.call(body, snakeKey) ? body[snakeKey] : body[camelKey]
 );
+
+const safeInteger = (value, min = 0, max = 9999) => {
+    if (value === null || typeof value === 'undefined' || value === '') {
+        return null;
+    }
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed)) return null;
+    return parsed >= min && parsed <= max ? parsed : null;
+};
+
+const safeBoolean = value => value === true || value === 1 || isTruthyEnv(value);
 
 const safeText = (value, limit = 160) => String(value || '')
     .trim()
@@ -610,6 +657,9 @@ const createApp = async () => {
             const count = await db.bindDevice(req.userNumericId, deviceId, deviceName);
             return res.json({ok: true, device_count: count});
         } catch (err) {
+            if (err.statusCode === 403) {
+                return res.status(403).json({message: err.message});
+            }
             if (err.statusCode === 409) {
                 return res.status(409).json({message: err.message});
             }
@@ -617,19 +667,16 @@ const createApp = async () => {
         }
     });
 
-    app.post('/entitlement/device/unbind', requireAuth, async (req, res) => {
-        try {
-            const {device_id: deviceId} = req.body || {};
-            if (!deviceId) return res.status(400).json({message: 'device_id is required'});
-            await db.unbindDevice(req.userNumericId, deviceId);
-            return res.json({ok: true});
-        } catch (err) {
-            return sendServerError(res, err);
-        }
+    app.post('/entitlement/device/unbind', requireAuth, (req, res) => {
+        void req;
+        res.status(403).json({message: 'Device unbind requires operator support'});
     });
 
     app.post('/order/create', requireAuth, async (req, res) => {
         try {
+            if (req.user && req.user.entitlement && req.user.entitlement.status === 'frozen') {
+                return res.status(403).json({message: 'Account frozen'});
+            }
             const {plan, channel, return_url: returnUrl} = req.body || {};
             if (!plan || !channel) {
                 return res.status(400).json({message: 'plan and channel are required'});
@@ -649,7 +696,7 @@ const createApp = async () => {
                 currency,
                 paymentProofTokenHash: hashPaymentProofToken(paymentProofToken)
             });
-            const urls = buildPaymentUrls(orderId, paymentProofToken, channel);
+            const urls = buildPaymentUrls(orderId, paymentProofToken, channel, requestBaseUrl(req));
             return res.json({
                 order_id: `o_${orderId}`,
                 status: 'created',
@@ -685,7 +732,7 @@ const createApp = async () => {
             if (!order) {
                 return res.status(404).json({message: 'Order not found'});
             }
-            const urls = buildPaymentUrls(numericId, proofToken, order.channel);
+            const urls = buildPaymentUrls(numericId, proofToken, order.channel, requestBaseUrl(req));
             return res.json({
                 ...toOrderPayload(order),
                 payment_mode: paymentMode(),
@@ -874,6 +921,12 @@ const createApp = async () => {
                 return res.status(400).json({message: 'Invalid order id'});
             }
             const body = req.body || {};
+            const completedProjects = Array.isArray(body.completed_projects || body.completedProjects) ?
+                (body.completed_projects || body.completedProjects)
+                    .map(item => safeText(item, 64))
+                    .filter(Boolean)
+                    .slice(0, 8) :
+                [];
             const business = {
                 source: safeText(body.source, 64),
                 packageType: safeText(body.package_type || body.packageType, 64),
@@ -882,9 +935,14 @@ const createApp = async () => {
                 deliveryCents: safeMoneyCents(pickBodyValue(body, 'delivery_cents', 'deliveryCents')),
                 serviceCents: safeMoneyCents(pickBodyValue(body, 'service_cents', 'serviceCents')),
                 refundRiskCents: safeMoneyCents(pickBodyValue(body, 'refund_risk_cents', 'refundRiskCents')),
-                starterCompleted: Boolean(body.starter_completed || body.starterCompleted),
+                starterCompleted: safeBoolean(pickBodyValue(body, 'starter_completed', 'starterCompleted')),
                 firstProjectType: safeText(body.first_project_type || body.firstProjectType, 64),
                 followupStatus: safeText(body.followup_status || body.followupStatus, 64),
+                bootcampDay: safeInteger(pickBodyValue(body, 'bootcamp_day', 'bootcampDay'), 0, 7),
+                completedProjects,
+                riskLevel: safeText(body.risk_level || body.riskLevel, 32),
+                nextFollowupAt: safeText(body.next_followup_at || body.nextFollowupAt, 64),
+                deliveryNote: safeText(body.delivery_note || body.deliveryNote, 800),
                 note: safeText(body.note, 500)
             };
             const order = await db.updateOrderBusiness(numericId, business);
@@ -970,6 +1028,84 @@ const createApp = async () => {
                 permissions: userPayload.permissions,
                 entitlement: userPayload.entitlement,
                 orders: orders.map(toOrderPayload)
+            });
+        } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.post('/admin/user/:username/freeze', requireAdmin, async (req, res) => {
+        try {
+            const row = await db.findUserByUsername(req.params.username);
+            if (!row) {
+                return res.status(404).json({message: 'User not found'});
+            }
+            const body = req.body || {};
+            const updated = await db.updateEntitlementStatus({
+                userId: row.id,
+                status: 'frozen',
+                action: 'freeze',
+                operator: safeText(body.operator || 'ops', 128),
+                reason: safeText(body.reason || 'manual freeze', 255),
+                note: safeText(body.note, 1000)
+            });
+            const devices = await db.listDevices(row.id);
+            return res.json({
+                ok: true,
+                entitlement: toUserPayload(updated, devices).entitlement
+            });
+        } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.post('/admin/user/:username/unfreeze', requireAdmin, async (req, res) => {
+        try {
+            const row = await db.findUserByUsername(req.params.username);
+            if (!row) {
+                return res.status(404).json({message: 'User not found'});
+            }
+            const body = req.body || {};
+            const updated = await db.updateEntitlementStatus({
+                userId: row.id,
+                status: 'unfreeze',
+                action: 'unfreeze',
+                operator: safeText(body.operator || 'ops', 128),
+                reason: safeText(body.reason || 'manual unfreeze', 255),
+                note: safeText(body.note, 1000)
+            });
+            const devices = await db.listDevices(row.id);
+            return res.json({
+                ok: true,
+                entitlement: toUserPayload(updated, devices).entitlement
+            });
+        } catch (err) {
+            return sendServerError(res, err);
+        }
+    });
+
+    app.post('/admin/user/:username/device/unbind', requireAdmin, async (req, res) => {
+        try {
+            const row = await db.findUserByUsername(req.params.username);
+            if (!row) {
+                return res.status(404).json({message: 'User not found'});
+            }
+            const body = req.body || {};
+            const deviceId = safeText(body.device_id || body.deviceId, 128);
+            if (!deviceId) {
+                return res.status(400).json({message: 'device_id is required'});
+            }
+            await db.unbindDeviceByAdmin({
+                userId: row.id,
+                deviceId,
+                operator: safeText(body.operator || 'ops', 128),
+                reason: safeText(body.reason || 'operator unbind', 255),
+                note: safeText(body.note, 1000)
+            });
+            const devices = await db.listDevices(row.id);
+            return res.json({
+                ok: true,
+                devices
             });
         } catch (err) {
             return sendServerError(res, err);

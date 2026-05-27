@@ -32,4 +32,21 @@ describe('auth HOC capability resolution', () => {
 
         expect(capabilities.cloudSaveEnabled).toBe(true);
     });
+
+    it('does not unlock capabilities for expired, frozen, or device-limit states', () => {
+        ['expired', 'frozen', 'deviceLimit', 'inactive'].forEach(status => {
+            const capabilities = resolveAuthCapabilities({
+                cloudHost: 'wss.example.com',
+                entitlement: {
+                    ...activeEntitlement,
+                    status
+                },
+                projectHost: 'https://projects.zhimeng.example.com',
+                user
+            });
+            expect(capabilities.active).toBe(false);
+            expect(capabilities.cloudSaveEnabled).toBe(false);
+            expect(capabilities.cloudDataEnabled).toBe(false);
+        });
+    });
 });

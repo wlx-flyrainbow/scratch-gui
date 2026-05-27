@@ -1,4 +1,4 @@
-import {bindDevice, login, refresh, register} from '../../../src/lib/auth/api';
+import {bindDevice, createOrder, login, refresh, register} from '../../../src/lib/auth/api';
 
 describe('auth api request helper', () => {
     const originalFetch = global.fetch;
@@ -36,7 +36,7 @@ describe('auth api request helper', () => {
             throw new Error('expected refresh to throw');
         } catch (err) {
             expect(err.status).toBe(401);
-            expect(err.message).toBe('授权已过期，请重新登录知萌账号。');
+            expect(err.message).toBe('授权已过期，请重新登录新祥编程账号。');
         }
     });
 
@@ -71,7 +71,37 @@ describe('auth api request helper', () => {
             throw new Error('expected bindDevice to throw');
         } catch (err) {
             expect(err.status).toBe(409);
-            expect(err.message).toBe('当前账号已达到设备上限，请联系运营解绑旧设备后再登录。');
+            expect(err.message).toBe('当前账号最多可绑定 3 台设备，请联系运营解绑旧设备后再使用。');
+        }
+    });
+
+    it('shows friendly frozen copy for device binding and order creation', async () => {
+        global.fetch = jest.fn(() => Promise.resolve({
+            ok: false,
+            status: 403,
+            text: () => Promise.resolve(JSON.stringify({message: 'Account frozen'}))
+        }));
+
+        try {
+            await bindDevice('token', {
+                device_id: 'device-1',
+                device_name: 'Mac'
+            });
+            throw new Error('expected bindDevice to throw');
+        } catch (err) {
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('当前账号已被冻结，请联系运营处理。');
+        }
+
+        try {
+            await createOrder('token', {
+                plan: 'family_yearly',
+                channel: 'wechat'
+            });
+            throw new Error('expected createOrder to throw');
+        } catch (err) {
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('当前账号已被冻结，暂时不能创建订单，请联系运营处理。');
         }
     });
 

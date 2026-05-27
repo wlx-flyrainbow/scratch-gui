@@ -2,24 +2,31 @@
  * Backend order flow unit tests (db mocked, no MySQL dependency).
  */
 jest.mock('../../backend/db', () => {
+    const defaultEntitlement = () => ({
+        status: 'inactive',
+        plan: '',
+        features_json: '[]',
+        device_limit: 3,
+        subscription_expires_at: null,
+        status_reason: null,
+        status_note: null,
+        status_operator: null,
+        status_updated_at: null
+    });
+    const planDurationDays = plan => (plan === 'bootcamp_7d' ? 7 : 365);
     const state = {
+        devices: new Map([[1, []]]),
         orders: new Map(),
         users: new Map(),
         nextUserId: 2,
         nextOrderId: 1,
-        entitlement: {
-            status: 'inactive',
-            plan: '',
-            features_json: '[]',
-            device_limit: 3,
-            subscription_expires_at: null
-        }
+        entitlement: defaultEntitlement()
     };
     const userRow = (user = {}) => ({
         id: user.id || 1,
         username: user.username || 'demo',
         password_hash: user.password_hash || 'mock',
-        nickname: user.nickname || '知萌体验账号',
+        nickname: user.nickname || '新祥编程体验账号',
         permission_student: 1,
         permission_educator: 0,
         ...(user.entitlement || state.entitlement)
@@ -41,13 +48,10 @@ jest.mock('../../backend/db', () => {
                 password_hash: passwordHash,
                 nickname,
                 entitlement: {
-                    status: 'inactive',
-                    plan: '',
-                    features_json: '[]',
-                    device_limit: 3,
-                    subscription_expires_at: null
+                    ...defaultEntitlement()
                 }
             });
+            state.devices.set(id, []);
             return Promise.resolve(id);
         }),
         findUserById: jest.fn(id => {
@@ -59,13 +63,74 @@ jest.mock('../../backend/db', () => {
             const registered = state.users.get(username);
             return Promise.resolve(registered ? userRow(registered) : null);
         }),
-        listDevices: jest.fn(() => Promise.resolve([])),
+        listDevices: jest.fn(userId => Promise.resolve((state.devices.get(Number(userId)) || []).slice())),
         insertRefreshToken: jest.fn(() => Promise.resolve()),
         findRefreshToken: jest.fn(() => Promise.resolve({user_id: 1, expires_at: new Date(Date.now() + 3600000)})),
         deleteRefreshToken: jest.fn(() => Promise.resolve()),
         deleteExpiredRefreshTokens: jest.fn(() => Promise.resolve()),
-        bindDevice: jest.fn(() => Promise.resolve(1)),
-        unbindDevice: jest.fn(() => Promise.resolve()),
+        bindDevice: jest.fn((userId, deviceId, deviceName) => {
+            const uid = Number(userId);
+            const entitlement = uid === 1 ?
+                state.entitlement :
+                ((Array.from(state.users.values()).find(user => Number(user.id) === uid) || {}).entitlement || {});
+            if (entitlement.status === 'frozen') {
+                const err = new Error('Account frozen');
+                err.statusCode = 403;
+                return Promise.reject(err);
+            }
+            const list = state.devices.get(uid) || [];
+            const existing = list.find(device => device.device_id === deviceId);
+            if (existing) {
+                existing.device_name = deviceName || 'unknown-device';
+                existing.last_seen_at = new Date().toISOString();
+                state.devices.set(uid, list);
+                return Promise.resolve(list.length);
+            }
+            const limit = entitlement.device_limit || 3;
+            if (list.length >= limit) {
+                const err = new Error('Device limit exceeded');
+                err.statusCode = 409;
+                return Promise.reject(err);
+            }
+            list.push({
+                device_id: deviceId,
+                device_name: deviceName || 'unknown-device',
+                last_seen_at: new Date().toISOString()
+            });
+            state.devices.set(uid, list);
+            return Promise.resolve(list.length);
+        }),
+        unbindDevice: jest.fn((userId, deviceId) => {
+            const uid = Number(userId);
+            const list = state.devices.get(uid) || [];
+            state.devices.set(uid, list.filter(device => device.device_id !== deviceId));
+            return Promise.resolve();
+        }),
+        updateEntitlementStatus: jest.fn(({userId, status, operator, reason, note}) => {
+            if (Number(userId) !== 1) return Promise.resolve(userRow({id: userId}));
+            let nextStatus = status;
+            if (status === 'unfreeze') {
+                const expiresAt = state.entitlement.subscription_expires_at ?
+                    new Date(state.entitlement.subscription_expires_at).getTime() :
+                    0;
+                nextStatus = expiresAt > Date.now() ? 'active' : 'inactive';
+            }
+            state.entitlement = {
+                ...state.entitlement,
+                status: nextStatus,
+                status_reason: reason || null,
+                status_note: note || null,
+                status_operator: operator || '',
+                status_updated_at: new Date().toISOString()
+            };
+            return Promise.resolve(userRow());
+        }),
+        unbindDeviceByAdmin: jest.fn(({userId, deviceId}) => {
+            const uid = Number(userId);
+            const list = state.devices.get(uid) || [];
+            state.devices.set(uid, list.filter(device => device.device_id !== deviceId));
+            return Promise.resolve(true);
+        }),
         createOrder: jest.fn(({
             userId,
             plan,
@@ -111,7 +176,7 @@ jest.mock('../../backend/db', () => {
             .map(order => ({
                 ...order,
                 username: 'demo',
-                nickname: '知萌体验账号'
+                nickname: '新祥编程体验账号'
             }))
             .reverse()
             .slice(0, Math.max(1, Math.min(Number(limit) || 50, 200))))),
@@ -124,12 +189,22 @@ jest.mock('../../backend/db', () => {
             return Promise.resolve();
         }),
         activateEntitlementFromOrder: jest.fn((userId, plan) => {
+            const now = Date.now();
+            const currentExpiresAt = state.entitlement.subscription_expires_at ?
+                new Date(state.entitlement.subscription_expires_at).getTime() :
+                0;
+            const baseTime = currentExpiresAt > now ? currentExpiresAt : now;
             state.entitlement = {
+                ...state.entitlement,
                 status: 'active',
-                plan: plan || 'family_yearly',
+                plan: state.entitlement.plan === 'family_yearly' &&
+                    plan === 'bootcamp_7d' &&
+                    currentExpiresAt > now ?
+                    state.entitlement.plan :
+                    (plan || 'family_yearly'),
                 features_json: JSON.stringify(['cloud_save', 'share', 'community', 'backpack']),
                 device_limit: 3,
-                subscription_expires_at: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
+                subscription_expires_at: new Date(baseTime + (planDurationDays(plan) * 24 * 60 * 60 * 1000))
             };
             return Promise.resolve();
         }),
@@ -214,15 +289,36 @@ jest.mock('../../backend/db', () => {
             row.provider_trade_no = providerTradeNo || row.provider_trade_no;
             row.paid_at = row.paid_at || new Date();
             row.fulfilled_at = row.fulfilled_at || new Date();
+            const now = Date.now();
+            const currentExpiresAt = state.entitlement.subscription_expires_at ?
+                new Date(state.entitlement.subscription_expires_at).getTime() :
+                0;
             state.entitlement = {
+                ...state.entitlement,
                 status: 'active',
-                plan: row.plan || 'family_yearly',
+                plan: state.entitlement.plan === 'family_yearly' &&
+                    row.plan === 'bootcamp_7d' &&
+                    currentExpiresAt > now ?
+                    state.entitlement.plan :
+                    (row.plan || 'family_yearly'),
                 features_json: JSON.stringify(['cloud_save', 'share', 'community', 'backpack']),
                 device_limit: 3,
-                subscription_expires_at: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
+                subscription_expires_at: new Date(
+                    Math.max(
+                        now,
+                        currentExpiresAt
+                    ) + (planDurationDays(row.plan) * 24 * 60 * 60 * 1000)
+                )
             };
             return Promise.resolve({order: row, idempotent});
         }),
+        __reset: jest.fn(() => {
+            state.orders.clear();
+            state.devices = new Map([[1, []]]);
+            state.nextOrderId = 1;
+            state.entitlement = defaultEntitlement();
+        }),
+        __state: state,
         bcrypt: {
             compareSync: jest.fn(() => true),
             hashSync: jest.fn(password => `hashed:${password}`)
@@ -242,8 +338,17 @@ describe('backend order flow (mocked db)', () => {
     let app;
     let authHeader;
     let proofDir;
+    let originalBootcampPrice;
+    let originalFamilyPrice;
+    let originalPlanPricesJson;
 
     beforeAll(async () => {
+        originalBootcampPrice = process.env.ZHIMENG_PLAN_BOOTCAMP_7D_AMOUNT_CENTS;
+        originalFamilyPrice = process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS;
+        originalPlanPricesJson = process.env.ZHIMENG_PLAN_PRICES_JSON;
+        delete process.env.ZHIMENG_PLAN_PRICES_JSON;
+        process.env.ZHIMENG_PLAN_BOOTCAMP_7D_AMOUNT_CENTS = '69900';
+        process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS = '19900';
         proofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zhimeng-proof-'));
         process.env.ZHIMENG_PAYMENT_PROOF_STORAGE_DIR = proofDir;
         app = await createApp();
@@ -255,12 +360,31 @@ describe('backend order flow (mocked db)', () => {
         authHeader = {Authorization: `Bearer ${login.body.access_token}`};
     });
 
+    beforeEach(() => {
+        db.__reset();
+    });
+
     afterAll(() => {
         accessTokens.clear();
         if (proofDir) {
             fs.rmSync(proofDir, {recursive: true, force: true});
         }
         delete process.env.ZHIMENG_PAYMENT_PROOF_STORAGE_DIR;
+        if (typeof originalBootcampPrice === 'undefined') {
+            delete process.env.ZHIMENG_PLAN_BOOTCAMP_7D_AMOUNT_CENTS;
+        } else {
+            process.env.ZHIMENG_PLAN_BOOTCAMP_7D_AMOUNT_CENTS = originalBootcampPrice;
+        }
+        if (typeof originalFamilyPrice === 'undefined') {
+            delete process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS;
+        } else {
+            process.env.ZHIMENG_PLAN_FAMILY_YEARLY_AMOUNT_CENTS = originalFamilyPrice;
+        }
+        if (typeof originalPlanPricesJson === 'undefined') {
+            delete process.env.ZHIMENG_PLAN_PRICES_JSON;
+        } else {
+            process.env.ZHIMENG_PLAN_PRICES_JSON = originalPlanPricesJson;
+        }
     });
 
     it('registers a new inactive account and returns login tokens', async () => {
@@ -307,6 +431,8 @@ describe('backend order flow (mocked db)', () => {
         expect(create.body.payment_note).toContain(create.body.order_id);
         expect(create.body.pay_url).toContain('pay.html');
         expect(create.body.pay_url).toContain('proof_token=');
+        expect(create.body.pay_url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/pay\.html/);
+        expect(create.body.pay_url).not.toContain('billing.zhimeng.example.com');
 
         const status = await inject(app, {
             path: `/order/${create.body.order_id}/status`,
@@ -315,6 +441,203 @@ describe('backend order flow (mocked db)', () => {
         });
         expect(status.status).toBe(200);
         expect(status.body.status).toBe('created');
+    });
+
+    it('rejects order creation for frozen accounts', async () => {
+        db.__state.entitlement = {
+            ...db.__state.entitlement,
+            status: 'frozen',
+            status_reason: 'payment dispute'
+        };
+        const create = await inject(app, {
+            path: '/order/create',
+            method: 'POST',
+            headers: authHeader,
+            body: {plan: 'family_yearly', channel: 'wechat'}
+        });
+        expect(create.status).toBe(403);
+    });
+
+    it('binds up to three devices and allows a new device after operator unbind', async () => {
+        await inject(app, {
+            path: '/entitlement/device/bind',
+            method: 'POST',
+            headers: authHeader,
+            body: {device_id: 'd1', device_name: 'Mac'}
+        });
+        await inject(app, {
+            path: '/entitlement/device/bind',
+            method: 'POST',
+            headers: authHeader,
+            body: {device_id: 'd2', device_name: 'Windows'}
+        });
+        const repeat = await inject(app, {
+            path: '/entitlement/device/bind',
+            method: 'POST',
+            headers: authHeader,
+            body: {device_id: 'd2', device_name: 'Windows again'}
+        });
+        expect(repeat.status).toBe(200);
+        expect(repeat.body.device_count).toBe(2);
+        await inject(app, {
+            path: '/entitlement/device/bind',
+            method: 'POST',
+            headers: authHeader,
+            body: {device_id: 'd3', device_name: 'Linux'}
+        });
+        const overLimit = await inject(app, {
+            path: '/entitlement/device/bind',
+            method: 'POST',
+            headers: authHeader,
+            body: {device_id: 'd4', device_name: 'New Mac'}
+        });
+        expect(overLimit.status).toBe(409);
+
+        const originalAdminToken = process.env.ZHIMENG_ADMIN_TOKEN;
+        process.env.ZHIMENG_ADMIN_TOKEN = 'test-admin-token';
+        try {
+            const unbind = await inject(app, {
+                path: '/admin/user/demo/device/unbind',
+                method: 'POST',
+                headers: {'X-Zhimeng-Admin-Token': 'test-admin-token'},
+                body: {device_id: 'd1', operator: 'qa', reason: 'changed computer'}
+            });
+            expect(unbind.status).toBe(200);
+            expect(unbind.body.devices.length).toBe(2);
+        } finally {
+            if (typeof originalAdminToken === 'undefined') {
+                delete process.env.ZHIMENG_ADMIN_TOKEN;
+            } else {
+                process.env.ZHIMENG_ADMIN_TOKEN = originalAdminToken;
+            }
+        }
+
+        const afterUnbind = await inject(app, {
+            path: '/entitlement/device/bind',
+            method: 'POST',
+            headers: authHeader,
+            body: {device_id: 'd4', device_name: 'New Mac'}
+        });
+        expect(afterUnbind.status).toBe(200);
+        expect(afterUnbind.body.device_count).toBe(3);
+    });
+
+    it('returns frozen status and blocks device binding for frozen accounts', async () => {
+        db.__state.entitlement = {
+            ...db.__state.entitlement,
+            status: 'frozen',
+            status_reason: 'risk control'
+        };
+        const entitlement = await inject(app, {
+            path: '/entitlement',
+            method: 'GET',
+            headers: authHeader
+        });
+        expect(entitlement.status).toBe(200);
+        expect(entitlement.body.status).toBe('frozen');
+
+        const bind = await inject(app, {
+            path: '/entitlement/device/bind',
+            method: 'POST',
+            headers: authHeader,
+            body: {device_id: 'frozen-device', device_name: 'Mac'}
+        });
+        expect(bind.status).toBe(403);
+    });
+
+    it('allows operators to freeze and unfreeze accounts', async () => {
+        const originalAdminToken = process.env.ZHIMENG_ADMIN_TOKEN;
+        process.env.ZHIMENG_ADMIN_TOKEN = 'test-admin-token';
+        db.__state.entitlement = {
+            ...db.__state.entitlement,
+            status: 'active',
+            subscription_expires_at: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000))
+        };
+        try {
+            const freeze = await inject(app, {
+                path: '/admin/user/demo/freeze',
+                method: 'POST',
+                headers: {'X-Zhimeng-Admin-Token': 'test-admin-token'},
+                body: {operator: 'qa', reason: 'payment dispute'}
+            });
+            expect(freeze.status).toBe(200);
+            expect(freeze.body.entitlement.status).toBe('frozen');
+
+            const unfreeze = await inject(app, {
+                path: '/admin/user/demo/unfreeze',
+                method: 'POST',
+                headers: {'X-Zhimeng-Admin-Token': 'test-admin-token'},
+                body: {operator: 'qa', reason: 'resolved'}
+            });
+            expect(unfreeze.status).toBe(200);
+            expect(unfreeze.body.entitlement.status).toBe('active');
+        } finally {
+            if (typeof originalAdminToken === 'undefined') {
+                delete process.env.ZHIMENG_ADMIN_TOKEN;
+            } else {
+                process.env.ZHIMENG_ADMIN_TOKEN = originalAdminToken;
+            }
+        }
+    });
+
+    it('extends entitlement by plan duration without shortening an existing yearly plan', async () => {
+        const familyOrder = await inject(app, {
+            path: '/order/create',
+            method: 'POST',
+            headers: authHeader,
+            body: {plan: 'family_yearly', channel: 'wechat'}
+        });
+        const beforeFamilyPaid = Date.now();
+        const familyPaid = await inject(app, {
+            path: `/order/${familyOrder.body.order_id}/mock-paid`,
+            method: 'POST',
+            headers: authHeader
+        });
+        expect(familyPaid.status).toBe(200);
+        const familyExpiresAt = new Date(db.__state.entitlement.subscription_expires_at).getTime();
+        expect(familyExpiresAt - beforeFamilyPaid).toBeGreaterThanOrEqual(364 * 24 * 60 * 60 * 1000);
+
+        const bootcampOrder = await inject(app, {
+            path: '/order/create',
+            method: 'POST',
+            headers: authHeader,
+            body: {plan: 'bootcamp_7d', channel: 'wechat'}
+        });
+        const bootcampPaid = await inject(app, {
+            path: `/order/${bootcampOrder.body.order_id}/mock-paid`,
+            method: 'POST',
+            headers: authHeader
+        });
+        expect(bootcampPaid.status).toBe(200);
+        expect(db.__state.entitlement.plan).toBe('family_yearly');
+        const afterBootcampExpiresAt = new Date(db.__state.entitlement.subscription_expires_at).getTime();
+        expect(afterBootcampExpiresAt - familyExpiresAt).toBeGreaterThanOrEqual(6 * 24 * 60 * 60 * 1000);
+    });
+
+    it('uses bootcamp plan when the previous yearly plan is already expired', async () => {
+        db.__state.entitlement = {
+            ...db.__state.entitlement,
+            status: 'active',
+            plan: 'family_yearly',
+            subscription_expires_at: new Date(Date.now() - (24 * 60 * 60 * 1000))
+        };
+        const bootcampOrder = await inject(app, {
+            path: '/order/create',
+            method: 'POST',
+            headers: authHeader,
+            body: {plan: 'bootcamp_7d', channel: 'wechat'}
+        });
+        const beforePaid = Date.now();
+        const bootcampPaid = await inject(app, {
+            path: `/order/${bootcampOrder.body.order_id}/mock-paid`,
+            method: 'POST',
+            headers: authHeader
+        });
+        expect(bootcampPaid.status).toBe(200);
+        expect(db.__state.entitlement.plan).toBe('bootcamp_7d');
+        const expiresAt = new Date(db.__state.entitlement.subscription_expires_at).getTime();
+        expect(expiresAt - beforePaid).toBeGreaterThanOrEqual(6 * 24 * 60 * 60 * 1000);
+        expect(expiresAt - beforePaid).toBeLessThanOrEqual(8 * 24 * 60 * 60 * 1000);
     });
 
     it('returns public payment page data with order proof token', async () => {

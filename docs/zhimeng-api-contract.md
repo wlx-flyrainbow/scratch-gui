@@ -136,6 +136,13 @@ Authorization: Bearer <access_token>
 }
 ```
 
+状态口径：
+
+- `inactive`：未开通。
+- `active`：已开通且未到期。
+- `expired`：数据库状态可能仍为 `active`，但 `subscription_expires_at <= now` 时接口统一返回 `expired`。
+- `frozen`：运营冻结，优先级高于到期判断。
+
 ### `POST /entitlement/device/bind`
 
 请求：
@@ -156,21 +163,20 @@ Authorization: Bearer <access_token>
 }
 ```
 
+错误：
+
+- `403 Account frozen`：账号被冻结，客户端应锁定完整编辑器。
+- `409 Device limit exceeded`：账号已达到设备上限。MVP 只允许运营在 `ops.html` 解绑旧设备。
+
 ### `POST /entitlement/device/unbind`
 
-请求：
-
-```json
-{
-  "device_id": "win-uuid"
-}
-```
+用户自助解绑在 MVP 阶段不开放。客户端调用该接口会返回 `403`，解绑只由运营通过后台完成。
 
 响应：
 
 ```json
 {
-  "ok": true
+  "message": "Device unbind requires operator support"
 }
 ```
 
@@ -358,6 +364,79 @@ X-Zhimeng-Admin-Token: <admin-token>
 ```
 
 该接口供 `website/ops.html` 使用，用于拉取已提交付款凭证、等待人工核账的订单。
+
+### `GET /admin/user/:username`
+
+查询账号授权、设备和历史订单。返回的 `entitlement.status` 使用与 `GET /entitlement` 相同的有效状态口径。
+
+Header:
+
+```text
+X-Zhimeng-Admin-Token: <admin-token>
+```
+
+响应：
+
+```json
+{
+  "user": {
+    "id": "1",
+    "username": "demo",
+    "nickname": "知萌体验账号"
+  },
+  "entitlement": {
+    "status": "active",
+    "plan": "family_yearly",
+    "expires_at": "2027-05-26T00:00:00.000Z",
+    "device_limit": 3,
+    "status_reason": "",
+    "status_updated_at": null,
+    "devices": [
+      {
+        "device_id": "zm_xxx",
+        "device_name": "知萌客户端 macOS",
+        "last_seen_at": "2026-05-26T10:00:00.000Z"
+      }
+    ]
+  },
+  "orders": []
+}
+```
+
+### `POST /admin/user/:username/freeze`
+
+冻结账号。冻结后客户端下一次联网刷新授权会进入锁定态；离线客户端最多受 7 天离线租约约束。
+
+请求：
+
+```json
+{
+  "operator": "ops",
+  "reason": "risk control",
+  "note": "付款争议处理中"
+}
+```
+
+### `POST /admin/user/:username/unfreeze`
+
+解冻账号。若仍在订阅有效期内，状态恢复为 `active`；若已过期或未开通，恢复为 `inactive`。
+
+请求字段同冻结接口。
+
+### `POST /admin/user/:username/device/unbind`
+
+运营解绑旧设备，解绑后该账号可绑定新设备。
+
+请求：
+
+```json
+{
+  "device_id": "zm_xxx",
+  "operator": "ops",
+  "reason": "user changed computer",
+  "note": "家长反馈旧电脑已不用"
+}
+```
 
 ## 是否自建 Project/Backpack 服务
 

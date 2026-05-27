@@ -10,6 +10,14 @@ const ORDER_STATUS = {
 };
 
 const ENTITLEMENT_FEATURES = ['cloud_save', 'share', 'community', 'backpack'];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const PLAN_DURATIONS_DAYS = {
+    bootcamp_7d: 7,
+    family_yearly: 365
+};
+
+const planDurationDays = plan => PLAN_DURATIONS_DAYS[plan] || 365;
 
 const getPool = () => {
     /* eslint-disable require-atomic-updates -- lazy singleton pool */
@@ -85,7 +93,25 @@ const initSchema = async () => {
             features_json JSON NOT NULL,
             device_limit INT NOT NULL DEFAULT 3,
             subscription_expires_at DATETIME NULL,
+            status_reason VARCHAR(255) NULL,
+            status_note TEXT NULL,
+            status_operator VARCHAR(128) NULL,
+            status_updated_at DATETIME NULL,
             CONSTRAINT fk_ent_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    await p.query(`
+        CREATE TABLE IF NOT EXISTS entitlement_events (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            action VARCHAR(64) NOT NULL,
+            operator VARCHAR(128) NOT NULL DEFAULT '',
+            reason VARCHAR(255) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            payload_json JSON NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_entitlement_events_user (user_id),
+            CONSTRAINT fk_ent_event_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     await p.query(`
@@ -143,6 +169,10 @@ const initSchema = async () => {
     await ensureColumn(p, 'orders', 'payment_proof_json', 'payment_proof_json JSON NULL');
     await ensureColumn(p, 'orders', 'payment_proof_token_hash', 'CHAR(64) NULL');
     await ensureColumn(p, 'orders', 'audit_json', 'audit_json JSON NULL');
+    await ensureColumn(p, 'entitlements', 'status_reason', 'status_reason VARCHAR(255) NULL');
+    await ensureColumn(p, 'entitlements', 'status_note', 'status_note TEXT NULL');
+    await ensureColumn(p, 'entitlements', 'status_operator', 'status_operator VARCHAR(128) NULL');
+    await ensureColumn(p, 'entitlements', 'status_updated_at', 'status_updated_at DATETIME NULL');
 };
 
 const seedDemoUser = async () => {
@@ -200,7 +230,8 @@ const findUserByUsername = async username => {
     const p = getPool();
     const [rows] = await p.query(
         `SELECT u.id, u.username, u.password_hash, u.nickname, u.permission_student, u.permission_educator,
-                e.status, e.plan, e.features_json, e.device_limit, e.subscription_expires_at
+                e.status, e.plan, e.features_json, e.device_limit, e.subscription_expires_at,
+                e.status_reason, e.status_note, e.status_operator, e.status_updated_at
          FROM users u
          LEFT JOIN entitlements e ON e.user_id = u.id
          WHERE u.username = ?
@@ -214,7 +245,8 @@ const findUserById = async id => {
     const p = getPool();
     const [rows] = await p.query(
         `SELECT u.id, u.username, u.nickname, u.permission_student, u.permission_educator,
-                e.status, e.plan, e.features_json, e.device_limit, e.subscription_expires_at
+                e.status, e.plan, e.features_json, e.device_limit, e.subscription_expires_at,
+                e.status_reason, e.status_note, e.status_operator, e.status_updated_at
          FROM users u
          LEFT JOIN entitlements e ON e.user_id = u.id
          WHERE u.id = ?
@@ -272,6 +304,11 @@ const bindDevice = async (userId, deviceId, deviceName) => {
     if (!row || !row.device_limit) {
         throw new Error('User not found');
     }
+    if (row.status === 'frozen') {
+        const err = new Error('Account frozen');
+        err.statusCode = 403;
+        throw err;
+    }
     const [countRows] = await p.query(
         'SELECT COUNT(*) AS c FROM user_devices WHERE user_id = ?',
         [userId]
@@ -305,6 +342,114 @@ const unbindDevice = async (userId, deviceId) => {
         'DELETE FROM user_devices WHERE user_id = ? AND device_id = ?',
         [userId, deviceId]
     );
+};
+
+const insertEntitlementEventWithConnection = async (
+    conn,
+    {userId, action, operator, reason, note, payload}
+) => {
+    await conn.query(
+        `INSERT INTO entitlement_events (user_id, action, operator, reason, note, payload_json)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+            userId,
+            action,
+            operator || '',
+            reason || '',
+            note || null,
+            payload ? JSON.stringify(payload) : null
+        ]
+    );
+};
+
+const updateEntitlementStatus = async ({
+    userId,
+    status,
+    operator,
+    reason,
+    note,
+    action
+}) => {
+    const p = getPool();
+    const conn = await p.getConnection();
+    try {
+        await conn.beginTransaction();
+        let nextStatus = status;
+        if (status === 'unfreeze') {
+            const [rows] = await conn.query(
+                'SELECT subscription_expires_at FROM entitlements WHERE user_id = ? LIMIT 1 FOR UPDATE',
+                [userId]
+            );
+            const expiresAt = rows[0] && rows[0].subscription_expires_at ?
+                new Date(rows[0].subscription_expires_at).getTime() :
+                0;
+            nextStatus = expiresAt > Date.now() ? 'active' : 'inactive';
+        }
+        await conn.query(
+            `UPDATE entitlements
+             SET status = ?,
+                 status_reason = ?,
+                 status_note = ?,
+                 status_operator = ?,
+                 status_updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = ?`,
+            [
+                nextStatus,
+                reason || null,
+                note || null,
+                operator || '',
+                userId
+            ]
+        );
+        await insertEntitlementEventWithConnection(conn, {
+            userId,
+            action: action || status,
+            operator,
+            reason,
+            note,
+            payload: {status: nextStatus}
+        });
+        await conn.commit();
+        return findUserById(userId);
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+};
+
+const unbindDeviceByAdmin = async ({
+    userId,
+    deviceId,
+    operator,
+    reason,
+    note
+}) => {
+    const p = getPool();
+    const conn = await p.getConnection();
+    try {
+        await conn.beginTransaction();
+        await conn.query(
+            'DELETE FROM user_devices WHERE user_id = ? AND device_id = ?',
+            [userId, deviceId]
+        );
+        await insertEntitlementEventWithConnection(conn, {
+            userId,
+            action: 'device_unbind',
+            operator,
+            reason,
+            note,
+            payload: {deviceId}
+        });
+        await conn.commit();
+        return true;
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
 };
 
 const createOrder = async ({
@@ -496,16 +641,30 @@ const updateOrderBusiness = async (orderId, business) => {
 
 const activateEntitlementWithConnection = async (conn, userId, plan) => {
     const features = JSON.stringify(ENTITLEMENT_FEATURES);
-    const subExpires = new Date(Date.now() + (365 * 24 * 60 * 60 * 1000));
+    const [rows] = await conn.query(
+        'SELECT status, plan, subscription_expires_at FROM entitlements WHERE user_id = ? LIMIT 1 FOR UPDATE',
+        [userId]
+    );
+    const current = rows[0] || {};
+    const now = Date.now();
+    const currentExpiresAt = current.subscription_expires_at ?
+        new Date(current.subscription_expires_at).getTime() :
+        0;
+    const baseTime = currentExpiresAt > now ? currentExpiresAt : now;
+    const subExpires = new Date(baseTime + (planDurationDays(plan) * DAY_MS));
+    const nextPlan = current.plan === 'family_yearly' && plan === 'bootcamp_7d' && currentExpiresAt > now ?
+        current.plan :
+        plan;
+    const nextStatus = current.status === 'frozen' ? 'frozen' : 'active';
     await conn.query(
         `INSERT INTO entitlements (user_id, status, plan, features_json, device_limit, subscription_expires_at)
-         VALUES (?, 'active', ?, ?, 3, ?)
+         VALUES (?, ?, ?, ?, 3, ?)
          ON DUPLICATE KEY UPDATE
             status = VALUES(status),
             plan = VALUES(plan),
             features_json = VALUES(features_json),
             subscription_expires_at = VALUES(subscription_expires_at)`,
-        [userId, plan, features, subExpires]
+        [userId, nextStatus, nextPlan || plan || 'family_yearly', features, subExpires]
     );
 };
 
@@ -647,6 +806,8 @@ module.exports = {
     deleteExpiredRefreshTokens,
     bindDevice,
     unbindDevice,
+    updateEntitlementStatus,
+    unbindDeviceByAdmin,
     createOrder,
     findOrderById,
     listOrdersByUser,
