@@ -337,8 +337,10 @@ ZHIMENG_BILLING_URL=http://localhost:3001
 
 const releaseSourceMapDoc = (pkg, revision, sourceRef, sourceStatus, fullStatus) => {
     const sourceDirtyText = sourceStatus ? 'yes' : 'no';
-    const fullDirtyText = fullStatus ? 'yes' : 'no';
     const sourceText = sourceRef ? `git ref ${sourceRef}` : 'working tree';
+    const fullStatusLine = sourceRef ?
+        '' :
+        `- Core working tree had any uncommitted changes: ${fullStatus ? 'yes' : 'no'}\n`;
 
     return `# Release Source Map
 
@@ -347,7 +349,7 @@ const releaseSourceMapDoc = (pkg, revision, sourceRef, sourceStatus, fullStatus)
 - Core repository commit: ${revision}
 - Export generated at: ${new Date().toISOString()}
 - Exported source inputs had uncommitted changes: ${sourceDirtyText}
-- Core working tree had any uncommitted changes: ${fullDirtyText}
+${fullStatusLine}
 
 For a public release, the final installer should point to the public repository
 tag created from this exported source tree.
@@ -418,7 +420,7 @@ const main = () => {
     const pkg = readPackageJson(sourceRef);
     const revision = coreRevision(sourceRef);
     const sourceStatus = sourceRef ? '' : coreStatus(exportInputPaths());
-    const fullStatus = coreStatus();
+    const fullStatus = sourceRef ? '' : coreStatus();
     writeGeneratedFiles(target, pkg, revision, sourceRef, sourceStatus, fullStatus);
 
     console.log(`Exported public source to ${relative(target)}`);
