@@ -7,9 +7,8 @@ import GUI from '../containers/gui.jsx';
 import HashParserHOC from '../lib/hash-parser-hoc.jsx';
 import log from '../lib/log.js';
 
-const onClickLogo = () => {
-    window.location = 'https://scratch.mit.edu';
-};
+const zhimengWebsiteUrl = 'https://zhimeng.codevalley.cn/index.html';
+const publicSourceUrl = 'https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28';
 
 const handleTelemetryModalCancel = () => {
     log('User canceled telemetry modal');
@@ -22,6 +21,21 @@ const handleTelemetryModalOptIn = () => {
 const handleTelemetryModalOptOut = () => {
     log('User opted out of telemetry');
 };
+
+const openExternalUrl = url => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const zhimengAboutMenu = [
+    {
+        title: '新祥编程官网',
+        onClick: () => openExternalUrl(zhimengWebsiteUrl)
+    },
+    {
+        title: '源码与 AGPL 许可',
+        onClick: () => openExternalUrl(publicSourceUrl)
+    }
+];
 
 /*
  * Render the GUI playground. This is a separate function because importing anything
@@ -69,6 +83,7 @@ export default appTarget => {
                 isScratchDesktop
                 showTelemetryModal
                 canSave={false}
+                onClickAbout={zhimengAboutMenu}
                 onTelemetryModalCancel={handleTelemetryModalCancel}
                 onTelemetryModalOptIn={handleTelemetryModalOptIn}
                 onTelemetryModalOptOut={handleTelemetryModalOptOut}
@@ -79,7 +94,7 @@ export default appTarget => {
                 showComingSoon
                 backpackHost={backpackHost}
                 canSave={false}
-                onClickLogo={onClickLogo}
+                onClickAbout={zhimengAboutMenu}
             />,
         appTarget);
 };

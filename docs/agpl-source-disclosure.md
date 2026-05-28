@@ -4,7 +4,7 @@
 
 - 项目名：`新祥编程客户端 / NewSiang client`
 - 许可证：`AGPL-3.0-only`
-- 仓库地址：`https://github.com/wlx-flyrainbow/newsiang-client-public`
+- 仓库地址：`https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28`
 - 问题反馈：`https://github.com/wlx-flyrainbow/newsiang-client-public/issues`
 
 ---
@@ -13,7 +13,7 @@
 
 ```text
 本服务基于 AGPLv3 许可的软件提供。该服务当前运行版本的完整对应源代码（含修改）可在此获取：
-https://github.com/wlx-flyrainbow/newsiang-client-public
+https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28
 ```
 
 ---
@@ -27,7 +27,7 @@ https://github.com/wlx-flyrainbow/newsiang-client-public
 根据 AGPLv3 的要求，我们向所有通过网络与本服务交互的用户提供本服务当前运行版本的完整对应源代码（包括我们所作修改）。
 
 源代码获取地址：
-https://github.com/wlx-flyrainbow/newsiang-client-public
+https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28
 
 如你在获取或构建源代码时遇到问题，可通过以下方式联系我们：
 https://github.com/wlx-flyrainbow/newsiang-client-public/issues
@@ -43,7 +43,7 @@ NOTICE
 This service includes software licensed under the GNU Affero General Public License v3.0 (AGPLv3).
 
 Corresponding Source for the running service (including local modifications) is available at:
-https://github.com/wlx-flyrainbow/newsiang-client-public
+https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28
 
 Contact / issue tracker:
 https://github.com/wlx-flyrainbow/newsiang-client-public/issues
@@ -57,8 +57,8 @@ https://github.com/wlx-flyrainbow/newsiang-client-public/issues
 <footer>
   <p>
     本服务基于 AGPLv3 许可的软件提供。完整对应源代码（含修改）：
-    <a href="https://github.com/wlx-flyrainbow/newsiang-client-public" target="_blank" rel="noopener noreferrer">
-      https://github.com/wlx-flyrainbow/newsiang-client-public
+    <a href="https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28" target="_blank" rel="noopener noreferrer">
+      https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28
     </a>
   </p>
 </footer>

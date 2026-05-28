@@ -14,7 +14,8 @@ let mainWindow;
 let isQuitting = false;
 const authFilePath = path.join(app.getPath('userData'), 'zhimeng-auth.json');
 const deviceFilePath = path.join(app.getPath('userData'), 'zhimeng-device.json');
-const sourceUrl = 'https://github.com/wlx-flyrainbow/scratch-gui';
+const websiteUrl = 'https://zhimeng.codevalley.cn/index.html';
+const publicSourceUrl = 'https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28';
 
 const readAuthBundle = () => {
     try {
@@ -140,8 +141,12 @@ const createWindow = function () {
             label: '帮助',
             submenu: [
                 {
-                    label: '查看源码与 AGPL 许可',
-                    click: () => shell.openExternal(sourceUrl)
+                    label: '打开新祥编程官网',
+                    click: () => shell.openExternal(websiteUrl)
+                },
+                {
+                    label: '源码与 AGPL 许可',
+                    click: () => shell.openExternal(publicSourceUrl)
                 }
             ]
         }

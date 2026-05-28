@@ -44,7 +44,7 @@ npm run public:check
 源码与许可：
 
 - 许可证：`AGPL-3.0-only`
-- 当前对应源码：`https://github.com/wlx-flyrainbow/newsiang-client-public`
+- 当前对应源码：`https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28`
 - 客户端帮助菜单打开新祥编程官网；官网页脚提供当前对应源码链接。
 
 ---
