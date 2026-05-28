@@ -22,6 +22,8 @@
 
 - MVP 阶段按路径 1 执行，保证上线节奏。
 - 同步推进路径 2 的沟通，作为后续商业化升级选项。
+- 产品与商业落地按 `docs/zhimeng-agpl-product-strategy-implementation-plan.md` 执行：核心编辑器公开，商业能力服务端化，内容与运营形成长期护城河。
+- 公开源码发布按 `docs/zhimeng-public-source-repo-management.md` 执行：当前核心仓库不变，另建干净公开仓库，按白名单导出源码和必要文档。
 
 ## 发布前核对清单
 

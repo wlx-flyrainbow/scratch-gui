@@ -20,6 +20,11 @@ const __dirname = path.dirname(__filename);
 
 // base/root path for the project
 const basePath = path.join(__dirname, '..');
+const microbitHexUrl = 'https://downloads.scratch.mit.edu/microbit/scratch-microbit.hex.zip';
+const microbitDownloadTimeoutMs = Number.parseInt(
+    process.env.SCRATCH_MICROBIT_DOWNLOAD_TIMEOUT_MS || '30000',
+    10
+);
 
 /**
  * Extract the first matching file from a zip buffer.
@@ -76,11 +81,29 @@ const extractFirstMatchingFile = (filter, relativeDestDir, zipBuffer) => new Pro
     }
 });
 
+const readMicrobitZip = async () => {
+    if (process.env.SCRATCH_MICROBIT_HEX_ZIP) {
+        const localZipPath = path.resolve(process.cwd(), process.env.SCRATCH_MICROBIT_HEX_ZIP);
+        console.info(`Using local micro:bit hex zip ${localZipPath}`);
+        return fs.readFileSync(localZipPath);
+    }
+
+    console.info(`Downloading ${microbitHexUrl}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), microbitDownloadTimeoutMs);
+    try {
+        const response = await crossFetch(microbitHexUrl, {signal: controller.signal});
+        if (!response.ok) {
+            throw new Error(`Failed to download micro:bit hex: ${response.status} ${response.statusText}`);
+        }
+        return Buffer.from(await response.arrayBuffer());
+    } finally {
+        clearTimeout(timeout);
+    }
+};
+
 const downloadMicrobitHex = async () => {
-    const url = 'https://downloads.scratch.mit.edu/microbit/scratch-microbit.hex.zip';
-    console.info(`Downloading ${url}`);
-    const response = await crossFetch(url);
-    const zipBuffer = Buffer.from(await response.arrayBuffer());
+    const zipBuffer = await readMicrobitZip();
     const relativeHexDir = path.join('static', 'microbit');
     const hexFileName = await extractFirstMatchingFile(
         entry => /\.hex$/.test(entry.fileName),

@@ -43,6 +43,8 @@
     "release:check": "node scripts/validate-zhimeng-release.js",
     "release:check-signing": "node scripts/validate-zhimeng-signing-readiness.js",
     "release:verify-public": "node scripts/verify-zhimeng-public-release.js",
+    "public:export": "node scripts/export-public-source.js",
+    "public:check": "node scripts/check-public-source.js",
     "deploy:static:test": "bash deploy/scripts/deploy-static.sh test",
     "deploy:static:prod": "bash deploy/scripts/deploy-static.sh prod",
     "deploy:api:test": "bash deploy/scripts/deploy-api.sh test",

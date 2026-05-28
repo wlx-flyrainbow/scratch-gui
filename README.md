@@ -23,6 +23,13 @@ npm run test:zhimeng-goal
 npm run release:check
 ```
 
+公开源码导出：
+
+```bash
+npm run public:export
+npm run public:check
+```
+
 关键文档：
 
 - PRD：`_bmad-output/planning-artifacts/prd.md`
@@ -31,12 +38,14 @@ npm run release:check
 - 运维发布 Runbook：`docs/zhimeng-ops-runbook.md`
 - codevalley.cn 宝塔部署：`docs/zhimeng-codevalley-deployment.md`
 - AGPL 源码公开说明：`docs/agpl-source-disclosure.md`
+- AGPL 产品战略实施计划：`docs/zhimeng-agpl-product-strategy-implementation-plan.md`
+- 公开源码仓库管理方案：`docs/zhimeng-public-source-repo-management.md`
 
 源码与许可：
 
 - 许可证：`AGPL-3.0-only`
-- 当前对应源码：`https://github.com/wlx-flyrainbow/scratch-gui`
-- 客户端帮助菜单和下载页页脚均应指向当前对应源码。
+- 当前对应源码：`https://github.com/wlx-flyrainbow/newsiang-client-public`
+- 客户端帮助菜单打开新祥编程官网；官网页脚提供当前对应源码链接。
 
 ---
 
