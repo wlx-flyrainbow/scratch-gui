@@ -11,6 +11,10 @@ const readJson = relativePath => JSON.parse(readText(relativePath));
 
 const exists = relativePath => fs.existsSync(path.join(root, relativePath));
 
+const publicSourceUrl =
+    'https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28';
+const legacyCoreSourceUrl = 'https://github.com/wlx-flyrainbow/scratch-gui';
+
 const addFailure = (id, message) => {
     failures.push({id, message});
 };
@@ -89,8 +93,10 @@ const checkElectronShell = () => {
     requireIncludes('electron-main.pageTitleLock', main, "mainWindow.setTitle('新祥编程')");
     requireIncludes('electron-main.winIcon', main, 'favicon.ico');
     requireIncludes('electron-main.appIcon', main, 'app-icon.png');
-    requireIncludes('electron-main.sourceUrl', main, 'https://github.com/wlx-flyrainbow/scratch-gui');
-    requireIncludes('electron-main.helpMenu', main, '查看源码与 AGPL 许可');
+    requireIncludes('electron-main.websiteUrl', main, 'https://zhimeng.codevalley.cn/index.html');
+    requireIncludes('electron-main.helpMenu', main, '打开新祥编程官网');
+    requireIncludes('electron-main.publicSourceUrl', main, publicSourceUrl);
+    requireIncludes('electron-main.helpMenuSource', main, '源码与 AGPL 许可');
     requireIncludes('electron-main.safeStorage', main, 'safeStorage');
     requireIncludes('electron-main.authStore', main, 'zhimeng-auth.json');
 
@@ -131,10 +137,13 @@ const checkWebsite = pkg => {
         'Windows 安装版',
         'Windows 便携版',
         'AGPLv3',
-        'https://github.com/wlx-flyrainbow/scratch-gui'
+        publicSourceUrl
     ].forEach(needle => {
         requireIncludes('website.index', index, needle);
     });
+    if (index.includes(legacyCoreSourceUrl)) {
+        addFailure('website.index', `website/index.html must not link to legacy core source ${legacyCoreSourceUrl}`);
+    }
 
     const releases = readJson('website/releases.json');
     requireEqual('website.releases.version', releases.version, pkg.version);

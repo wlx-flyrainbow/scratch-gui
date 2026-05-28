@@ -5,6 +5,9 @@ const packageJson = require('../package.json');
 const DEFAULT_BASE_URL = 'https://zhimeng.codevalley.cn';
 const MIN_DOWNLOAD_BYTES = 1024 * 1024;
 const MIN_VIDEO_BYTES = 100 * 1024;
+const PUBLIC_SOURCE_URL =
+    'https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28';
+const LEGACY_CORE_SOURCE_URL = 'https://github.com/wlx-flyrainbow/scratch-gui';
 
 const baseUrl = String(process.env.ZHIMENG_VERIFY_PUBLIC_BASE_URL || DEFAULT_BASE_URL)
     .replace(/\/$/, '');
@@ -127,13 +130,15 @@ const checkHome = async () => {
         'macOS Intel 芯片版',
         'Windows 安装版',
         'Windows 便携版',
-        'AGPLv3'
+        'AGPLv3',
+        PUBLIC_SOURCE_URL
     ]);
     expectTextExcludes('home.content', response.text, [
         '知萌',
         'Scratch 3.0 GUI',
         '当前版本 5.2.16',
-        'purchase.html'
+        'purchase.html',
+        LEGACY_CORE_SOURCE_URL
     ]);
     expectNoPlaceholderLinks('home.links', response.text);
 };
