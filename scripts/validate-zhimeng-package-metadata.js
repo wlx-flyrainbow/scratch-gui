@@ -14,6 +14,7 @@ const exists = relativePath => fs.existsSync(path.join(root, relativePath));
 const publicSourceUrl =
     'https://github.com/wlx-flyrainbow/newsiang-client-public/tree/public-bootstrap-2026-05-28';
 const legacyCoreSourceUrl = 'https://github.com/wlx-flyrainbow/scratch-gui';
+const publicRepositoryUrl = 'https://github.com/wlx-flyrainbow/newsiang-client-public.git';
 
 const addFailure = (id, message) => {
     failures.push({id, message});
@@ -51,7 +52,21 @@ const checkPackageMetadata = () => {
     requireEqual('package.name', pkg.name, 'scratch-gui');
     requireEqual('package.description', pkg.description, '新祥编程 - 少儿创意编程启蒙桌面应用');
     requireEqual('package.license', pkg.license, 'AGPL-3.0-only');
-    requireEqual('package.homepage', pkg.homepage, 'https://github.com/wlx-flyrainbow/scratch-gui#readme');
+    requireEqual('package.homepage', pkg.homepage, 'https://zhimeng.codevalley.cn');
+    requireEqual(
+        'package.repository.url',
+        pkg.repository && pkg.repository.url,
+        publicRepositoryUrl
+    );
+    const hasLegacySourceMetadata =
+        (pkg.homepage && pkg.homepage.includes(legacyCoreSourceUrl)) ||
+        (pkg.repository && pkg.repository.url && pkg.repository.url.includes(legacyCoreSourceUrl));
+    if (hasLegacySourceMetadata) {
+        addFailure(
+            'package.publicSourceMetadata',
+            `package metadata must not point to legacy core source ${legacyCoreSourceUrl}`
+        );
+    }
     requireEqual('build.appId', build.appId, 'com.zhimeng.desktop');
     requireEqual('build.productName', build.productName, '新祥编程');
     requireEqual('build.mac.icon', mac.icon, 'static/app-icon.icns');

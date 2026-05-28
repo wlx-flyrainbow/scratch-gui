@@ -4,10 +4,10 @@
   "description": "新祥编程 - 少儿创意编程启蒙桌面应用",
   "author": "Massachusetts Institute of Technology",
   "license": "AGPL-3.0-only",
-  "homepage": "https://github.com/wlx-flyrainbow/scratch-gui#readme",
+  "homepage": "https://zhimeng.codevalley.cn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wlx-flyrainbow/scratch-gui.git"
+    "url": "https://github.com/wlx-flyrainbow/newsiang-client-public.git"
   },
   "main": "electron-main.js",
   "scripts": {
