@@ -51,8 +51,10 @@ log "Syncing website/ to $SITE_ROOT"
 rsync -a --delete \
   --exclude='.user.ini' \
   --exclude='downloads/' \
+  --exclude='releases.local.json' \
   "$REPO_DIR/website/" "$SITE_ROOT/"
 
+rm -f "$SITE_ROOT/releases.local.json"
 mkdir -p "$SITE_ROOT/downloads"
 
 log "Static deploy complete: $ENVIRONMENT -> $SITE_ROOT"
