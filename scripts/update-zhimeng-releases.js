@@ -7,6 +7,8 @@ const releasesPath = path.resolve(__dirname, '../website/releases.json');
 
 const value = key => String(process.env[key] || '').trim();
 
+const allowVersionMismatch = value('ZHIMENG_ALLOW_RELEASE_VERSION_MISMATCH') === '1';
+
 const assertHttpsUrl = (key, raw) => {
     try {
         const parsed = new URL(raw);
@@ -21,18 +23,46 @@ const assertHttpsUrl = (key, raw) => {
     }
 };
 
+const downloadFilename = raw => {
+    try {
+        const parsed = new URL(raw);
+        return decodeURIComponent(parsed.pathname.split('/').pop() || '');
+    } catch (err) {
+        return '';
+    }
+};
+
+const assertDownloadUrl = (key, raw, version) => {
+    assertHttpsUrl(key, raw);
+    const filename = downloadFilename(raw);
+    if (/^zhimeng-/i.test(filename)) {
+        throw new Error(`${key} must not point to legacy zhimeng-* package filename: ${filename}`);
+    }
+    if (!raw.includes(version)) {
+        throw new Error(`${key} must include release version ${version}: ${raw}`);
+    }
+};
+
+const releaseVersion = value('ZHIMENG_RELEASE_VERSION') || packageJson.version;
+if (!allowVersionMismatch && releaseVersion !== packageJson.version) {
+    throw new Error(
+        `ZHIMENG_RELEASE_VERSION (${releaseVersion}) must match package.json version ` +
+        `(${packageJson.version}); set ZHIMENG_ALLOW_RELEASE_VERSION_MISMATCH=1 only for an explicit rollback`
+    );
+}
+
 const nsisUrl = value('ZHIMENG_WINDOWS_NSIS_URL');
 const portableUrl = value('ZHIMENG_WINDOWS_PORTABLE_URL');
 const macArm64Url = value('ZHIMENG_MACOS_ARM64_URL');
 const macX64Url = value('ZHIMENG_MACOS_X64_URL');
-assertHttpsUrl('ZHIMENG_WINDOWS_NSIS_URL', nsisUrl);
-assertHttpsUrl('ZHIMENG_WINDOWS_PORTABLE_URL', portableUrl);
-assertHttpsUrl('ZHIMENG_MACOS_ARM64_URL', macArm64Url);
-assertHttpsUrl('ZHIMENG_MACOS_X64_URL', macX64Url);
+assertDownloadUrl('ZHIMENG_WINDOWS_NSIS_URL', nsisUrl, releaseVersion);
+assertDownloadUrl('ZHIMENG_WINDOWS_PORTABLE_URL', portableUrl, releaseVersion);
+assertDownloadUrl('ZHIMENG_MACOS_ARM64_URL', macArm64Url, releaseVersion);
+assertDownloadUrl('ZHIMENG_MACOS_X64_URL', macX64Url, releaseVersion);
 
 const releases = {
     channel: value('ZHIMENG_RELEASE_CHANNEL') || 'stable',
-    version: value('ZHIMENG_RELEASE_VERSION') || packageJson.version,
+    version: releaseVersion,
     releasedAt: value('ZHIMENG_RELEASED_AT') || new Date().toISOString()
         .slice(0, 10),
     windows: {

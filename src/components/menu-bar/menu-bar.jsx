@@ -484,12 +484,9 @@ class MenuBar extends React.Component {
                             <img
                                 id="logo_img"
                                 alt="新祥编程"
-                                className={classNames(styles.scratchLogo, {
-                                    [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
-                                })}
+                                className={styles.scratchLogo}
                                 draggable={false}
                                 src={this.props.logo}
-                                onClick={this.props.onClickLogo}
                             />
                         </div>
                         {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<SettingsMenu
@@ -1016,7 +1013,6 @@ MenuBar.propTypes = {
     onClickEdit: PropTypes.func,
     onClickFile: PropTypes.func,
     onClickLogin: PropTypes.func,
-    onClickLogo: PropTypes.func,
     onClickMode: PropTypes.func,
     onClickNew: PropTypes.func,
     onClickRemix: PropTypes.func,

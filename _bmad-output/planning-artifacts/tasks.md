@@ -16,7 +16,7 @@
 ## Milestone 0: 品牌与合规
 
 - [x] 确认 Electron 窗口标题、产品名、图标、下载页品牌均为新祥编程。
-- [x] 确认下载页和客户端帮助菜单都指向当前版本对应源码。
+- [x] 确认客户端帮助菜单打开官网，官网页脚保留当前版本对应源码链接。
 - [x] 检查 AGPL 说明文档与下载页页脚一致。
 - [x] 将 `README.md` 中仍明显指向上游 Scratch 的首屏说明补充新祥编程开发/发布入口，避免交付文档割裂。
 - [x] 在国家知识产权公共服务平台商标数据中完成“知萌”文字商标检索，重点检索第 9/41/42 类。
@@ -44,7 +44,7 @@
 Acceptance:
 
 - `package.json`、Electron 窗口、官网下载页、帮助菜单均体现新祥编程；英文环境仅出现 `NewSiang`。
-- AGPL 源码链接可从官网和客户端找到。
+- AGPL 源码链接可从官网页脚找到；客户端帮助菜单打开官网。
 - 有商标近似检索记录、申请类别决策和品牌资产清单；真实售卖前不带着商标未知风险大规模投放。
 
 ## Milestone 1: 账号授权产品化
@@ -107,11 +107,11 @@ Acceptance:
 - [x] 新增自包含购买闭环验收脚本：inactive 登录、创建订单、提交付款凭证、运营列表、人工确认、刷新授权 active。
 - [x] 新增隔离 MySQL 容器的真库购买闭环验收命令 `npm run test:zhimeng-purchase-flow:realdb`。
 - [x] 新增新用户完整流程真库验收命令 `npm run test:zhimeng-new-user-flow:realdb`，从注册账号开始验证到开通授权。
-- [x] 新增 macOS / Windows 客户端发布元数据检查：产品名、appId、图标、窗口标题、源码链接、AGPL 文件、下载页与 releases 版本一致。
+- [x] 新增 macOS / Windows 客户端发布元数据检查：产品名、appId、图标、窗口标题、官网帮助入口、AGPL 文件、下载页与 releases 版本一致。
 - [x] 新增本地完整打包命令 `npm run dist:desktop:local`，可生成 macOS Apple 芯片版、macOS Intel 芯片版、Windows x64 安装版与便携版。
 - [x] 新增本地下载清单 `website/releases.local.json` 生成流程，下载页本地验收时优先读取本机 `dist/` 产物。
 - [x] 真库验收覆盖 inactive 用户创建订单、提交付款凭证、人工确认、刷新授权 active。
-- [x] 本地 macOS 与 Windows 打包后检查安装包名称、架构、DMG 校验、下载页按钮和源码链接。
+- [x] 本地 macOS 与 Windows 打包后检查安装包名称、架构、DMG 校验、下载页按钮和官网源码披露链接。
 - [x] 新增签名/公证发布闸门 `npm run release:check-signing`，正式公开分发必须设置 `ZHIMENG_REQUIRE_CODE_SIGNING=1`。
 - [ ] 生产 macOS 包完成 Developer ID 签名、timestamp、公证；Windows 包完成正式代码签名。
 - [ ] 上传“新祥编程”正式安装包到 `https://zhimeng.codevalley.cn/downloads/` 并验证四个下载 URL 可访问。

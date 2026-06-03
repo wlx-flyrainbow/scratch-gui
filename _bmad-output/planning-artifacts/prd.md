@@ -155,7 +155,7 @@ MVP 必须完成以下能力：
 - `package.json` 中 appId、productName 指向新祥编程。
 - Electron 窗口标题显示“新祥编程”。
 - 官网下载页展示新祥编程品牌。
-- 下载页和客户端帮助菜单都能打开当前版本对应源码链接。
+- 客户端帮助菜单打开官网；官网页脚能打开当前版本对应源码链接。
 - `docs/agpl-source-disclosure.md` 和 `docs/zhimeng-agpl-compliance.md` 可作为上线合规材料。
 - 发布前已有商标近似检索记录、改名候选筛选记录、申请类别决策和品牌资产清单。
 

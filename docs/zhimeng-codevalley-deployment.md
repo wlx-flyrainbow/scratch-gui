@@ -307,6 +307,19 @@ GIT_REF=feat/electron bash deploy/scripts/deploy-api.sh prod
 
 如果只是静态页变化、没有后端代码和数据库变化，可以跳过 API 更新。但只要改了 `backend/`、`deploy/env/`、鉴权、订单、设备限制、付款凭证或运营后台接口，就应执行这一步。
 
+如果只改了服务器 env，例如 `ZHIMENG_ADMIN_TOKEN`、支付二维码、下载 URL 或 CORS 域名，也需要至少重启 API 让 PM2 进程重新加载环境变量：
+
+```bash
+cd /www/wwwroot/zhimeng-app/scratch-gui
+set -a
+. /www/server/zhimeng/env/zhimeng-prod.env
+set +a
+pm2 restart zhimeng-api-prod --update-env
+pm2 save
+```
+
+否则静态页虽然已经更新，后端仍会使用旧进程里的 env，运营页可能出现 `Unauthorized`。
+
 ### 2.4 上传或替换安装包
 
 如果本次版本更新生成了新安装包，先上传到 `downloads/`。当前 `1.0.0` 正式包命令：
@@ -327,6 +340,14 @@ scp "dist/新祥编程-1.0.0.dmg" root@39.106.81.189:"/www/wwwroot/zhimeng/downl
 - 实际上传文件名。
 - `ZHIMENG_RELEASE_VERSION` 和 `releasedAt`。
 
+注意：`npm run release:update-downloads` 会按**当前 shell 已加载的环境变量**重写 `website/releases.json`。如果服务器 `/www/server/zhimeng/env/zhimeng-prod.env` 仍是旧版本，就会把仓库里的正确清单覆盖回旧版本。生成前先检查：
+
+```bash
+grep -E "ZHIMENG_RELEASE_VERSION|ZHIMENG_WINDOWS_NSIS_URL|ZHIMENG_MACOS" /www/server/zhimeng/env/zhimeng-prod.env
+```
+
+当前 `1.0.0` 发布应看到 `ZHIMENG_RELEASE_VERSION=1.0.0`，且下载 URL 使用 `新祥编程` 包名。脚本已增加防呆：如果生成清单版本与 `package.json` 版本不一致，或下载 URL 指向旧 `zhimeng-*` 包名，会直接失败；只有显式回滚时才允许设置 `ZHIMENG_ALLOW_RELEASE_VERSION_MISMATCH=1`。
+
 可在服务器加载正式 env 后重新生成下载清单：
 
 ```bash
@@ -345,6 +366,8 @@ bash deploy/scripts/deploy-static.sh prod
 ```
 
 这个脚本会同步最新 `website/`、`pay.html`、`ops.html`、`releases.json`、海报、视频封面等静态文件，但不会删除 `downloads/`。
+
+同步前它会校验 `website/releases.json`：版本必须等于 `package.json`，下载 URL 必须包含版本号，且不能指向旧 `zhimeng-*` 包名。校验失败时会拒绝部署，避免错误清单发布到线上。
 
 ### 2.6 版本更新验收
 
@@ -371,6 +394,26 @@ bash deploy/scripts/verify-public.sh prod
 - `missing required text: 新祥编程`：线上页面还没部署新品牌静态文件。
 - `download URL -> 404`：安装包没上传、文件名不一致，或 Nginx 路径不对。
 - `/health` 失败：PM2 后端未启动、Nginx 反代错误或 env/数据库配置错误。
+- `ops.html` 显示 `Unauthorized`：运营口令和后端进程中的 `ZHIMENG_ADMIN_TOKEN` 不一致。先重启 API 加载最新 env，再清理浏览器保存的旧口令。
+
+运营口令排查：
+
+```bash
+cd /www/wwwroot/zhimeng-app/scratch-gui
+set -a
+. /www/server/zhimeng/env/zhimeng-prod.env
+set +a
+pm2 restart zhimeng-api-prod --update-env
+curl -fsS -H "X-Zhimeng-Admin-Token: $ZHIMENG_ADMIN_TOKEN" \
+  "https://zhimeng.codevalley.cn/admin/orders?limit=1"
+```
+
+如果命令行验证通过，但浏览器仍失败，在 `ops.html` 控制台执行：
+
+```js
+localStorage.removeItem('zhimengOpsAdminToken');
+location.reload();
+```
 
 ### 2.7 PM2 与 Nginx 快速排查
 

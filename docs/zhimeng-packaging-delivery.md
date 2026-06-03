@@ -166,5 +166,5 @@ npm run test:zhimeng-new-user-flow:realdb
 - [ ] `npm run release:verify-public` 通过，确认线上页面、发布清单、演示视频和四个下载包均可访问
 - [ ] `npm run test:zhimeng-desktop-bundle` 通过，确认正式包内 API 指向 `https://zhimeng.codevalley.cn`，不含 `localhost:3001`
 - [ ] `npm run test:zhimeng-mac-release` 通过；正式发布时设置 `ZHIMENG_REQUIRE_MAC_SIGNED=1`
-- [ ] 应用内「帮助」菜单可打开当前版本对应源码与 AGPL 许可说明
+- [ ] 应用内「帮助」菜单可打开新祥编程官网，官网页脚可继续访问当前版本对应源码与 AGPL 许可说明
 - [ ] 生产 macOS 包已完成 Developer ID 签名与公证

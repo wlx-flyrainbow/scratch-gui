@@ -503,6 +503,12 @@
         return res.json().catch(function () {
           return {};
         }).then(function (body) {
+          if (res.status === 401) {
+            localStorage.removeItem('zhimengOpsAdminToken');
+            setupCard.classList.remove('is-collapsed');
+            tokenInput.focus();
+            throw new Error('运营口令未通过校验。请重新填写最新 ZHIMENG_ADMIN_TOKEN；如果刚改过服务器 env，请先重启 API。');
+          }
           throw new Error(body.message || '请求失败');
         });
       }
@@ -614,8 +620,16 @@
         showSuccess('已加载账号 ' + username + '。');
       })
       .catch(function (err) {
-        showErr(err.message || '账号查询失败');
+        showErr(formatAccountError(err, username, '账号查询失败'));
       });
+  }
+
+  function formatAccountError(err, username, fallback) {
+    var message = err && err.message ? err.message : '';
+    if (message === 'User not found') {
+      return '未找到账号「' + username + '」。请确认用户已在正式环境注册或登录；本地、测试环境账号不会出现在生产库。';
+    }
+    return message || fallback;
   }
 
   function mutateAccount(action, deviceId) {
@@ -648,7 +662,7 @@
         return loadAccount();
       })
       .catch(function (err) {
-        showErr(err.message || '账号操作失败');
+        showErr(formatAccountError(err, username, '账号操作失败'));
       });
   }
 
@@ -1045,8 +1059,8 @@
   }
 
   apiInput.value = localStorage.getItem('zhimengOpsApiBase') || defaultApiBase();
-  tokenInput.value = localStorage.getItem('zhimengOpsAdminToken') ||
-    new URLSearchParams(window.location.search).get('ops_token') || '';
+  var urlOpsToken = new URLSearchParams(window.location.search).get('ops_token');
+  tokenInput.value = urlOpsToken || localStorage.getItem('zhimengOpsAdminToken') || '';
   accountOperatorInput.value = localStorage.getItem('zhimengOpsOperator') || '';
   if (tokenInput.value) {
     setupCard.classList.add('is-collapsed');
