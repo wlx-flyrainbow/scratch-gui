@@ -424,6 +424,36 @@ const safeText = (value, limit = 160) => String(value || '')
     .trim()
     .slice(0, limit);
 
+const buildOrderBusinessFromAttribution = (body, plan) => {
+    const referrerCode = safeText(
+        pickBodyValue(body, 'referrer_code', 'referrerCode') || body.ref,
+        64
+    );
+    const landingPageId = safeText(pickBodyValue(body, 'landing_page_id', 'landingPageId'), 96);
+    const referrerName = safeText(pickBodyValue(body, 'referrer_name', 'referrerName'), 128);
+    const teacherName = safeText(pickBodyValue(body, 'teacher_name', 'teacherName'), 128);
+    const teacherId = safeText(pickBodyValue(body, 'teacher_id', 'teacherId'), 64);
+    const attributionNote = safeText(pickBodyValue(body, 'attribution_note', 'attributionNote'), 500);
+    const sourceType = safeText(
+        pickBodyValue(body, 'source_type', 'sourceType') ||
+        (referrerCode || referrerName || teacherName || teacherId || landingPageId ? 'kol' : ''),
+        64
+    );
+    const business = {};
+    if (sourceType) business.source = sourceType;
+    if (plan) business.packageType = safeText(plan, 64);
+    if (referrerCode) business.referrerCode = referrerCode;
+    if (referrerName) business.referrerName = referrerName;
+    if (teacherName) business.teacherName = teacherName;
+    if (teacherId) business.teacherId = teacherId;
+    if (landingPageId) business.landingPageId = landingPageId;
+    if (attributionNote) business.attributionNote = attributionNote;
+    if (Object.keys(business).length > 0) {
+        business.attributionCapturedAt = nowIso();
+    }
+    return business;
+};
+
 const sendServerError = (res, err) => {
     const message = isProduction() ? 'Server error' : (err.message || 'Server error');
     return res.status(500).json({message});
@@ -677,7 +707,8 @@ const createApp = async () => {
             if (req.user && req.user.entitlement && req.user.entitlement.status === 'frozen') {
                 return res.status(403).json({message: 'Account frozen'});
             }
-            const {plan, channel, return_url: returnUrl} = req.body || {};
+            const body = req.body || {};
+            const {plan, channel, return_url: returnUrl} = body;
             if (!plan || !channel) {
                 return res.status(400).json({message: 'plan and channel are required'});
             }
@@ -694,9 +725,11 @@ const createApp = async () => {
                 returnUrl,
                 amountCents,
                 currency,
-                paymentProofTokenHash: hashPaymentProofToken(paymentProofToken)
+                paymentProofTokenHash: hashPaymentProofToken(paymentProofToken),
+                business: buildOrderBusinessFromAttribution(body, plan)
             });
             const urls = buildPaymentUrls(orderId, paymentProofToken, channel, requestBaseUrl(req));
+            const order = await db.findOrderById(orderId);
             return res.json({
                 order_id: `o_${orderId}`,
                 status: 'created',
@@ -708,6 +741,7 @@ const createApp = async () => {
                 payment_account_label: process.env.ZHIMENG_PAYMENT_ACCOUNT_LABEL || '知萌官方收款',
                 payment_note: buildPaymentNote(orderId),
                 payment_methods: buildPaymentMethods(orderId),
+                business: order ? toOrderPayload(order).business : null,
                 ...urls
             });
         } catch (err) {
@@ -930,6 +964,12 @@ const createApp = async () => {
             const business = {
                 source: safeText(body.source, 64),
                 packageType: safeText(body.package_type || body.packageType, 64),
+                referrerCode: safeText(body.referrer_code || body.referrerCode, 64),
+                referrerName: safeText(body.referrer_name || body.referrerName, 128),
+                teacherId: safeText(body.teacher_id || body.teacherId, 64),
+                teacherName: safeText(body.teacher_name || body.teacherName, 128),
+                landingPageId: safeText(body.landing_page_id || body.landingPageId, 96),
+                attributionNote: safeText(body.attribution_note || body.attributionNote, 500),
                 commissionCents: safeMoneyCents(pickBodyValue(body, 'commission_cents', 'commissionCents')),
                 acquisitionCents: safeMoneyCents(pickBodyValue(body, 'acquisition_cents', 'acquisitionCents')),
                 deliveryCents: safeMoneyCents(pickBodyValue(body, 'delivery_cents', 'deliveryCents')),

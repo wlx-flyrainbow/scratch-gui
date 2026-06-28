@@ -759,6 +759,7 @@
           '<div><span>付款渠道</span><strong>' + escapeHtml(methodLabel(order.channel)) + '</strong></div>',
           '<div><span>当前状态</span><strong>待核对到账</strong></div>',
         '</div>',
+        renderAttributionSummary(order),
         '<div class="ops-order-workflow">',
           '<div class="ops-proof">' + renderProof(order.payment_proof) + '</div>',
           '<form class="ops-confirm-form">',
@@ -802,6 +803,22 @@
     });
   }
 
+  function renderAttributionSummary(order) {
+    var business = order.business || {};
+    if (!business.referrerCode && !business.referrerName && !business.teacherName && !business.landingPageId) {
+      return '<div class="ops-attribution-empty">未记录老师/渠道来源，可在下方经营记录中补录。</div>';
+    }
+    return [
+      '<div class="ops-attribution">',
+        '<div><span>推荐码</span><strong>' + escapeHtml(business.referrerCode || '-') + '</strong></div>',
+        '<div><span>老师/机构</span><strong>' +
+          escapeHtml(business.referrerName || business.teacherName || '-') + '</strong></div>',
+        '<div><span>联名页</span><strong>' + escapeHtml(business.landingPageId || '-') + '</strong></div>',
+        '<div><span>来源</span><strong>' + escapeHtml(sourceLabel(business.source)) + '</strong></div>',
+      '</div>'
+    ].join('');
+  }
+
   function renderBusinessForm(order) {
     var business = order.business || {};
     var costs = businessCost(order);
@@ -821,6 +838,9 @@
           optionHtml('ads', '付费投放', business.source),
           optionHtml('channel', '渠道/机构', business.source),
         '</select></label>',
+        '<label>推荐码<input name="referrerCode" type="text" autocomplete="off" placeholder="例如 teacher_a" value="' + escapeHtml(business.referrerCode || '') + '" /></label>',
+        '<label>老师/机构<input name="referrerName" type="text" autocomplete="off" placeholder="例如 王老师" value="' + escapeHtml(business.referrerName || business.teacherName || '') + '" /></label>',
+        '<label>联名页 ID<input name="landingPageId" type="text" autocomplete="off" placeholder="例如 teacher-a" value="' + escapeHtml(business.landingPageId || '') + '" /></label>',
         '<label>套餐类型<select name="packageType">',
           optionHtml('family_yearly', '家庭年卡 199', business.packageType || order.plan),
           optionHtml('bootcamp_7d', '7 天项目陪跑包 699', business.packageType || order.plan),
@@ -877,6 +897,7 @@
         '<label>下次跟进<input name="nextFollowupAt" type="datetime-local" value="' + escapeHtml(business.nextFollowupAt || '') + '" /></label>',
         '<label class="ops-business-check"><input name="starterCompleted" type="checkbox" ' + (business.starterCompleted ? 'checked' : '') + ' /> 已完成第一个作品</label>',
         '<label class="ops-business-delivery">交付备注<textarea name="deliveryNote" rows="2" placeholder="例如：Day 2 已完成小角色，家长反馈孩子愿意继续；明晚推进生日祝福动画。">' + escapeHtml(business.deliveryNote || '') + '</textarea></label>',
+        '<label class="ops-business-note">归因备注<textarea name="attributionNote" rows="2" placeholder="例如：老师联名页进入；客服确认来自王老师微信群。">' + escapeHtml(business.attributionNote || '') + '</textarea></label>',
         '<label class="ops-business-note">经营备注<textarea name="businessNote" rows="2" placeholder="例如：朋友转介绍，无佣金；已推荐 699 陪跑包">' + escapeHtml(business.note || '') + '</textarea></label>',
         '<button class="btn btn-secondary compact-btn" type="submit">保存经营记录</button>',
       '</form>'
@@ -895,6 +916,17 @@
     return '<option value="' + escapeHtml(value) + '"' +
       (String(value) === selectedValue ? ' selected' : '') +
       '>' + escapeHtml(label) + '</option>';
+  }
+
+  function sourceLabel(source) {
+    return {
+      private: '私域私聊',
+      group: '微信群/社群',
+      referral: '老用户转介绍',
+      kol: 'KOL/老师推荐',
+      ads: '付费投放',
+      channel: '渠道/机构'
+    }[source] || source || '-';
   }
 
   function loadOrders() {
@@ -933,6 +965,11 @@
     var payload = {
       source: form.querySelector('[name="source"]').value,
       package_type: form.querySelector('[name="packageType"]').value,
+      referrer_code: form.querySelector('[name="referrerCode"]').value.trim(),
+      referrer_name: form.querySelector('[name="referrerName"]').value.trim(),
+      teacher_name: form.querySelector('[name="referrerName"]').value.trim(),
+      landing_page_id: form.querySelector('[name="landingPageId"]').value.trim(),
+      attribution_note: form.querySelector('[name="attributionNote"]').value,
       commission_cents: yuanToCents(form.querySelector('[name="commission"]').value),
       acquisition_cents: yuanToCents(form.querySelector('[name="acquisition"]').value),
       delivery_cents: yuanToCents(form.querySelector('[name="delivery"]').value),

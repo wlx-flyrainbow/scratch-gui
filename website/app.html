@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>新祥编程 — Web 体验入口</title>
+  <meta name="description" content="新祥编程 Web 体验入口，用于老师渠道低摩擦注册、授权检查和购买转化。" />
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero hero-compact">
+      <div class="logo-wrap logo-wrap-small">
+        <img class="logo" src="assets/logo.png" width="256" height="256" alt="新祥编程" />
+      </div>
+      <h1>Web 体验入口</h1>
+      <p class="subtitle">先完成账号、授权和购买链路；在线编辑器按灰度地址开放。</p>
+    </header>
+
+    <div id="load-error" class="err-banner" role="alert"></div>
+    <div id="success" class="success-banner" role="status"></div>
+
+    <section class="card" aria-labelledby="web-attribution-heading">
+      <h2 id="web-attribution-heading">来源归因</h2>
+      <div id="attribution-summary" class="order-summary"></div>
+    </section>
+
+    <section class="card" aria-labelledby="web-auth-heading">
+      <h2 id="web-auth-heading">登录或注册</h2>
+      <form id="auth-form" class="proof-form">
+        <label>
+          API 地址
+          <input id="api-base" type="url" required />
+        </label>
+        <label>
+          账号
+          <input id="username" type="text" autocomplete="username" required placeholder="3-32 位字母、数字或下划线" />
+        </label>
+        <label>
+          昵称
+          <input id="nickname" type="text" autocomplete="nickname" placeholder="注册时可填" />
+        </label>
+        <label>
+          密码
+          <input id="password" type="password" autocomplete="current-password" required />
+        </label>
+        <div class="cta-row">
+          <button id="login-btn" class="btn btn-primary" type="submit" data-mode="login">登录并检查授权</button>
+          <button id="register-btn" class="btn btn-secondary" type="button">注册并检查授权</button>
+        </div>
+      </form>
+      <div id="entitlement-result" class="empty-state">登录后会显示账号授权状态。</div>
+    </section>
+
+    <section class="card" aria-labelledby="web-next-heading">
+      <h2 id="web-next-heading">下一步</h2>
+      <div class="cta-row">
+        <a id="purchase-link" class="btn btn-primary" href="purchase.html">创建订单</a>
+        <a id="download-link" class="btn btn-secondary" href="index.html#download-heading">下载桌面端</a>
+        <a id="editor-link" class="btn btn-secondary is-disabled" href="#">打开在线编辑器</a>
+      </div>
+      <div class="note">
+        <p>Web V0 先验证老师渠道低摩擦注册、授权检查和购买归因。完整在线编辑器可通过 `editor_url` 参数灰度接入。</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var attributionStorageKey = 'zhimengAttribution';
+  var apiInput = document.getElementById('api-base');
+  var authForm = document.getElementById('auth-form');
+  var errEl = document.getElementById('load-error');
+  var successEl = document.getElementById('success');
+  var resultEl = document.getElementById('entitlement-result');
+  var editorLink = document.getElementById('editor-link');
+
+  function safeParam(name) {
+    return (params.get(name) || '').trim().slice(0, 128);
+  }
+
+  function defaultApiBase() {
+    var configured = safeParam('api_base');
+    if (configured) return configured.replace(/\/$/, '');
+    if (window.location.protocol.indexOf('http') === 0) return window.location.origin;
+    return 'http://localhost:3001';
+  }
+
+  function readAttribution() {
+    var stored = {};
+    try {
+      stored = JSON.parse(localStorage.getItem(attributionStorageKey) || '{}') || {};
+    } catch (e) {
+      stored = {};
+    }
+    var attribution = {
+      referrer_code: safeParam('referrer_code') || safeParam('ref') || stored.referrer_code || '',
+      referrer_name: safeParam('referrer_name') || stored.referrer_name || '',
+      teacher_name: safeParam('teacher_name') || stored.teacher_name || '',
+      teacher_id: safeParam('teacher_id') || stored.teacher_id || '',
+      landing_page_id: safeParam('landing_page_id') || stored.landing_page_id || '',
+      source_type: safeParam('source_type') || stored.source_type || ''
+    };
+    if (attribution.referrer_code && !attribution.source_type) attribution.source_type = 'kol';
+    localStorage.setItem(attributionStorageKey, JSON.stringify(Object.assign({}, attribution, {
+      captured_at: new Date().toISOString()
+    })));
+    return attribution;
+  }
+
+  function linkWithAttribution(path) {
+    var url = new URL(path, window.location.href);
+    Object.keys(attribution).forEach(function (key) {
+      if (attribution[key]) url.searchParams.set(key, attribution[key]);
+    });
+    url.searchParams.set('api_base', apiInput.value.replace(/\/$/, ''));
+    return url.pathname + url.search + (url.hash || '');
+  }
+
+  function showErr(message) {
+    errEl.textContent = message;
+    errEl.classList.add('is-visible');
+    successEl.classList.remove('is-visible');
+  }
+
+  function showSuccess(message) {
+    successEl.textContent = message;
+    successEl.classList.add('is-visible');
+    errEl.classList.remove('is-visible');
+  }
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (ch) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[ch];
+    });
+  }
+
+  function request(path, options) {
+    return fetch(apiInput.value.replace(/\/$/, '') + path, Object.assign({
+      headers: {'Content-Type': 'application/json'}
+    }, options || {})).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () {
+          return {};
+        }).then(function (body) {
+          throw new Error(body.message || '请求失败');
+        });
+      }
+      return res.json();
+    });
+  }
+
+  function renderAttribution() {
+    document.getElementById('attribution-summary').innerHTML = [
+      '<div><span>推荐码</span><strong>' + escapeHtml(attribution.referrer_code || '-') + '</strong></div>',
+      '<div><span>老师/机构</span><strong>' +
+        escapeHtml(attribution.referrer_name || attribution.teacher_name || '-') + '</strong></div>',
+      '<div><span>联名页</span><strong>' + escapeHtml(attribution.landing_page_id || '-') + '</strong></div>'
+    ].join('');
+  }
+
+  function renderEntitlement(data) {
+    var entitlement = data.entitlement || {};
+    resultEl.innerHTML = [
+      '<div class="ops-account-summary">',
+        '<div><span>账号</span><strong>' + escapeHtml(data.user && data.user.username || '-') + '</strong></div>',
+        '<div><span>状态</span><strong>' + escapeHtml(entitlement.status || '-') + '</strong></div>',
+        '<div><span>套餐</span><strong>' + escapeHtml(entitlement.plan || '-') + '</strong></div>',
+      '</div>'
+    ].join('');
+    if (entitlement.status === 'active') {
+      showSuccess('账号已开通，可继续使用完整编辑器。');
+    } else {
+      showSuccess('账号已登录，当前未开通，可继续创建订单。');
+    }
+  }
+
+  function loginOrRegister(mode) {
+    var route = mode === 'register' ? '/auth/register' : '/auth/login';
+    var payload = {
+      username: document.getElementById('username').value.trim(),
+      password: document.getElementById('password').value
+    };
+    if (mode === 'register') payload.nickname = document.getElementById('nickname').value.trim();
+    return request(route, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }).then(renderEntitlement);
+  }
+
+  var attribution = readAttribution();
+  apiInput.value = localStorage.getItem('zhimengWebApiBase') || defaultApiBase();
+  renderAttribution();
+  document.getElementById('purchase-link').href = linkWithAttribution('purchase.html');
+  document.getElementById('download-link').href = linkWithAttribution('index.html#download-heading');
+  var editorUrl = safeParam('editor_url');
+  if (editorUrl) {
+    editorLink.href = editorUrl;
+    editorLink.classList.remove('is-disabled');
+  }
+  editorLink.addEventListener('click', function (event) {
+    if (editorLink.classList.contains('is-disabled')) {
+      event.preventDefault();
+      showErr('在线编辑器灰度地址尚未配置，请先使用 Web 入口完成注册/授权检查，或下载桌面端。');
+    }
+  });
+
+  authForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    localStorage.setItem('zhimengWebApiBase', apiInput.value.replace(/\/$/, ''));
+    loginOrRegister('login').catch(function (err) {
+      showErr(err.message || '登录失败');
+    });
+  });
+  document.getElementById('register-btn').addEventListener('click', function () {
+    localStorage.setItem('zhimengWebApiBase', apiInput.value.replace(/\/$/, ''));
+    loginOrRegister('register').catch(function (err) {
+      showErr(err.message || '注册失败');
+    });
+  });
+})();
+  </script>
+</body>
+</html>

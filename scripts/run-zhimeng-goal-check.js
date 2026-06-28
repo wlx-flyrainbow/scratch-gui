@@ -207,6 +207,48 @@ const main = async () => {
     }
 
     try {
+        responses.frontendTeacher = await requestText({
+            method: 'GET',
+            url: joinUrl(frontendBase, '/teacher.html?teacher=teacher_a')
+        });
+        const teacherPass = responses.frontendTeacher.status === 200 &&
+            includesAll(responses.frontendTeacher.text, ['老师联名体验', '新祥编程 x', '在线体验']);
+        pushStep(
+            steps,
+            'frontend_teacher_channel_page',
+            Boolean(teacherPass),
+            `GET /teacher.html -> ${responses.frontendTeacher.status}, ${
+                teacherPass ? '老师联名页关键元素存在' : '缺少老师联名页关键元素'
+            }`
+        );
+        if (!teacherPass) pass = false;
+    } catch (err) {
+        pushStep(steps, 'frontend_teacher_channel_page', false, `请求失败: ${err.message || err}`);
+        pass = false;
+    }
+
+    try {
+        responses.frontendWebApp = await requestText({
+            method: 'GET',
+            url: joinUrl(frontendBase, '/app.html?ref=test_teacher')
+        });
+        const webAppPass = responses.frontendWebApp.status === 200 &&
+            includesAll(responses.frontendWebApp.text, ['Web 体验入口', '来源归因', '创建订单']);
+        pushStep(
+            steps,
+            'frontend_web_experience_entry',
+            Boolean(webAppPass),
+            `GET /app.html -> ${responses.frontendWebApp.status}, ${
+                webAppPass ? 'Web 体验入口关键元素存在' : '缺少 Web 体验入口关键元素'
+            }`
+        );
+        if (!webAppPass) pass = false;
+    } catch (err) {
+        pushStep(steps, 'frontend_web_experience_entry', false, `请求失败: ${err.message || err}`);
+        pass = false;
+    }
+
+    try {
         responses.frontendPay = await requestText({
             method: 'GET',
             url: joinUrl(frontendBase, '/pay.html')
@@ -311,12 +353,18 @@ const main = async () => {
             body: {
                 plan: 'family_yearly',
                 channel: 'wechat',
-                return_url: 'https://billing.example.com/result'
+                return_url: 'https://billing.example.com/result',
+                referrer_code: 'test_teacher',
+                referrer_name: '测试老师',
+                landing_page_id: 'test-teacher',
+                source_type: 'kol'
             }
         });
         const orderPass = responses.createOrder.status === 200 &&
             responses.createOrder.json &&
-            responses.createOrder.json.order_id;
+            responses.createOrder.json.order_id &&
+            responses.createOrder.json.business &&
+            responses.createOrder.json.business.referrerCode === 'test_teacher';
         pushStep(
             steps,
             'order_create',

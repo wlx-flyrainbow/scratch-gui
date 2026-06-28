@@ -58,6 +58,15 @@
 
 ## 4. 第一版功能范围
 
+当前 V0 已落地为静态页面 + 现有订单业务字段复用，不新增老师后台和新数据库表。落地文件包括：
+
+- `website/teacher.html`：老师联名页 V0。
+- `website/app.html`：Web 体验入口 V0。
+- `website/purchase.html`：客服辅助下单时传递老师/渠道来源。
+- `website/ops.html`：运营台展示和补录老师来源、佣金与归因备注。
+- `backend/app.js` / `backend/db.js`：订单创建和人工确认保留 `audit_json.business`。
+- `src/lib/auth/attribution.js` / `src/lib/auth-hoc.jsx`：客户端订阅中心读取并提交推荐来源。
+
 ### 4.1 老师联名页
 
 页面目标：让老师有推广身份，让家长理解产品和信任来源。

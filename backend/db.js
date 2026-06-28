@@ -19,6 +19,20 @@ const PLAN_DURATIONS_DAYS = {
 
 const planDurationDays = plan => PLAN_DURATIONS_DAYS[plan] || 365;
 
+const parseAuditJson = value => {
+    if (!value) {
+        return {};
+    }
+    if (typeof value === 'object') {
+        return value;
+    }
+    try {
+        return JSON.parse(value) || {};
+    } catch (e) {
+        return {};
+    }
+};
+
 const getPool = () => {
     /* eslint-disable require-atomic-updates -- lazy singleton pool */
     if (!pool) {
@@ -459,15 +473,23 @@ const createOrder = async ({
     returnUrl,
     amountCents,
     currency,
-    paymentProofTokenHash
+    paymentProofTokenHash,
+    business
 }) => {
     const p = getPool();
+    const auditJson = business && Object.keys(business).length > 0 ?
+        JSON.stringify({
+            business: Object.assign({}, business, {
+                updatedAt: new Date().toISOString()
+            })
+        }) :
+        null;
     const [result] = await p.query(
         `INSERT INTO orders (
             user_id, plan, channel, provider, status, return_url,
-            amount_cents, currency, payment_proof_token_hash
+            amount_cents, currency, payment_proof_token_hash, audit_json
          )
-         VALUES (?, ?, ?, ?, 'created', ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, 'created', ?, ?, ?, ?, ?)`,
         [
             userId,
             plan,
@@ -476,7 +498,8 @@ const createOrder = async ({
             returnUrl || null,
             typeof amountCents === 'number' ? amountCents : null,
             currency || null,
-            paymentProofTokenHash || null
+            paymentProofTokenHash || null,
+            auditJson
         ]
     );
     return result.insertId;
@@ -614,16 +637,7 @@ const updateOrderBusiness = async (orderId, business) => {
         err.statusCode = 404;
         throw err;
     }
-    let audit = {};
-    if (typeof order.audit_json === 'object' && order.audit_json) {
-        audit = order.audit_json;
-    } else if (order.audit_json) {
-        try {
-            audit = JSON.parse(order.audit_json) || {};
-        } catch (e) {
-            audit = {};
-        }
-    }
+    const audit = parseAuditJson(order.audit_json);
     const currentBusiness = audit.business && typeof audit.business === 'object' ? audit.business : {};
     const nextAudit = Object.assign({}, audit, {
         business: Object.assign({}, currentBusiness, business, {
@@ -741,13 +755,14 @@ const fulfillOrderFromPayment = async ({
                 idempotent: true
             };
         }
-        const audit = {
+        const currentAudit = parseAuditJson(order.audit_json);
+        const audit = Object.assign({}, currentAudit, {
             actor: actor || 'system',
             provider: provider || order.provider || order.channel,
             providerTradeNo: providerTradeNo || order.provider_trade_no || null,
             confirmedAt: new Date().toISOString(),
             rawPayload: rawPayload || null
-        };
+        });
         await conn.query(
             `UPDATE orders
              SET status = ?,

@@ -14,6 +14,15 @@ jest.mock('../../backend/db', () => {
         status_updated_at: null
     });
     const planDurationDays = plan => (plan === 'bootcamp_7d' ? 7 : 365);
+    const parseAudit = value => {
+        if (!value) return {};
+        if (typeof value === 'object') return value;
+        try {
+            return JSON.parse(value) || {};
+        } catch (e) {
+            return {};
+        }
+    };
     const state = {
         devices: new Map([[1, []]]),
         orders: new Map(),
@@ -138,9 +147,13 @@ jest.mock('../../backend/db', () => {
             returnUrl,
             amountCents,
             currency,
-            paymentProofTokenHash
+            paymentProofTokenHash,
+            business
         }) => {
             const id = state.nextOrderId++;
+            const audit = business && Object.keys(business).length > 0 ?
+                {business: {...business, updatedAt: new Date().toISOString()}} :
+                null;
             state.orders.set(id, {
                 id,
                 user_id: userId,
@@ -155,7 +168,8 @@ jest.mock('../../backend/db', () => {
                 amount_cents: typeof amountCents === 'number' ? amountCents : null,
                 currency: currency || null,
                 payment_proof_json: null,
-                payment_proof_token_hash: paymentProofTokenHash || null
+                payment_proof_token_hash: paymentProofTokenHash || null,
+                audit_json: audit ? JSON.stringify(audit) : null
             });
             return Promise.resolve(id);
         }),
@@ -207,6 +221,25 @@ jest.mock('../../backend/db', () => {
                 subscription_expires_at: new Date(baseTime + (planDurationDays(plan) * 24 * 60 * 60 * 1000))
             };
             return Promise.resolve();
+        }),
+        updateOrderBusiness: jest.fn((orderId, business) => {
+            const row = state.orders.get(orderId);
+            if (!row) {
+                const err = new Error('Order not found');
+                err.statusCode = 404;
+                return Promise.reject(err);
+            }
+            const audit = parseAudit(row.audit_json);
+            const currentBusiness = audit.business && typeof audit.business === 'object' ? audit.business : {};
+            row.audit_json = JSON.stringify({
+                ...audit,
+                business: {
+                    ...currentBusiness,
+                    ...business,
+                    updatedAt: new Date().toISOString()
+                }
+            });
+            return Promise.resolve(row);
         }),
         submitOrderPaymentProof: jest.fn(({
             orderId,
@@ -289,6 +322,13 @@ jest.mock('../../backend/db', () => {
             row.provider_trade_no = providerTradeNo || row.provider_trade_no;
             row.paid_at = row.paid_at || new Date();
             row.fulfilled_at = row.fulfilled_at || new Date();
+            row.audit_json = JSON.stringify({
+                ...parseAudit(row.audit_json),
+                actor: 'mock-admin',
+                provider: row.provider,
+                providerTradeNo: row.provider_trade_no || null,
+                confirmedAt: new Date().toISOString()
+            });
             const now = Date.now();
             const currentExpiresAt = state.entitlement.subscription_expires_at ?
                 new Date(state.entitlement.subscription_expires_at).getTime() :
@@ -441,6 +481,48 @@ describe('backend order flow (mocked db)', () => {
         });
         expect(status.status).toBe(200);
         expect(status.body.status).toBe('created');
+    });
+
+    it('keeps teacher channel attribution on created orders for ops review', async () => {
+        const originalAdminToken = process.env.ZHIMENG_ADMIN_TOKEN;
+        process.env.ZHIMENG_ADMIN_TOKEN = 'test-admin-token';
+        try {
+            const create = await inject(app, {
+                path: '/order/create',
+                method: 'POST',
+                headers: authHeader,
+                body: {
+                    plan: 'family_yearly',
+                    channel: 'wechat',
+                    referrer_code: 'teacher_a',
+                    referrer_name: '王老师',
+                    landing_page_id: 'teacher-a',
+                    source_type: 'kol'
+                }
+            });
+            expect(create.status).toBe(200);
+            expect(create.body.business.referrerCode).toBe('teacher_a');
+            expect(create.body.business.referrerName).toBe('王老师');
+            expect(create.body.business.landingPageId).toBe('teacher-a');
+            expect(create.body.business.source).toBe('kol');
+
+            const adminOrders = await inject(app, {
+                path: '/admin/orders?limit=20',
+                method: 'GET',
+                headers: {'X-Zhimeng-Admin-Token': 'test-admin-token'}
+            });
+            expect(adminOrders.status).toBe(200);
+            const order = adminOrders.body.orders.find(item => item.order_id === create.body.order_id);
+            expect(order.business.referrerCode).toBe('teacher_a');
+            expect(order.business.referrerName).toBe('王老师');
+            expect(order.business.landingPageId).toBe('teacher-a');
+        } finally {
+            if (typeof originalAdminToken === 'undefined') {
+                delete process.env.ZHIMENG_ADMIN_TOKEN;
+            } else {
+                process.env.ZHIMENG_ADMIN_TOKEN = originalAdminToken;
+            }
+        }
     });
 
     it('rejects order creation for frozen accounts', async () => {

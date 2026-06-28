@@ -190,9 +190,26 @@ Authorization: Bearer <access_token>
 {
   "plan": "family_yearly",
   "channel": "wechat",
-  "return_url": "https://billing.example.com/result"
+  "return_url": "https://billing.example.com/result",
+  "referrer_code": "teacher_a",
+  "referrer_name": "王老师",
+  "teacher_name": "王老师",
+  "teacher_id": "t_001",
+  "landing_page_id": "teacher-a",
+  "source_type": "kol"
 }
 ```
+
+老师/渠道归因字段均可选，用于 `teacher.html`、`app.html`、客户端订阅中心和 `purchase.html` 将来源写入订单 `audit_json.business`。字段含义：
+
+| 字段 | 说明 |
+| --- | --- |
+| `referrer_code` | 老师、KOL、社群或渠道推荐码 |
+| `referrer_name` | 对运营展示的推荐人/机构名 |
+| `teacher_name` | 老师展示名，通常与 `referrer_name` 相同 |
+| `teacher_id` | 内部老师/机构 ID，可后置接老师后台 |
+| `landing_page_id` | 联名页或活动页标识 |
+| `source_type` | 来源类型，如 `kol`、`channel`、`referral`、`private` |
 
 响应：
 
@@ -208,9 +225,20 @@ Authorization: Bearer <access_token>
   "payment_account_label": "知萌官方收款",
   "payment_note": "付款备注请填写：ZM-o_123",
   "pay_url": "https://billing.example.com/pay.html?order_id=o_123&proof_token=pay_xxx",
-  "qr_code_url": "https://cdn.example.com/zhimeng/pay/wechat.png"
+  "qr_code_url": "https://cdn.example.com/zhimeng/pay/wechat.png",
+  "business": {
+    "source": "kol",
+    "packageType": "family_yearly",
+    "referrerCode": "teacher_a",
+    "referrerName": "王老师",
+    "teacherName": "王老师",
+    "teacherId": "t_001",
+    "landingPageId": "teacher-a"
+  }
 }
 ```
+
+运营人工确认到账时必须保留 `business`，不得覆盖老师来源、佣金和交付成本。
 
 ### `GET /order/:id/payment-page`
 

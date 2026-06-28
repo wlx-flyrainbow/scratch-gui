@@ -163,6 +163,83 @@ header.hero-compact {
   font-weight: 700;
 }
 
+.teacher-hero {
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.teacher-profile {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.teacher-profile img {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.teacher-profile h1 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 2.2rem;
+  line-height: 1.15;
+}
+
+.proof-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ops-attribution,
+.ops-attribution-empty {
+  margin-top: 0.9rem;
+}
+
+.ops-attribution {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding: 0.85rem;
+  background: #fbfaff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.ops-attribution > div {
+  min-width: 0;
+}
+
+.ops-attribution span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.ops-attribution strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+
+.ops-attribution-empty {
+  padding: 0.8rem;
+  color: var(--muted);
+  background: var(--amber-soft);
+  border: 1px solid #f1d78a;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
 .ops-hero {
   display: flex;
   align-items: center;
@@ -1754,6 +1831,8 @@ footer.site-footer a {
   .ops-setup-card,
   .ops-account-form,
   .ops-account-summary,
+  .proof-form-grid,
+  .ops-attribution,
   .ops-grid,
   .profit-grid,
   .profit-offer,

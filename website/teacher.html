@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>新祥编程 — 老师联名体验</title>
+  <meta name="description" content="新祥编程老师联名体验页，支持老师推荐、Web 体验和订单归因。" />
+  <link rel="icon" href="assets/logo.png" type="image/png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap sales-wrap">
+    <header class="teacher-hero">
+      <div class="teacher-profile">
+        <img id="teacher-logo" src="assets/logo.png" width="96" height="96" alt="老师头像" />
+        <div>
+          <p class="eyebrow">老师联名体验</p>
+          <h1 id="teacher-title">新祥编程 x 编程启蒙老师</h1>
+          <p id="teacher-intro" class="sales-subtitle">先让孩子用积木做出第一个作品</p>
+        </div>
+      </div>
+      <p id="teacher-recommendation" class="sales-copy">适合想先低成本试试少儿编程的家庭。</p>
+      <div class="hero-actions">
+        <a id="app-link" class="btn btn-primary" href="app.html">在线体验</a>
+        <a id="download-link" class="btn btn-secondary" href="index.html#download-heading">下载桌面端</a>
+        <a id="purchase-link" class="btn btn-secondary" href="purchase.html">客服辅助下单</a>
+      </div>
+      <div class="hero-facts">
+        <span>推荐码 <strong id="teacher-ref">-</strong></span>
+        <span>家庭年卡 199 元/年</span>
+        <span>7 天项目陪跑包 699 元/期</span>
+      </div>
+    </header>
+
+    <section class="sales-section starter-projects" aria-labelledby="teacher-projects-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">建议先完成</p>
+          <h2 id="teacher-projects-heading">3 个入门作品</h2>
+        </div>
+        <p>老师推荐入口只承接启蒙体验，不承诺长期一对一教学或学校官方合作。</p>
+      </div>
+      <div class="starter-grid">
+        <article class="starter-card">
+          <div class="starter-card-head"><span class="starter-number">01</span><span class="starter-time">3-5 分钟</span></div>
+          <h3>会说话的小角色</h3>
+          <p>让孩子先理解积木和画面之间的关系。</p>
+        </article>
+        <article class="starter-card">
+          <div class="starter-card-head"><span class="starter-number">02</span><span class="starter-time">5-8 分钟</span></div>
+          <h3>生日祝福动画</h3>
+          <p>把编程变成孩子熟悉的表达。</p>
+        </article>
+        <article class="starter-card">
+          <div class="starter-card-head"><span class="starter-number">03</span><span class="starter-time">8-12 分钟</span></div>
+          <h3>接水果小游戏</h3>
+          <p>第一次理解规则、控制和互动。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="sales-section faq-section" aria-labelledby="teacher-faq-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">购买前说明</p>
+          <h2 id="teacher-faq-heading">老师推荐，但产品与开通由新祥编程统一承接</h2>
+        </div>
+      </div>
+      <div class="faq-grid">
+        <article class="faq-item">
+          <h3>这是 Scratch 官方产品吗？</h3>
+          <p>不是。新祥编程基于 Scratch GUI 开源项目改造，遵守 AGPLv3 许可并提供对应源码。</p>
+        </article>
+        <article class="faq-item">
+          <h3>老师会每天直播上课吗？</h3>
+          <p>当前主产品是编程启蒙工具和轻陪跑包，不承诺固定直播课或长期一对一教学。</p>
+        </article>
+        <article class="faq-item">
+          <h3>为什么要记录推荐码？</h3>
+          <p>用于确认订单来源、佣金成本和后续服务质量，运营台会按老师来源复盘。</p>
+        </article>
+        <article class="faq-item">
+          <h3>付款后如何开通？</h3>
+          <p>扫码付款并提交凭证后，由新祥编程运营核对到账，再开通账号授权。</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <p>联名展示不改变新祥编程的账号、支付、授权、客服和源码披露规则。</p>
+    </footer>
+  </div>
+
+  <script>
+(function () {
+  var teachers = {
+    demo: {
+      referrerCode: 'teacher_demo',
+      landingPageId: 'teacher-demo',
+      displayName: '编程启蒙老师',
+      intro: '先让孩子用积木做出第一个作品',
+      recommendation: '我建议先用新祥编程低成本体验，再判断孩子是否适合继续系统学习。',
+      logoUrl: 'assets/logo.png'
+    },
+    teacher_a: {
+      referrerCode: 'teacher_a',
+      landingPageId: 'teacher-a',
+      displayName: '王老师',
+      intro: '适合 6-10 岁孩子的第一节创作体验',
+      recommendation: '先完成会说话的小角色，再决定要不要继续深入学习。',
+      logoUrl: 'assets/logo.png'
+    }
+  };
+  var params = new URLSearchParams(window.location.search);
+  var slug = (params.get('teacher') || params.get('ref') || 'demo').trim();
+  var teacher = teachers[slug] || teachers.demo;
+  var attribution = {
+    referrer_code: params.get('referrer_code') || teacher.referrerCode,
+    referrer_name: params.get('referrer_name') || teacher.displayName,
+    teacher_name: params.get('teacher_name') || teacher.displayName,
+    landing_page_id: params.get('landing_page_id') || teacher.landingPageId,
+    source_type: params.get('source_type') || 'kol'
+  };
+  localStorage.setItem('zhimengAttribution', JSON.stringify(Object.assign({}, attribution, {
+    captured_at: new Date().toISOString()
+  })));
+  function linkWithAttribution(path) {
+    var url = new URL(path, window.location.href);
+    Object.keys(attribution).forEach(function (key) {
+      if (attribution[key]) url.searchParams.set(key, attribution[key]);
+    });
+    return url.pathname + url.search + (url.hash || '');
+  }
+  document.getElementById('teacher-logo').src = teacher.logoUrl || 'assets/logo.png';
+  document.getElementById('teacher-title').textContent = '新祥编程 x ' + teacher.displayName;
+  document.getElementById('teacher-intro').textContent = teacher.intro;
+  document.getElementById('teacher-recommendation').textContent = teacher.recommendation;
+  document.getElementById('teacher-ref').textContent = attribution.referrer_code;
+  document.getElementById('app-link').href = linkWithAttribution('app.html');
+  document.getElementById('download-link').href = linkWithAttribution('index.html#download-heading');
+  document.getElementById('purchase-link').href = linkWithAttribution('purchase.html');
+})();
+  </script>
+</body>
+</html>

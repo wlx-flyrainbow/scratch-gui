@@ -15,6 +15,7 @@ import {
     getOrderStatus,
     submitPaymentProof
 } from './auth/api';
+import {getOrderAttribution} from './auth/attribution';
 import {buildLease, isLeaseValid} from './auth/lease';
 import {loadAuthBundle, saveAuthBundle, clearAuthBundle, loadDeviceIdentity} from './auth/storage';
 import {setEntitlement, setPermissions, setSession, clearSession} from '../reducers/session';
@@ -327,7 +328,8 @@ const AuthHOC = WrappedComponent => {
                 const created = await createOrder(user.token, {
                     plan: selectedPlan,
                     channel: paymentChannel,
-                    return_url: authConfig.billingUrl
+                    return_url: authConfig.billingUrl,
+                    ...getOrderAttribution()
                 });
                 this.setState({billingOrder: created});
                 return created;

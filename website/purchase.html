@@ -54,6 +54,30 @@
             <option value="alipay">支付宝</option>
           </select>
         </label>
+        <div class="proof-form-grid">
+          <label>
+            推荐码
+            <input id="referrer-code" type="text" autocomplete="off" placeholder="例如 teacher_a" />
+          </label>
+          <label>
+            老师/机构
+            <input id="referrer-name" type="text" autocomplete="off" placeholder="例如 王老师" />
+          </label>
+          <label>
+            联名页 ID
+            <input id="landing-page-id" type="text" autocomplete="off" placeholder="例如 teacher-a" />
+          </label>
+          <label>
+            来源类型
+            <select id="source-type">
+              <option value="">未记录</option>
+              <option value="kol">KOL/老师推荐</option>
+              <option value="channel">渠道/机构</option>
+              <option value="referral">转介绍</option>
+              <option value="private">私域私聊</option>
+            </select>
+          </label>
+        </div>
         <button id="create-order" class="btn btn-primary" type="submit">创建验收订单并打开付款页</button>
       </form>
       <div id="success" class="success-banner" role="status"></div>
@@ -72,6 +96,7 @@
   var button = document.getElementById('create-order');
   var errEl = document.getElementById('load-error');
   var successEl = document.getElementById('success');
+  var attributionStorageKey = 'zhimengAttribution';
 
   function defaultApiBase() {
     var configured = params.get('api_base');
@@ -82,6 +107,47 @@
 
   function getApiBase() {
     return apiInput.value.replace(/\/$/, '');
+  }
+
+  function safeParam(name) {
+    return (params.get(name) || '').trim().slice(0, 128);
+  }
+
+  function readStoredAttribution() {
+    try {
+      return JSON.parse(localStorage.getItem(attributionStorageKey) || '{}') || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function writeStoredAttribution(attribution) {
+    var hasValue = Object.keys(attribution).some(function (key) {
+      return Boolean(attribution[key]);
+    });
+    if (!hasValue) return;
+    localStorage.setItem(attributionStorageKey, JSON.stringify(Object.assign({}, attribution, {
+      captured_at: new Date().toISOString()
+    })));
+  }
+
+  function readAttribution() {
+    var stored = readStoredAttribution();
+    var attribution = {
+      referrer_code: safeParam('referrer_code') || safeParam('ref') || safeParam('teacher') ||
+        stored.referrer_code || '',
+      referrer_name: safeParam('referrer_name') || stored.referrer_name || '',
+      teacher_name: safeParam('teacher_name') || stored.teacher_name || '',
+      teacher_id: safeParam('teacher_id') || stored.teacher_id || '',
+      landing_page_id: safeParam('landing_page_id') || safeParam('landing') ||
+        stored.landing_page_id || '',
+      source_type: safeParam('source_type') || stored.source_type || ''
+    };
+    if (attribution.referrer_code && !attribution.source_type) {
+      attribution.source_type = 'kol';
+    }
+    writeStoredAttribution(attribution);
+    return attribution;
   }
 
   function showErr(msg) {
@@ -122,6 +188,11 @@
   }
 
   apiInput.value = localStorage.getItem('zhimengPurchaseApiBase') || defaultApiBase();
+  var attribution = readAttribution();
+  document.getElementById('referrer-code').value = attribution.referrer_code || '';
+  document.getElementById('referrer-name').value = attribution.referrer_name || attribution.teacher_name || '';
+  document.getElementById('landing-page-id').value = attribution.landing_page_id || '';
+  document.getElementById('source-type').value = attribution.source_type || '';
 
   form.addEventListener('submit', function (event) {
     event.preventDefault();
@@ -143,7 +214,12 @@
           },
           body: JSON.stringify({
             plan: document.getElementById('plan').value,
-            channel: document.getElementById('channel').value
+            channel: document.getElementById('channel').value,
+            referrer_code: document.getElementById('referrer-code').value.trim(),
+            referrer_name: document.getElementById('referrer-name').value.trim(),
+            teacher_name: document.getElementById('referrer-name').value.trim(),
+            landing_page_id: document.getElementById('landing-page-id').value.trim(),
+            source_type: document.getElementById('source-type').value
           })
         });
       })

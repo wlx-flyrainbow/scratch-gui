@@ -220,12 +220,18 @@ const runFlow = async baseUrl => {
         body: {
             plan: 'family_yearly',
             channel: 'wechat',
-            return_url: `${baseUrl}/purchase-flow-return`
+            return_url: `${baseUrl}/purchase-flow-return`,
+            referrer_code: 'test_teacher',
+            referrer_name: '测试老师',
+            landing_page_id: 'test-teacher',
+            source_type: 'kol'
         }
     });
     const orderPass = responses.createOrder.status === 200 &&
         responses.createOrder.json &&
-        responses.createOrder.json.order_id;
+        responses.createOrder.json.order_id &&
+        responses.createOrder.json.business &&
+        responses.createOrder.json.business.referrerCode === 'test_teacher';
     pushStep(steps, 'order_create', Boolean(orderPass), `POST /order/create -> ${responses.createOrder.status}`);
     orderId = responses.createOrder.json.order_id;
 

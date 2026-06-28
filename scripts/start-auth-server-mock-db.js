@@ -11,6 +11,20 @@ let nextUserId = 2;
 
 const planDurationDays = plan => (plan === 'bootcamp_7d' ? 7 : 365);
 
+const parseAuditJson = value => {
+    if (!value) {
+        return {};
+    }
+    if (typeof value === 'object') {
+        return value;
+    }
+    try {
+        return JSON.parse(value) || {};
+    } catch (e) {
+        return {};
+    }
+};
+
 const ensureSeed = () => {
     if (users.has(1)) return;
     users.set(1, {
@@ -204,9 +218,18 @@ const mockDb = {
         returnUrl,
         amountCents,
         currency,
-        paymentProofTokenHash
+        paymentProofTokenHash,
+        business
     }) => {
         const id = nextOrderId++;
+        const auditJson = business && Object.keys(business).length > 0 ?
+            JSON.stringify({
+                business: {
+                    ...business,
+                    updatedAt: new Date().toISOString()
+                }
+            }) :
+            null;
         orders.set(id, {
             id,
             user_id: Number(userId),
@@ -222,7 +245,7 @@ const mockDb = {
             currency: currency || null,
             payment_proof_json: null,
             payment_proof_token_hash: paymentProofTokenHash || null,
-            audit_json: null
+            audit_json: auditJson
         });
         return id;
     },
@@ -303,7 +326,7 @@ const mockDb = {
             err.statusCode = 404;
             throw err;
         }
-        const audit = row.audit_json ? JSON.parse(row.audit_json) : {};
+        const audit = parseAuditJson(row.audit_json);
         row.audit_json = JSON.stringify({
             ...audit,
             business: {
@@ -341,6 +364,14 @@ const mockDb = {
         row.provider_trade_no = providerTradeNo || row.provider_trade_no;
         row.paid_at = row.paid_at || new Date();
         row.fulfilled_at = row.fulfilled_at || new Date();
+        row.audit_json = JSON.stringify({
+            ...parseAuditJson(row.audit_json),
+            actor: 'mock-payment',
+            provider: row.provider,
+            providerTradeNo: row.provider_trade_no,
+            confirmedAt: new Date().toISOString(),
+            rawPayload: null
+        });
         await mockDb.activateEntitlementFromOrder(row.user_id, row.plan || 'family_yearly');
         return {
             order: row,
