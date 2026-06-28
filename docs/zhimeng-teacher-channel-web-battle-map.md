@@ -314,6 +314,14 @@ OEM 必须单独报价，不走普通推荐佣金。
 - `website/ops.html` 的内部话术区新增老师邀约、老师转发家长、老师佣金说明和老师 D7 复盘模板。
 - 下一步进入阶段 4：按跟踪表邀请 3-5 位老师试销，7 天后按推荐码复盘真实付款、作品完成和利润。
 
+2026-06-28 第四轮测试/生产部署：
+
+- `feat/electron` 的 `30961bc9` 已部署到 codevalley 测试和生产环境，测试/生产 API 均由 PM2 拉起。
+- 生产静态站已同步，`bash deploy/scripts/verify-public.sh prod` 通过，`https://zhimeng.codevalley.cn/health` 返回 MySQL 健康状态。
+- 浏览器验收确认 `https://zhimeng.codevalley.cn/teacher.html?teacher=teacher_a` 渲染为“新祥编程 x 王老师”，进入 Web 体验后推荐码、老师名和联名页 ID 继续保留。
+- 测试域名 `zhimeng-test.codevalley.cn` 的服务端 Host 绑定可通过 `curl --resolve` 验证，但公共 DNS 暂未解析；对外邀请老师前必须补测试 DNS 或直接使用生产域名的受控链接。
+- 生产静态发布后服务器根分区使用率约 95%，下一次发布前需要清理 `/www/backup` 旧备份或扩容。
+
 ## 12. 数据复盘模板
 
 每轮老师试销结束后记录：

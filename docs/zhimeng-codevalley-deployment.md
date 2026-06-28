@@ -9,7 +9,10 @@
 
 ## 0. 当前域名与部署模型
 
-当前阿里云 DNS 已将以下域名解析到 `39.106.81.189`：
+目标部署模型如下。2026-06-28 远程部署复核结果：
+
+- `zhimeng.codevalley.cn` 公共 DNS 已解析到 `39.106.81.189`，生产 HTTPS、API 和静态站可公网验收。
+- `zhimeng-test.codevalley.cn` 的 Nginx、HTTPS、API 和静态目录已在 `39.106.81.189` 配好，但 1.1.1.1、8.8.8.8 和服务器本机 DNS 暂未解析该测试域名；外部测试前需要补 DNS 记录，临时验收可使用 `curl --resolve zhimeng-test.codevalley.cn:443:39.106.81.189 ...`。
 
 | 环境 | 域名 | 用途 | 后端端口 | 数据库 | 价格 |
 | --- | --- | --- | --- | --- | --- |
@@ -395,6 +398,7 @@ bash deploy/scripts/verify-public.sh prod
 - `download URL -> 404`：安装包没上传、文件名不一致，或 Nginx 路径不对。
 - `/health` 失败：PM2 后端未启动、Nginx 反代错误或 env/数据库配置错误。
 - `ops.html` 显示 `Unauthorized`：运营口令和后端进程中的 `ZHIMENG_ADMIN_TOKEN` 不一致。先重启 API 加载最新 env，再清理浏览器保存的旧口令。
+- 测试域名 `fetch failed` 或 `Could not resolve host: zhimeng-test.codevalley.cn`：先补阿里云 DNS 记录；补记录前只能用 `curl --resolve` 验证测试站 Host 绑定，不能把它视为普通用户已可访问。
 
 运营口令排查：
 
