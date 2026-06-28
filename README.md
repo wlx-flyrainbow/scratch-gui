@@ -40,6 +40,10 @@ npm run public:check
 - AGPL 源码公开说明：`docs/agpl-source-disclosure.md`
 - AGPL 产品战略实施计划：`docs/zhimeng-agpl-product-strategy-implementation-plan.md`
 - 公开源码仓库管理方案：`docs/zhimeng-public-source-repo-management.md`
+- 老师渠道与网页版作战图：`docs/zhimeng-teacher-channel-web-battle-map.md`
+- 老师渠道与 Web 体验产品方案：`docs/zhimeng-teacher-channel-web-product-plan.md`
+- 新祥编程独立变更记录：`ZHIMENG_CHANGELOG.md`
+- 上游 Scratch GUI 变更记录：`CHANGELOG.md`
 
 源码与许可：
 

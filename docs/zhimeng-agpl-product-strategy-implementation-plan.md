@@ -267,3 +267,5 @@ AGPL 客户端公开后，任何前端付费墙都可被修改。因此以下能
 - 商业化营销计划：`docs/zhimeng-commercialization-marketing-plan.md`
 - 7 天项目陪跑包：`docs/zhimeng-bootcamp-7d-offer.md`
 - 2026 利润目标：`docs/zhimeng-2026-revenue-1m-plan.md`
+- 老师渠道与网页版作战图：`docs/zhimeng-teacher-channel-web-battle-map.md`
+- 老师渠道与 Web 体验产品方案：`docs/zhimeng-teacher-channel-web-product-plan.md`

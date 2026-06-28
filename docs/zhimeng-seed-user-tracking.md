@@ -19,11 +19,15 @@
 | --- | --- |
 | 编号 | S001、S002 等 |
 | 来源 | 朋友圈、微信群、一对一私聊、朋友转介绍等 |
+| 推荐码 | 老师、KOL、社群或渠道专属推荐码 |
+| 老师/机构 | 推荐来源的老师、KOL、社群主或小机构名称 |
+| 联名页 ID | 老师联名页、活动页或渠道页标识 |
 | 家长昵称 | 便于客服跟进 |
 | 联系方式 | 微信、手机号或其他联系渠道 |
 | 孩子年龄 | 覆盖 6-10 岁，首发重点观察 6-8 岁 |
 | 使用系统 | macOS Apple 芯片、macOS Intel、Windows 安装版、Windows 便携版 |
 | 是否访问官网 | 是/否 |
+| 是否打开 Web 体验 | 是/否 |
 | 是否下载 | 是/否 |
 | 是否安装成功 | 是/否 |
 | 是否注册 | 是/否 |
@@ -87,7 +91,7 @@
 - 家长最常问的 3 个问题是什么？
 - 是否需要调整官网文案、客户端锁定页或订阅中心？
 
-详细执行节奏见：`docs/zhimeng-seed-user-20-family-runbook.md`。
+详细执行节奏见：`docs/zhimeng-seed-user-20-family-runbook.md`。老师渠道、联名页、网页版体验和后续白标/OEM 的顺序见：`docs/zhimeng-teacher-channel-web-battle-map.md`；产品方案见：`docs/zhimeng-teacher-channel-web-product-plan.md`。
 
 ## 5. 转化判断
 
