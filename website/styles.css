@@ -1124,6 +1124,101 @@ h1 {
   font-size: 0.9rem;
 }
 
+.ops-channel-dashboard {
+  padding: 1.25rem;
+}
+
+.channel-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.channel-review-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+.channel-review-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.channel-review-head div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.channel-review-head strong {
+  color: var(--text);
+  word-break: break-word;
+}
+
+.channel-review-head span,
+.channel-review-meta {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.channel-review-head em {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  background: #eef7ff;
+  color: #0b5c90;
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.channel-review-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.channel-review-metrics div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+.channel-review-metrics span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.channel-review-metrics strong {
+  color: var(--text);
+  font-size: 0.98rem;
+  word-break: break-word;
+}
+
+.channel-review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.channel-review-warn {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #fff3e0;
+  color: #7c4d00;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .bootcamp-sop-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1836,6 +1931,8 @@ footer.site-footer a {
   .ops-grid,
   .profit-grid,
   .profit-offer,
+  .channel-review-grid,
+  .channel-review-metrics,
   .bootcamp-sop-grid,
   .daily-review-grid,
   .ops-order-workflow,

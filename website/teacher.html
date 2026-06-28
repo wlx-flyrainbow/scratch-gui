@@ -93,37 +93,69 @@
 
   <script>
 (function () {
-  var teachers = {
-    demo: {
-      referrerCode: 'teacher_demo',
-      landingPageId: 'teacher-demo',
-      displayName: '编程启蒙老师',
-      intro: '先让孩子用积木做出第一个作品',
-      recommendation: '我建议先用新祥编程低成本体验，再判断孩子是否适合继续系统学习。',
-      logoUrl: 'assets/logo.png'
-    },
-    teacher_a: {
-      referrerCode: 'teacher_a',
-      landingPageId: 'teacher-a',
-      displayName: '王老师',
-      intro: '适合 6-10 岁孩子的第一节创作体验',
-      recommendation: '先完成会说话的小角色，再决定要不要继续深入学习。',
-      logoUrl: 'assets/logo.png'
-    }
+  var fallbackChannel = {
+    slug: 'demo',
+    enabled: true,
+    teacher_id: 'teacher_demo',
+    referrer_code: 'teacher_demo',
+    landing_page_id: 'teacher-demo',
+    display_name: '编程启蒙老师',
+    avatar_or_logo_url: 'assets/logo.png',
+    intro: '先让孩子用积木做出第一个作品',
+    recommendation: '我建议先用新祥编程低成本体验，再判断孩子是否适合继续系统学习。',
+    source_type: 'kol'
   };
   var params = new URLSearchParams(window.location.search);
   var slug = (params.get('teacher') || params.get('ref') || 'demo').trim();
-  var teacher = teachers[slug] || teachers.demo;
-  var attribution = {
-    referrer_code: params.get('referrer_code') || teacher.referrerCode,
-    referrer_name: params.get('referrer_name') || teacher.displayName,
-    teacher_name: params.get('teacher_name') || teacher.displayName,
-    landing_page_id: params.get('landing_page_id') || teacher.landingPageId,
-    source_type: params.get('source_type') || 'kol'
-  };
-  localStorage.setItem('zhimengAttribution', JSON.stringify(Object.assign({}, attribution, {
-    captured_at: new Date().toISOString()
-  })));
+
+  function safeText(value, limit) {
+    return String(value || '').trim().slice(0, limit || 128);
+  }
+
+  function normalizeChannel(channel) {
+    var row = channel || fallbackChannel;
+    return {
+      slug: safeText(row.slug || fallbackChannel.slug, 96),
+      enabled: row.enabled !== false,
+      teacher_id: safeText(row.teacher_id || row.teacherId || fallbackChannel.teacher_id, 64),
+      referrer_code: safeText(row.referrer_code || row.referrerCode || fallbackChannel.referrer_code, 64),
+      landing_page_id: safeText(row.landing_page_id || row.landingPageId || fallbackChannel.landing_page_id, 96),
+      display_name: safeText(row.display_name || row.displayName || fallbackChannel.display_name, 128),
+      avatar_or_logo_url: safeText(row.avatar_or_logo_url || row.avatarOrLogoUrl || fallbackChannel.avatar_or_logo_url, 512),
+      intro: safeText(row.intro || fallbackChannel.intro, 160),
+      recommendation: safeText(row.recommendation || fallbackChannel.recommendation, 280),
+      source_type: safeText(row.source_type || row.sourceType || fallbackChannel.source_type, 64)
+    };
+  }
+
+  function chooseChannel(config) {
+    var channels = config && Array.isArray(config.channels) ? config.channels : [fallbackChannel];
+    var defaultSlug = safeText(config && config.default_slug || fallbackChannel.slug, 96);
+    var matched = channels.find(function (channel) {
+      return channel && channel.enabled !== false && (
+        channel.slug === slug ||
+        channel.referrer_code === slug ||
+        channel.landing_page_id === slug
+      );
+    });
+    if (matched) return normalizeChannel(matched);
+    var fallback = channels.find(function (channel) {
+      return channel && channel.enabled !== false && channel.slug === defaultSlug;
+    }) || fallbackChannel;
+    return normalizeChannel(fallback);
+  }
+
+  function buildAttribution(channel) {
+    return {
+      referrer_code: safeText(params.get('referrer_code') || channel.referrer_code, 64),
+      referrer_name: safeText(params.get('referrer_name') || channel.display_name, 128),
+      teacher_id: safeText(params.get('teacher_id') || channel.teacher_id, 64),
+      teacher_name: safeText(params.get('teacher_name') || channel.display_name, 128),
+      landing_page_id: safeText(params.get('landing_page_id') || channel.landing_page_id, 96),
+      source_type: safeText(params.get('source_type') || channel.source_type || 'kol', 64)
+    };
+  }
+
   function linkWithAttribution(path) {
     var url = new URL(path, window.location.href);
     Object.keys(attribution).forEach(function (key) {
@@ -131,14 +163,39 @@
     });
     return url.pathname + url.search + (url.hash || '');
   }
-  document.getElementById('teacher-logo').src = teacher.logoUrl || 'assets/logo.png';
-  document.getElementById('teacher-title').textContent = '新祥编程 x ' + teacher.displayName;
-  document.getElementById('teacher-intro').textContent = teacher.intro;
-  document.getElementById('teacher-recommendation').textContent = teacher.recommendation;
-  document.getElementById('teacher-ref').textContent = attribution.referrer_code;
-  document.getElementById('app-link').href = linkWithAttribution('app.html');
-  document.getElementById('download-link').href = linkWithAttribution('index.html#download-heading');
-  document.getElementById('purchase-link').href = linkWithAttribution('purchase.html');
+
+  function render(channel) {
+    attribution = buildAttribution(channel);
+    localStorage.setItem('zhimengAttribution', JSON.stringify(Object.assign({}, attribution, {
+      captured_at: new Date().toISOString()
+    })));
+    document.getElementById('teacher-logo').src = channel.avatar_or_logo_url || 'assets/logo.png';
+    document.getElementById('teacher-title').textContent = '新祥编程 x ' + channel.display_name;
+    document.getElementById('teacher-intro').textContent = channel.intro;
+    document.getElementById('teacher-recommendation').textContent = channel.recommendation;
+    document.title = '新祥编程 — ' + channel.display_name + '联名体验';
+    document.querySelector('meta[name="description"]').setAttribute(
+      'content',
+      '新祥编程 ' + channel.display_name + ' 联名体验页，支持老师推荐、Web 体验和订单归因。'
+    );
+    document.getElementById('teacher-ref').textContent = attribution.referrer_code;
+    document.getElementById('app-link').href = linkWithAttribution('app.html');
+    document.getElementById('download-link').href = linkWithAttribution('index.html#download-heading');
+    document.getElementById('purchase-link').href = linkWithAttribution('purchase.html');
+  }
+
+  var attribution = buildAttribution(fallbackChannel);
+  fetch('data/teacher-channels.json', {cache: 'no-store'})
+    .then(function (res) {
+      if (!res.ok) throw new Error('teacher config unavailable');
+      return res.json();
+    })
+    .then(function (config) {
+      render(chooseChannel(config));
+    })
+    .catch(function () {
+      render(fallbackChannel);
+    });
 })();
   </script>
 </body>

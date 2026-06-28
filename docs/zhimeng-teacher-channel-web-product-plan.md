@@ -60,10 +60,11 @@
 
 当前 V0 已落地为静态页面 + 现有订单业务字段复用，不新增老师后台和新数据库表。落地文件包括：
 
+- `website/data/teacher-channels.json`：审核后的老师/机构联名配置。
 - `website/teacher.html`：老师联名页 V0。
 - `website/app.html`：Web 体验入口 V0。
 - `website/purchase.html`：客服辅助下单时传递老师/渠道来源。
-- `website/ops.html`：运营台展示和补录老师来源、佣金与归因备注。
+- `website/ops.html`：运营台展示和补录老师来源、佣金与归因备注，并按老师维度做渠道复盘。
 - `backend/app.js` / `backend/db.js`：订单创建和人工确认保留 `audit_json.business`。
 - `src/lib/auth/attribution.js` / `src/lib/auth-hoc.jsx`：客户端订阅中心读取并提交推荐来源。
 
@@ -102,6 +103,12 @@
 - 不允许老师隐藏 AGPL 和 Scratch 关系说明。
 - 不允许老师自定义价格和承诺。
 - 不允许老师上传未经审核的宣传语。
+
+当前处理结果：
+
+- 老师资料先维护在 `website/data/teacher-channels.json`，字段包括 `slug`、`enabled`、`teacher_id`、`referrer_code`、`display_name`、`avatar_or_logo_url`、`intro`、`recommendation`、`landing_page_id` 和 `source_type`。
+- 联名页按 `teacher`、`ref`、`referrer_code` 或 `landing_page_id` 选择配置；未命中或配置不可用时回退 demo。
+- 配置文件属于审核后素材，运营可新增 3-5 个试销入口，但上线前仍需检查宣传语、Logo 和合作对象边界。
 
 ### 4.2 Web 体验入口
 
@@ -181,6 +188,12 @@ https://zhimeng.codevalley.cn/purchase.html?ref=teacher_a
 
 - `website/ops.html` 已有来源、套餐、佣金、成本、利润和跟进字段。
 - `docs/zhimeng-seed-user-tracking.csv` 已新增推荐码、老师/机构、联名页 ID、Web 体验字段。
+
+当前处理结果：
+
+- `website/ops.html` 新增“渠道复盘”模块，按推荐码/老师来源聚合订单数、已确认订单、收入、佣金、预估利润、首作完成率和退款/流失风险。
+- 聚合口径基于 `/admin/orders?limit=200` 返回的订单 `business` 字段，不新增数据库表；适合首批 3-5 位老师小样本试销。
+- 佣金仍以运营保存的逐单 `commission_cents` 为准，退款或高风险订单在结算前人工复核。
 
 ### 4.5 前端与运营端联动契约
 

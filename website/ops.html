@@ -109,6 +109,19 @@
       </div>
     </section>
 
+    <section class="card ops-channel-dashboard" aria-labelledby="channel-review-heading">
+      <div class="section-header">
+        <div>
+          <div class="eyebrow">渠道复盘</div>
+          <h2 id="channel-review-heading">老师推荐与佣金统计</h2>
+        </div>
+        <div class="ops-state-pill is-ok">每周结算前复核</div>
+      </div>
+      <div id="channel-summary" class="channel-review-grid">
+        <div class="empty-state">进入工作台后会按推荐码汇总老师订单、收入、佣金、作品完成和退款风险。</div>
+      </div>
+    </section>
+
     <section class="card ops-bootcamp-sop" aria-labelledby="bootcamp-sop-heading">
       <div class="section-header">
         <div>
@@ -322,6 +335,7 @@
   var accountReasonInput = document.getElementById('account-reason');
   var accountNoteInput = document.getElementById('account-note');
   var accountResultEl = document.getElementById('account-result');
+  var channelSummaryEl = document.getElementById('channel-summary');
 
   function defaultApiBase() {
     var params = new URLSearchParams(window.location.search);
@@ -490,6 +504,121 @@
       '<div><span>陪跑包成交</span><strong>' + bootcampOrders.length + ' 单</strong></div>',
       '<div><span>陪跑作品完成</span><strong>' + bootcampCompletedProjects + ' 个</strong></div>'
     ].join('');
+  }
+
+  function orderCreatedAt(order) {
+    return order.fulfilled_at || order.paid_at || order.expires_at || '';
+  }
+
+  function channelLabel(order) {
+    var business = order.business || {};
+    return business.referrerCode ||
+      business.referrerName ||
+      business.teacherName ||
+      business.landingPageId ||
+      (business.source ? sourceLabel(business.source) : '未记录来源');
+  }
+
+  function isTeacherChannel(order) {
+    var business = order.business || {};
+    return Boolean(
+      business.referrerCode ||
+      business.referrerName ||
+      business.teacherName ||
+      business.teacherId ||
+      business.landingPageId ||
+      business.source === 'kol' ||
+      business.source === 'channel'
+    );
+  }
+
+  function renderChannelDashboard(orders) {
+    var grouped = {};
+    orders.forEach(function (order) {
+      if (!isTeacherChannel(order)) return;
+      var business = order.business || {};
+      var key = channelLabel(order);
+      if (!grouped[key]) {
+        grouped[key] = {
+          key: key,
+          teacherName: business.referrerName || business.teacherName || '-',
+          landingPageId: business.landingPageId || '-',
+          source: sourceLabel(business.source),
+          orders: 0,
+          created: 0,
+          paid: 0,
+          fulfilled: 0,
+          revenue: 0,
+          costs: 0,
+          commission: 0,
+          starterDone: 0,
+          refundRisk: 0,
+          lastTouchedAt: ''
+        };
+      }
+      var row = grouped[key];
+      var status = order.status || '';
+      var cost = businessCost(order);
+      row.orders += 1;
+      row.created += status === 'created' ? 1 : 0;
+      row.paid += status === 'paid' ? 1 : 0;
+      row.fulfilled += status === 'fulfilled' ? 1 : 0;
+      if (status === 'paid' || status === 'fulfilled') {
+        row.revenue += Number(order.amount_cents || 0);
+        row.costs += sumCosts(cost);
+        row.commission += cost.commission;
+      }
+      row.starterDone += business.starterCompleted ? 1 : 0;
+      row.refundRisk += business.riskLevel === 'high' || business.followupStatus === 'refund_risk' ? 1 : 0;
+      row.teacherName = row.teacherName === '-' ? (business.referrerName || business.teacherName || '-') : row.teacherName;
+      row.landingPageId = row.landingPageId === '-' ? (business.landingPageId || '-') : row.landingPageId;
+      row.source = row.source === '-' ? sourceLabel(business.source) : row.source;
+      row.lastTouchedAt = orderCreatedAt(order) || row.lastTouchedAt;
+    });
+
+    var rows = Object.keys(grouped).map(function (key) {
+      return grouped[key];
+    }).sort(function (a, b) {
+      return b.revenue - a.revenue || b.orders - a.orders || a.key.localeCompare(b.key);
+    });
+
+    if (!rows.length) {
+      channelSummaryEl.innerHTML = '<div class="empty-state">暂无老师/渠道来源订单。先让老师使用专属链接，或在订单经营记录里补录推荐码。</div>';
+      return;
+    }
+
+    channelSummaryEl.innerHTML = rows.map(function (row) {
+      var confirmed = row.paid + row.fulfilled;
+      var profit = row.revenue - row.costs;
+      var doneRate = confirmed > 0 ? Math.round((row.starterDone / confirmed) * 100) : 0;
+      var warning = row.refundRisk > 0 ?
+        '<div class="channel-review-warn">有 ' + row.refundRisk + ' 单退款/流失风险，结算前需复核。</div>' :
+        '';
+      return [
+        '<article class="channel-review-card">',
+          '<div class="channel-review-head">',
+            '<div>',
+              '<strong>' + escapeHtml(row.key) + '</strong>',
+              '<span>' + escapeHtml(row.teacherName) + ' · ' + escapeHtml(row.landingPageId) + '</span>',
+            '</div>',
+            '<em>' + escapeHtml(row.source) + '</em>',
+          '</div>',
+          '<div class="channel-review-metrics">',
+            '<div><span>订单</span><strong>' + row.orders + '</strong></div>',
+            '<div><span>已确认</span><strong>' + confirmed + '</strong></div>',
+            '<div><span>收入</span><strong>' + escapeHtml(formatAmount(row.revenue, 'CNY')) + '</strong></div>',
+            '<div><span>佣金</span><strong>' + escapeHtml(formatAmount(row.commission, 'CNY')) + '</strong></div>',
+            '<div><span>利润</span><strong>' + escapeHtml(formatAmount(profit, 'CNY')) + '</strong></div>',
+            '<div><span>首作完成</span><strong>' + doneRate + '%</strong></div>',
+          '</div>',
+          '<div class="channel-review-meta">',
+            '<span>待确认 ' + row.created + ' 单</span>',
+            '<span>最近触达 ' + escapeHtml(formatDateTime(row.lastTouchedAt)) + '</span>',
+          '</div>',
+          warning,
+        '</article>'
+      ].join('');
+    }).join('');
   }
 
   function adminFetch(path, options) {
@@ -946,6 +1075,7 @@
         var allOrders = responses[0].orders || [];
         var orders = responses[1].orders || [];
         renderProfitDashboard(allOrders);
+        renderChannelDashboard(allOrders);
         renderOrders(orders);
         setupCard.classList.add('is-collapsed');
         showSuccess(orders.length ? '已加载待确认订单，请逐笔核对到账记录。' : '暂无待确认订单。');

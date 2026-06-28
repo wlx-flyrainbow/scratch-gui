@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "updated_at": "2026-06-28",
+  "default_slug": "demo",
+  "channels": [
+    {
+      "slug": "demo",
+      "enabled": true,
+      "teacher_id": "teacher_demo",
+      "referrer_code": "teacher_demo",
+      "landing_page_id": "teacher-demo",
+      "display_name": "编程启蒙老师",
+      "avatar_or_logo_url": "assets/logo.png",
+      "intro": "先让孩子用积木做出第一个作品",
+      "recommendation": "我建议先用新祥编程低成本体验，再判断孩子是否适合继续系统学习。",
+      "source_type": "kol"
+    },
+    {
+      "slug": "teacher_a",
+      "enabled": true,
+      "teacher_id": "teacher_a",
+      "referrer_code": "teacher_a",
+      "landing_page_id": "teacher-a",
+      "display_name": "王老师",
+      "avatar_or_logo_url": "assets/logo.png",
+      "intro": "适合 6-10 岁孩子的第一节创作体验",
+      "recommendation": "先完成会说话的小角色，再决定要不要继续深入学习。",
+      "source_type": "kol"
+    },
+    {
+      "slug": "teacher_b",
+      "enabled": true,
+      "teacher_id": "teacher_b",
+      "referrer_code": "teacher_b",
+      "landing_page_id": "teacher-b",
+      "display_name": "李老师",
+      "avatar_or_logo_url": "assets/logo.png",
+      "intro": "适合亲子社群里的首次编程体验",
+      "recommendation": "家长不用先报大课，先让孩子在浏览器里做出一个能互动的小作品。",
+      "source_type": "kol"
+    },
+    {
+      "slug": "club_a",
+      "enabled": true,
+      "teacher_id": "club_a",
+      "referrer_code": "club_a",
+      "landing_page_id": "club-a",
+      "display_name": "创意编程小站",
+      "avatar_or_logo_url": "assets/logo.png",
+      "intro": "面向小机构的低成本编程启蒙体验入口",
+      "recommendation": "适合作为线下试听前的家庭预体验，先看孩子是否愿意动手创作。",
+      "source_type": "channel"
+    }
+  ]
+}

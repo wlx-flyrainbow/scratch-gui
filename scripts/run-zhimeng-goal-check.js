@@ -228,6 +228,36 @@ const main = async () => {
     }
 
     try {
+        responses.frontendTeacherConfig = await requestText({
+            method: 'GET',
+            url: joinUrl(frontendBase, '/data/teacher-channels.json')
+        });
+        let config = null;
+        try {
+            config = JSON.parse(responses.frontendTeacherConfig.text);
+        } catch (e) {
+            config = null;
+        }
+        const channels = config && Array.isArray(config.channels) ? config.channels : [];
+        const teacherConfigPass = responses.frontendTeacherConfig.status === 200 &&
+            channels.some(channel => channel.slug === 'teacher_a' &&
+                channel.enabled !== false &&
+                channel.referrer_code === 'teacher_a');
+        pushStep(
+            steps,
+            'frontend_teacher_config',
+            Boolean(teacherConfigPass),
+            `GET /data/teacher-channels.json -> ${responses.frontendTeacherConfig.status}, ${
+                teacherConfigPass ? '老师渠道配置可读取' : '老师渠道配置缺少 teacher_a 或推荐码'
+            }`
+        );
+        if (!teacherConfigPass) pass = false;
+    } catch (err) {
+        pushStep(steps, 'frontend_teacher_config', false, `请求失败: ${err.message || err}`);
+        pass = false;
+    }
+
+    try {
         responses.frontendWebApp = await requestText({
             method: 'GET',
             url: joinUrl(frontendBase, '/app.html?ref=test_teacher')
@@ -275,7 +305,13 @@ const main = async () => {
             url: joinUrl(frontendBase, '/ops.html')
         });
         const opsPass = responses.frontendOps.status === 200 &&
-            includesAll(responses.frontendOps.text, ['订单确认', '运营口令', '待确认订单']);
+            includesAll(responses.frontendOps.text, [
+                '订单确认',
+                '运营口令',
+                '待确认订单',
+                '渠道复盘',
+                '老师推荐与佣金统计'
+            ]);
         pushStep(
             steps,
             'frontend_ops_content',
