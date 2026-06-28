@@ -194,6 +194,8 @@ https://zhimeng.codevalley.cn/purchase.html?ref=teacher_a
 - `website/ops.html` 新增“渠道复盘”模块，按推荐码/老师来源聚合订单数、已确认订单、收入、佣金、预估利润、首作完成率和退款/流失风险。
 - 聚合口径基于 `/admin/orders?limit=200` 返回的订单 `business` 字段，不新增数据库表；适合首批 3-5 位老师小样本试销。
 - 佣金仍以运营保存的逐单 `commission_cents` 为准，退款或高风险订单在结算前人工复核。
+- `website/ops.html` 内部话术区已补老师邀约、老师转发家长、老师佣金说明和老师 D7 复盘模板，用于一线执行。
+- 老师渠道执行包见 `docs/zhimeng-teacher-channel-sales-kit.md`，老师候选和试销数据跟踪见 `docs/zhimeng-teacher-channel-pilot-tracker.csv`。
 
 ### 4.5 前端与运营端联动契约
 
@@ -302,6 +304,7 @@ https://zhimeng.codevalley.cn/purchase.html?ref=teacher_a
 - 推荐码贯穿联名页、Web 入口和购买页。
 - 运营台可查看和编辑来源。
 - 形成 7 天老师试销复盘。
+- 提供老师渠道试销执行包、链接清单、老师话术、佣金规则和候选跟踪表。
 
 通过条件：
 
@@ -372,5 +375,7 @@ https://zhimeng.codevalley.cn/purchase.html?ref=teacher_a
 - 商业化计划：`docs/zhimeng-commercialization-marketing-plan.md`
 - 2026 营收计划：`docs/zhimeng-2026-revenue-1m-plan.md`
 - 7 天陪跑包：`docs/zhimeng-bootcamp-7d-offer.md`
+- 老师渠道试销执行包：`docs/zhimeng-teacher-channel-sales-kit.md`
+- 老师渠道试销跟踪表：`docs/zhimeng-teacher-channel-pilot-tracker.csv`
 - 种子用户跟进表：`docs/zhimeng-seed-user-tracking.md`
 - 新祥变更记录：`ZHIMENG_CHANGELOG.md`

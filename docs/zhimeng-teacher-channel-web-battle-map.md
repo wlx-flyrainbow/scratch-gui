@@ -280,8 +280,8 @@ OEM 必须单独报价，不走普通推荐佣金。
 | 6 | 建立第一版 Web 体验入口 | 2 | P0 | 已完成 V0 |
 | 7 | Web 体验接入登录、授权和购买入口 | 2 | P0 | 已完成 V0 |
 | 8 | 做老师联名页模板 | 3 | P0 | 已完成配置化 V0 |
-| 9 | 准备老师渠道材料包 | 3 | P0 | 待办 |
-| 10 | 找 3-5 位老师试销 | 4 | P0 | 待办 |
+| 9 | 准备老师渠道材料包 | 3 | P0 | 已完成 V0 |
+| 10 | 找 3-5 位老师试销 | 4 | P0 | 可启动 |
 | 11 | 7 天后复盘老师维度转化和利润 | 4 | P0 | 待办 |
 | 12 | 打磨 4999 元渠道包 | 5 | P1 | 待办 |
 | 13 | 开放项目包配置 | 6 | P1 | 待办 |
@@ -306,6 +306,13 @@ OEM 必须单独报价，不走普通推荐佣金。
 - `website/teacher.html` 从审核配置读取老师资料，不再把老师名单写死在页面脚本里；配置读取失败时回退 demo，避免对外入口空白。
 - `website/ops.html` 新增“渠道复盘”模块，按老师/推荐码汇总订单数、已确认订单、收入、佣金、预估利润、首作完成率和退款/流失风险。
 - `scripts/run-zhimeng-goal-check.js` 增加老师配置文件和运营渠道复盘模块检查。
+
+2026-06-28 第三轮试销材料补齐：
+
+- 新增 `docs/zhimeng-teacher-channel-sales-kit.md`，沉淀老师渠道试销执行包，覆盖合作边界、链接模板、老师话术、家长 FAQ、3 个入门作品、佣金结算和 7 天试销节奏。
+- 新增 `docs/zhimeng-teacher-channel-pilot-tracker.csv`，用于记录 3-5 位老师候选、专属链接、触达、转化、佣金、利润和 D7 结论。
+- `website/ops.html` 的内部话术区新增老师邀约、老师转发家长、老师佣金说明和老师 D7 复盘模板。
+- 下一步进入阶段 4：按跟踪表邀请 3-5 位老师试销，7 天后按推荐码复盘真实付款、作品完成和利润。
 
 ## 12. 数据复盘模板
 
@@ -343,6 +350,7 @@ OEM 必须单独报价，不走普通推荐佣金。
 - 对外商业策略变更同步到 `docs/zhimeng-commercialization-marketing-plan.md`。
 - 阶段性目标和收入路径变更同步到 `docs/zhimeng-2026-revenue-1m-plan.md`。
 - 种子用户跟进字段变更同步到 `docs/zhimeng-seed-user-tracking.md` 和 `docs/zhimeng-seed-user-tracking.csv`。
+- 老师渠道试销材料写入 `docs/zhimeng-teacher-channel-sales-kit.md`，候选进度写入 `docs/zhimeng-teacher-channel-pilot-tracker.csv`。
 - 重要文档变更写入根目录 `ZHIMENG_CHANGELOG.md` 的 `Unreleased` 区域。
 
 本次朋友建议处理结果：
