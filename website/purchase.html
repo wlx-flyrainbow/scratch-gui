@@ -7,6 +7,65 @@
   <meta name="description" content="新祥编程本地验收与客服辅助订单创建工具，正式购买请在客户端订阅中心完成。" />
   <meta name="robots" content="noindex,nofollow" />
   <link rel="icon" href="assets/logo.png" type="image/png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Product",
+        "@id": "https://zhimeng.codevalley.cn/purchase.html#product",
+        "name": "新祥编程",
+        "description": "面向 6-10 岁孩子的少儿创意编程启蒙工具。",
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "家庭年卡",
+            "price": "199",
+            "priceCurrency": "CNY",
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "@type": "Offer",
+            "name": "7 天项目陪跑包",
+            "price": "699",
+            "priceCurrency": "CNY",
+            "availability": "https://schema.org/LimitedAvailability"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://zhimeng.codevalley.cn/purchase.html#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "为什么不是自动开通？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "首发 MVP 使用固定收款二维码和人工核账，用户提交付款凭证后由运营核对真实到账记录。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "付款截图是否一定能开通？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "不能。付款截图只是辅助证据，最终以收款方真实到账记录为准。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "多久可以开通？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "首发阶段目标是在用户提交完整凭证后 24 小时内完成核对和开通。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -81,6 +140,37 @@
         <button id="create-order" class="btn btn-primary" type="submit">创建验收订单并打开付款页</button>
       </form>
       <div id="success" class="success-banner" role="status"></div>
+    </section>
+
+    <section class="sales-section faq-section" aria-labelledby="purchase-faq-heading">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">客服口径</p>
+          <h2 id="purchase-faq-heading">价格、付款和开通说明</h2>
+        </div>
+      </div>
+      <div class="faq-grid">
+        <article class="faq-item">
+          <h3>当前有哪些套餐？</h3>
+          <p>家庭年卡 199 元/年，7 天项目陪跑包 699 元/期。体验月卡属于后续开放套餐，不作为当前首发主推。</p>
+        </article>
+        <article class="faq-item">
+          <h3>为什么不是扫码后自动开通？</h3>
+          <p>首发 MVP 使用固定二维码和人工核账。用户提交付款凭证后，运营需要核对真实到账记录。</p>
+        </article>
+        <article class="faq-item">
+          <h3>付款截图是否一定能开通？</h3>
+          <p>不能。付款截图只是辅助证据，最终以收款方真实到账记录为准。</p>
+        </article>
+        <article class="faq-item">
+          <h3>多久可以开通？</h3>
+          <p>用户提交完整凭证后，首发阶段目标通常是 24 小时内完成核对并开通账号授权。</p>
+        </article>
+        <article class="faq-item">
+          <h3>重复付款或金额不一致怎么办？</h3>
+          <p>运营先核对订单和到账记录，再按实际情况退款、补开通、延长订阅或做人工备注处理。</p>
+        </article>
+      </div>
     </section>
 
     <footer class="site-footer">

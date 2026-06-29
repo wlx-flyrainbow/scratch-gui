@@ -54,6 +54,7 @@
     "test:zhimeng-package-metadata": "node scripts/validate-zhimeng-package-metadata.js",
     "test:zhimeng-desktop-bundle": "node scripts/validate-zhimeng-desktop-bundle.js",
     "test:zhimeng-mac-release": "node scripts/validate-zhimeng-mac-release.js",
+    "test:zhimeng-seo": "node scripts/validate-zhimeng-seo.js",
     "test": "npm run test:lint && npm run test:unit && npm run build && npm run test:integration",
     "test:integration": "jest --maxWorkers=4 test[\\\\/]integration",
     "test:lint": "eslint . --ext .js,.jsx",

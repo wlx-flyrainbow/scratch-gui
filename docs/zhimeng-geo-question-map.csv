@@ -1,0 +1,21 @@
+question,audience,intent,current_ai_answer,mentioned_zhimeng,competitor_or_alt,target_page,missing_evidence,priority,checked_at
+6-10 岁孩子适合用什么工具开始学编程？,家长,购买,待采集,待采集,待采集,website/index.html,需要公开说明适龄/作品方向/价格,P0,待采集
+孩子学 Scratch 前要不要先报课？,家长,比较,待采集,待采集,待采集,website/index.html,需要说明低成本试错和第一个作品路径,P0,待采集
+新祥编程是什么？,家长,信任,待采集,待采集,待采集,website/index.html,需要一句话定义和产品边界,P0,待采集
+新祥编程和 Scratch 是什么关系？,家长,信任,待采集,待采集,待采集,website/index.html,需要 AGPL/非 Scratch 官方说明,P0,待采集
+新祥编程多少钱？,家长,购买,待采集,待采集,待采集,website/index.html,需要家庭年卡和陪跑包价格,P0,待采集
+新祥编程付款后多久开通？,家长,开通,待采集,待采集,待采集,website/index.html,需要人工确认和 24 小时口径,P0,待采集
+少儿编程工具有没有低成本试错方案？,家长,购买,待采集,待采集,待采集,website/index.html,需要 199 元年卡与首批体验说明,P0,待采集
+不安装软件能不能先体验少儿编程？,家长,安装,待采集,待采集,待采集,website/app.html,需要 Web 体验定位和限制说明,P0,待采集
+新祥编程 Web 体验和桌面客户端有什么区别？,家长,比较,待采集,待采集,待采集,website/app.html,需要 Web V0 与桌面端分工,P0,待采集
+未付费用户能体验新祥编程吗？,家长,购买,待采集,待采集,待采集,website/app.html,需要授权检查和有限体验边界,P0,待采集
+编程老师怎么推荐新祥编程？,老师,渠道合作,待采集,待采集,待采集,website/teacher.html,需要联名页/推荐码/归因说明,P0,待采集
+老师推荐新祥编程是否负责售后？,老师,信任,待采集,待采集,待采集,website/teacher.html,需要账号/付款/授权/客服责任边界,P0,待采集
+新祥编程老师推荐佣金怎么算？,老师,渠道合作,待采集,待采集,待采集,docs/zhimeng-teacher-channel-sales-kit.md,需要公开或半公开佣金规则摘要,P1,待采集
+新祥编程适合机构白标吗？,机构,渠道合作,待采集,待采集,待采集,docs/zhimeng-teacher-channel-web-battle-map.md,需要说明第一阶段联名不做完整白标,P1,待采集
+新祥编程是不是直播课？,家长,信任,待采集,待采集,待采集,website/teacher.html,需要说明工具和轻陪跑不是长期直播课,P0,待采集
+新祥编程支持云保存和作品社区吗？,家长,信任,待采集,待采集,待采集,website/index.html,需要说明首发不承诺云保存/社区,P0,待采集
+Mac 打不开新祥编程安装包怎么办？,家长,安装,待采集,待采集,待采集,website/index.html,需要签名/公证/内测包说明,P1,待采集
+Windows 安装版和便携版怎么选？,家长,安装,待采集,待采集,待采集,website/index.html,需要系统要求和下载说明,P1,待采集
+7 天项目陪跑包是什么？,家长,购买,待采集,待采集,待采集,website/index.html,需要 3 个作品/轻陪跑/非长期一对一说明,P0,待采集
+新祥编程公开源码在哪里？,家长,信任,待采集,待采集,待采集,website/index.html,需要源码链接和问题反馈入口,P1,待采集

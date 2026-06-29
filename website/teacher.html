@@ -4,8 +4,101 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>新祥编程 — 老师联名体验</title>
-  <meta name="description" content="新祥编程老师联名体验页，支持老师推荐、Web 体验和订单归因。" />
+  <meta name="description" content="新祥编程老师联名体验页，家长可通过老师推荐先在线体验或下载桌面端。" />
+  <link rel="canonical" href="https://zhimeng.codevalley.cn/teacher.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="新祥编程" />
+  <meta property="og:title" content="新祥编程 — 老师联名体验" />
+  <meta property="og:description" content="老师可发自己的新祥编程联名体验页，家长可先在线体验或下载桌面端。" />
+  <meta property="og:url" content="https://zhimeng.codevalley.cn/teacher.html" />
+  <meta property="og:image" content="https://zhimeng.codevalley.cn/assets/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="新祥编程 — 老师联名体验" />
+  <meta name="twitter:description" content="老师联名推荐入口，支持在线体验和桌面端下载。" />
+  <meta name="twitter:image" content="https://zhimeng.codevalley.cn/assets/logo.png" />
   <link rel="icon" href="assets/logo.png" type="image/png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://zhimeng.codevalley.cn/#organization",
+        "name": "新祥编程",
+        "url": "https://zhimeng.codevalley.cn/",
+        "logo": "https://zhimeng.codevalley.cn/assets/logo.png"
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://zhimeng.codevalley.cn/teacher.html#webpage",
+        "url": "https://zhimeng.codevalley.cn/teacher.html",
+        "name": "新祥编程老师联名体验",
+        "description": "新祥编程老师联名体验页，家长可通过老师推荐先在线体验或下载桌面端。",
+        "inLanguage": "zh-CN",
+        "publisher": {
+          "@id": "https://zhimeng.codevalley.cn/#organization"
+        }
+      },
+      {
+        "@type": "Product",
+        "@id": "https://zhimeng.codevalley.cn/teacher.html#product",
+        "name": "新祥编程",
+        "description": "面向 6-10 岁孩子的少儿创意编程启蒙工具，老师可通过联名页推荐给家长。",
+        "brand": {
+          "@id": "https://zhimeng.codevalley.cn/#organization"
+        },
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "家庭年卡",
+            "price": "199",
+            "priceCurrency": "CNY",
+            "url": "https://zhimeng.codevalley.cn/teacher.html",
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "@type": "Offer",
+            "name": "7 天项目陪跑包",
+            "price": "699",
+            "priceCurrency": "CNY",
+            "url": "https://zhimeng.codevalley.cn/teacher.html",
+            "availability": "https://schema.org/LimitedAvailability"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://zhimeng.codevalley.cn/teacher.html#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "老师推荐新祥编程是否等于老师负责售后？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "不是。老师联名页用于推荐和解释，账号、付款、授权、客服和退款由新祥编程统一承接。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "这是 Scratch 官方产品吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "不是。新祥编程基于 Scratch GUI 开源项目改造，遵守 AGPLv3 许可并提供对应源码。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "老师会每天直播上课吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "当前主产品是编程启蒙工具和轻陪跑包，不承诺固定直播课或长期一对一教学。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -23,14 +116,22 @@
       <div class="hero-actions">
         <a id="app-link" class="btn btn-primary" href="app.html">在线体验</a>
         <a id="download-link" class="btn btn-secondary" href="index.html#download-heading">下载桌面端</a>
-        <a id="purchase-link" class="btn btn-secondary" href="purchase.html">客服辅助下单</a>
+        <a id="purchase-link" class="btn btn-secondary" href="index.html#plans">了解开通方式</a>
       </div>
       <div class="hero-facts">
-        <span>推荐码 <strong id="teacher-ref">-</strong></span>
+        <span id="teacher-ref">老师推荐入口</span>
         <span>家庭年卡 199 元/年</span>
         <span>7 天项目陪跑包 699 元/期</span>
       </div>
     </header>
+
+    <section class="card" aria-labelledby="teacher-positioning-heading">
+      <h2 id="teacher-positioning-heading">推荐和服务说明</h2>
+      <div class="note">
+        <p>老师联名页用于帮助家长更快了解新祥编程，家长可以先在线体验或下载桌面端。</p>
+        <p>账号、付款、开通、客服、退款和源码披露由新祥编程统一处理。</p>
+      </div>
+    </section>
 
     <section class="sales-section starter-projects" aria-labelledby="teacher-projects-heading">
       <div class="section-title-row">
@@ -76,18 +177,30 @@
           <p>当前主产品是编程启蒙工具和轻陪跑包，不承诺固定直播课或长期一对一教学。</p>
         </article>
         <article class="faq-item">
-          <h3>为什么要记录推荐码？</h3>
-          <p>用于确认订单来源、佣金成本和后续服务质量，运营台会按老师来源复盘。</p>
+          <h3>为什么页面会显示老师推荐？</h3>
+          <p>这表示你是从老师的推荐入口进入。后续咨询和开通时，新祥编程会保留这个来源，方便服务跟进。</p>
         </article>
         <article class="faq-item">
           <h3>付款后如何开通？</h3>
           <p>扫码付款并提交凭证后，由新祥编程运营核对到账，再开通账号授权。</p>
         </article>
+        <article class="faq-item">
+          <h3>老师负责售后和退款吗？</h3>
+          <p>不负责。老师主要负责推荐和解释，账号、付款、授权、客服和退款由新祥编程统一承接。</p>
+        </article>
+        <article class="faq-item">
+          <h3>价格和开通规则由谁确认？</h3>
+          <p>价格、开通、客服和退款规则由新祥编程统一确认，老师推荐不会改变产品主体和服务规则。</p>
+        </article>
+        <article class="faq-item">
+          <h3>家长应该先做什么？</h3>
+          <p>建议先进入 Web 体验或下载桌面端，让孩子完成“会说话的小角色”，再判断是否继续购买年卡或陪跑包。</p>
+        </article>
       </div>
     </section>
 
     <footer class="site-footer">
-      <p>联名展示不改变新祥编程的账号、支付、授权、客服和源码披露规则。</p>
+      <p>账号、支付、开通、客服和源码披露由新祥编程统一处理。</p>
     </footer>
   </div>
 
@@ -176,12 +289,12 @@
     document.title = '新祥编程 — ' + channel.display_name + '联名体验';
     document.querySelector('meta[name="description"]').setAttribute(
       'content',
-      '新祥编程 ' + channel.display_name + ' 联名体验页，支持老师推荐、Web 体验和订单归因。'
+      '新祥编程 ' + channel.display_name + ' 联名体验页，家长可先在线体验或下载桌面端。'
     );
-    document.getElementById('teacher-ref').textContent = attribution.referrer_code;
+    document.getElementById('teacher-ref').textContent = channel.display_name + '推荐入口';
     document.getElementById('app-link').href = linkWithAttribution('app.html');
     document.getElementById('download-link').href = linkWithAttribution('index.html#download-heading');
-    document.getElementById('purchase-link').href = linkWithAttribution('purchase.html');
+    document.getElementById('purchase-link').href = linkWithAttribution('index.html#plans');
   }
 
   var attribution = buildAttribution(fallbackChannel);

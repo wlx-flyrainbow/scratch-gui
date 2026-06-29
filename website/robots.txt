@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /ops.html
+Disallow: /purchase.html
+Disallow: /releases.local.json
+
+Sitemap: https://zhimeng.codevalley.cn/sitemap.xml
