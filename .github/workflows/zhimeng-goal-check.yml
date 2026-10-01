@@ -34,10 +34,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Start backend mock + frontend
+      - name: Start backend mock + product website
         run: |
           nohup node scripts/start-auth-server-mock-db.js > backend.log 2>&1 &
-          nohup npm start > frontend.log 2>&1 &
+          nohup python3 -m http.server 8601 --bind 127.0.0.1 --directory website > frontend.log 2>&1 &
 
       - name: Wait for services
         run: |

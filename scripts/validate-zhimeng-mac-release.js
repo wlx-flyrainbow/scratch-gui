@@ -63,7 +63,9 @@ const report = (id, message) => {
     else warnings.push(`${id}: ${message}`);
 };
 
-const firstLine = output => String(output || '').split(/\r?\n/).find(Boolean) || 'command failed';
+const firstLine = output => String(output || '')
+    .split(/\r?\n/)
+    .find(Boolean) || 'command failed';
 
 const checkApp = (appPath, source) => {
     const key = fs.realpathSync.native(appPath);

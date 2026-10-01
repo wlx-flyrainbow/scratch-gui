@@ -429,7 +429,7 @@ if (require.main === module) {
 
     createApp()
         .then(app => {
-            app.listen(PORT, () => {
+            app.listen(PORT, process.env.ZHIMENG_AUTH_HOST || '127.0.0.1', () => {
                 // eslint-disable-next-line no-console
                 console.log(`Zhimeng auth mock server listening on http://localhost:${PORT}`);
             });

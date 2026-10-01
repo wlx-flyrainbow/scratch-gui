@@ -262,8 +262,24 @@ const main = async () => {
             method: 'GET',
             url: joinUrl(frontendBase, '/app.html?ref=test_teacher')
         });
+        // The website sends purchases to the desktop flow (see zhimeng-payment-flow.md).
+        // Check the actual attribution, authentication, entitlement and next-step controls.
         const webAppPass = responses.frontendWebApp.status === 200 &&
-            includesAll(responses.frontendWebApp.text, ['Web 体验入口', '来源归因', '创建订单']);
+            includesAll(responses.frontendWebApp.text, [
+                'Web 体验入口',
+                'id="attribution-summary"',
+                'id="auth-form"',
+                'id="login-btn"',
+                'id="register-btn"',
+                'id="entitlement-result"',
+                'id="editor-link"'
+            ]) &&
+            /<a\b[^>]*id="download-link"[^>]*href="index\.html#download-heading"[^>]*>/.test(
+                responses.frontendWebApp.text
+            ) &&
+            /<a\b[^>]*id="purchase-link"[^>]*href="index\.html#plans"[^>]*>/.test(
+                responses.frontendWebApp.text
+            );
         pushStep(
             steps,
             'frontend_web_experience_entry',
