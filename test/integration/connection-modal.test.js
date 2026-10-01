@@ -15,13 +15,24 @@ const uri = path.resolve(__dirname, '../../build/index.html');
 let driver;
 
 // The tests below require Scratch Link to be unavailable, so we can trigger
-// an error modal. To make sure this is always true, we came up with the idea of
-// injecting javascript that overwrites the global Websocket object with one that
-// attempts to connect to a fake socket address.
-const websocketFakeoutJs = `var RealWebSocket = WebSocket;
-    WebSocket = function () {
-        return new RealWebSocket("wss://fake.fake");
-    }`;
+// an error modal. Fail both connection attempts asynchronously without relying
+// on an external DNS name or a locally installed Scratch Link service.
+const websocketFakeoutJs = `
+    window.scratchLinkConnectionAttempts = [];
+    window.WebSocket = class UnavailableWebSocket {
+        constructor(url) {
+            window.scratchLinkConnectionAttempts.push(url);
+            this.readyState = 0;
+            this.OPEN = 1;
+            setTimeout(() => {
+                this.readyState = 3;
+                if (this.onerror) this.onerror(new Event('error'));
+            }, 0);
+        }
+        close() { this.readyState = 3; }
+        send() { throw new Error('Cannot send on the unavailable test socket'); }
+    };
+`;
 
 describe('Hardware extension connection modal', () => {
     beforeAll(() => {
@@ -33,9 +44,6 @@ describe('Hardware extension connection modal', () => {
     });
 
     test('Message saying Scratch Link is unavailable (BLE)', async () => {
-        await driver.quit();
-        driver = getDriver();
-
         await loadUri(uri);
 
         await driver.executeScript(websocketFakeoutJs);
@@ -43,8 +51,12 @@ describe('Hardware extension connection modal', () => {
         await clickXpath('//button[@title="Add Extension"]');
 
         await clickText('micro:bit');
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for modal to open
-        findByText('Scratch Link'); // Scratch Link is mentioned in the error modal
+        const notice = await findByText('Make sure you have Scratch Link installed and running');
+        expect(await notice.isDisplayed()).toBe(true);
+        expect(await driver.executeScript('return window.scratchLinkConnectionAttempts;')).toEqual([
+            'ws://127.0.0.1:20111/scratch/ble',
+            'wss://device-manager.scratch.mit.edu:20110/scratch/ble'
+        ]);
 
         const logs = await getLogs();
         await expect(logs).toEqual([]);
@@ -58,8 +70,12 @@ describe('Hardware extension connection modal', () => {
         await clickXpath('//button[@title="Add Extension"]');
 
         await clickText('EV3');
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for modal to open
-        findByText('Scratch Link'); // Scratch Link is mentioned in the error modal
+        const notice = await findByText('Make sure you have Scratch Link installed and running');
+        expect(await notice.isDisplayed()).toBe(true);
+        expect(await driver.executeScript('return window.scratchLinkConnectionAttempts;')).toEqual([
+            'ws://127.0.0.1:20111/scratch/bt',
+            'wss://device-manager.scratch.mit.edu:20110/scratch/bt'
+        ]);
 
         const logs = await getLogs();
         await expect(logs).toEqual([]);

@@ -83,12 +83,12 @@ describe('Working with the blocks', () => {
 
         // And there should be a monitor visible
         await rightClickText('score', scope.monitors);
-        await clickText('slider');
+        await clickText('slider', scope.contextMenu);
         await findByXpath("//input[@step='1']");
 
         // Changing the slider to a decimal should make it have a step size of 0.01
         await rightClickText('score', scope.monitors);
-        await clickText('change slider range');
+        await clickText('change slider range', scope.contextMenu);
         el = await findByXpath("//input[@name='Maximum value']");
         await el.sendKeys('.1');
         await clickButton('OK');
@@ -267,19 +267,27 @@ describe('Working with the blocks', () => {
         await clickText('A\u00A0Bass', scope.blocksTab); // Need &nbsp; for block text
     });
 
-    // Regression test for switching between editor/player causing toolbox to stop updating
-    test('"See inside" after being on project page re-initializing variables', async () => {
+    // This offline session can enter the editor, but has no configured community
+    // service or cloud-save entitlement. Attempting community access must preserve it.
+    test('Player entry and unavailable community access keep variable tools usable', async () => {
         const playerUri = path.resolve(__dirname, '../../build/player.html');
         await loadUri(playerUri);
         await clickText('See inside');
         await clickBlocksCategory('Variables');
-        await clickText('my\u00A0variable');
+        await clickText('my\u00A0variable', scope.blocksTab);
+        await findByText('0', scope.reportedValue);
 
+        const unavailableCommunity = await findByXpath(
+            '//*[@data-tip="tooltip" and .//*[text()="See Project Page"]]');
+        expect(await unavailableCommunity.isDisplayed()).toBe(true);
         await clickText('See Project Page');
-        await clickText('See inside');
+        expect(await textExists('See inside')).toBe(false);
+        expect(await (await findByText('Code')).isDisplayed()).toBe(true);
 
         await clickBlocksCategory('Variables');
-        await clickText('my\u00A0variable');
+        await clickText('my\u00A0variable', scope.blocksTab);
+        await findByText('0', scope.reportedValue);
+        expect(await getLogs()).toEqual([]);
     });
 
     // Regression test for switching editor tabs causing toolbox to stop updating

@@ -4,21 +4,40 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-NET="${ZHIMENG_REAL_NET:-zhimeng-net}"
-MYSQL_C="${ZHIMENG_REAL_MYSQL_CONTAINER:-zhimeng-real-mysql}"
-BACKEND_C="${ZHIMENG_REAL_BACKEND_CONTAINER:-zhimeng-real-backend}"
-FRONTEND_C="${ZHIMENG_REAL_FRONTEND_CONTAINER:-zhimeng-frontend-static}"
+RUN_ID="${GITHUB_RUN_ID:-local}-$$-$RANDOM"
+RUN_LABEL="cn.codevalley.goal-check-run"
+NET="${ZHIMENG_REAL_NET:-zhimeng-net-$RUN_ID}"
+MYSQL_C="${ZHIMENG_REAL_MYSQL_CONTAINER:-zhimeng-real-mysql-$RUN_ID}"
+BACKEND_C="${ZHIMENG_REAL_BACKEND_CONTAINER:-zhimeng-real-backend-$RUN_ID}"
+FRONTEND_C="${ZHIMENG_REAL_FRONTEND_CONTAINER:-zhimeng-frontend-static-$RUN_ID}"
 NODE_IMAGE="${ZHIMENG_NODE_IMAGE:-node:20-bullseye}"
 AUTH_PORT="${ZHIMENG_AUTH_PORT:-3003}"
 CHECK_USERNAME="${ZHIMENG_CHECK_USERNAME:-zhimeng_goal_inactive}"
 CHECK_PASSWORD="${ZHIMENG_CHECK_PASSWORD:-123456}"
 ADMIN_TOKEN="${ZHIMENG_CHECK_ADMIN_TOKEN:-zhimeng-goal-admin-token}"
 
-docker rm -f "$BACKEND_C" "$FRONTEND_C" "$MYSQL_C" >/dev/null 2>&1 || true
-docker network rm "$NET" >/dev/null 2>&1 || true
-docker network create "$NET"
+cleanup() {
+  if [ "${ZHIMENG_REAL_KEEP_CONTAINERS:-}" = "1" ]; then
+    return
+  fi
+  for container in "$BACKEND_C" "$FRONTEND_C" "$MYSQL_C"; do
+    owner=$(docker inspect --format "{{index .Config.Labels \"$RUN_LABEL\"}}" "$container" 2>/dev/null || true)
+    if [ "$owner" = "$RUN_ID" ]; then
+      docker rm -fv "$container" >/dev/null 2>&1 || true
+    fi
+  done
+  owner=$(docker network inspect --format "{{index .Labels \"$RUN_LABEL\"}}" "$NET" 2>/dev/null || true)
+  if [ "$owner" = "$RUN_ID" ]; then
+    docker network rm "$NET" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-docker run -d --name "$MYSQL_C" --network "$NET" \
+docker network create --label "$RUN_LABEL=$RUN_ID" "$NET"
+
+docker run -d --name "$MYSQL_C" --network "$NET" --label "$RUN_LABEL=$RUN_ID" \
   -e MYSQL_ROOT_PASSWORD=root \
   -e MYSQL_DATABASE=zhimeng \
   mysql:8.0 \
@@ -32,9 +51,10 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 
-docker run -d --name "$FRONTEND_C" --network "$NET" nginx:alpine
+docker run -d --name "$FRONTEND_C" --network "$NET" --label "$RUN_LABEL=$RUN_ID" \
+  -v "$ROOT/website:/usr/share/nginx/html:ro" nginx:alpine
 
-docker run -d --name "$BACKEND_C" --network "$NET" \
+docker run -d --name "$BACKEND_C" --network "$NET" --label "$RUN_LABEL=$RUN_ID" \
   -e NODE_ENV=production \
   -e "ZHIMENG_ADMIN_TOKEN=$ADMIN_TOKEN" \
   -e "ZHIMENG_AUTH_PORT=$AUTH_PORT" \
@@ -61,8 +81,6 @@ done
 if [ "$READY" != "1" ]; then
   echo "run-zhimeng-goal-realdb: backend not ready at http://$BACKEND_C:$AUTH_PORT/health" >&2
   docker logs "$BACKEND_C" 2>&1 | tail -n 80 >&2 || true
-  docker rm -f "$BACKEND_C" "$FRONTEND_C" "$MYSQL_C" >/dev/null 2>&1 || true
-  docker network rm "$NET" >/dev/null 2>&1 || true
   exit 1
 fi
 
@@ -91,12 +109,3 @@ docker run --rm --network "$NET" \
   -w /app \
   "$NODE_IMAGE" \
   bash -lc 'npm run test:zhimeng-goal'
-
-EXIT_CODE=$?
-
-if [ "${ZHIMENG_REAL_KEEP_CONTAINERS:-}" != "1" ]; then
-  docker rm -f "$BACKEND_C" "$FRONTEND_C" "$MYSQL_C" >/dev/null 2>&1 || true
-  docker network rm "$NET" >/dev/null 2>&1 || true
-fi
-
-exit "$EXIT_CODE"
