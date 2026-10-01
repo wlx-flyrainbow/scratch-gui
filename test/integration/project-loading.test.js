@@ -91,7 +91,7 @@ describe('Loading scratch gui', () => {
             await clickText('Operators', scope.blocksTab);
         });
 
-        test('Not logged in->made no changes to project->create new project should not show alert', async () => {
+        test('Offline session without cloud save->unchanged project->new project does not show alert', async () => {
             await loadUri(uri);
             await clickXpath(FILE_MENU_XPATH);
             await clickXpath('//li[span[text()="New"]]');
@@ -99,7 +99,7 @@ describe('Loading scratch gui', () => {
             await clickText('Operators', scope.blocksTab);
         });
 
-        test.skip('Not logged in->made a change to project->create new project should show alert', async () => {
+        test.skip('Offline session without cloud save->changed project->new project shows alert', async () => {
             await loadUri(uri);
             await clickText('Sounds');
             await clickXpath('//button[@aria-label="Choose a Sound"]');

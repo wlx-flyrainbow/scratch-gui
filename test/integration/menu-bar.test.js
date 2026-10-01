@@ -53,19 +53,21 @@ describe('Menu bar settings', () => {
         await findByXpath('//div[span[div[span[text()="Share"]]] and @data-tip="tooltip"]');
     });
 
-    test('Logo should be clickable', async () => {
+    test('Product logo is visible and keeps the editor open', async () => {
         await loadUri(uri);
-        await clickXpath('//img[@alt="Scratch"]');
         const currentUrl = await driver.getCurrentUrl();
-        await expect(currentUrl).toEqual('https://scratch.mit.edu/');
+        const logo = await findByXpath('//img[@alt="新祥编程" and @id="logo_img"]');
+        expect(await logo.isDisplayed()).toBe(true);
+        await logo.click();
+        expect(await driver.getCurrentUrl()).toEqual(currentUrl);
     });
 
     test('(GH#4064) Project name should be editable', async () => {
         await loadUri(uri);
-        const el = await findByXpath('//input[@value="Scratch Project"]');
+        const el = await findByXpath('//input[@value="新祥编程作品"]');
         await el.sendKeys(' - Personalized');
         await clickText('Costumes'); // just to blur the input
-        await clickXpath('//input[@value="Scratch Project - Personalized"]');
+        await clickXpath('//input[@value="新祥编程作品 - Personalized"]');
     });
 
     test('User is not warned before uploading project file over a fresh project', async () => {

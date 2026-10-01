@@ -4,6 +4,7 @@ jest.setTimeout(95000); // eslint-disable-line no-undef
 
 import bindAll from 'lodash.bindall';
 import webdriver from 'selenium-webdriver';
+import {editorAuthBundle} from './editor-auth-fixture';
 
 const {Button, By, until} = webdriver;
 
@@ -13,6 +14,11 @@ const USE_HEADLESS = process.env.USE_HEADLESS !== 'no';
 // if we hit the Jasmine default timeout then we get a terse message that we can't control.
 // The Jasmine default timeout is 30 seconds so make sure this is lower.
 const DEFAULT_TIMEOUT_MILLISECONDS = 20 * 1000;
+
+const limitDiagnostic = (value, maximum = 12000) => {
+    const text = String(value);
+    return text.length > maximum ? `${text.slice(0, maximum)}\n[diagnostic truncated]` : text;
+};
 
 /**
  * Add more debug information to an error:
@@ -32,22 +38,31 @@ const enhanceError = async (outerError, cause, driver) => {
         outerError.cause = cause;
     }
     if (cause && cause.message) {
-        outerError.message += `\n${['Cause:', ...cause.message.split('\n')].join('\n    ')}`;
+        outerError.message += `\n${['Cause:', ...limitDiagnostic(cause.message, 48000).split('\n')].join('\n    ')}`;
     } else {
         outerError.message += '\nCause: unknown';
     }
-    if (driver) {
+    if (driver && !(cause && cause.browserDiagnosticsCaptured)) {
         const url = await driver.getCurrentUrl();
         const title = await driver.getTitle();
         const pageSource = await driver.getPageSource();
+        const visibleText = await driver.executeScript('return document.body ? document.body.innerText : "";');
         const browserLogEntries = await driver.manage()
             .logs()
             .get('browser');
         const browserLogText = browserLogEntries.map(entry => entry.message).join('\n');
         outerError.message += `\nBrowser URL: ${url}`;
         outerError.message += `\nBrowser title: ${title}`;
-        outerError.message += `\nBrowser logs:\n*****\n${browserLogText}\n*****\n`;
-        outerError.message += `\nBrowser page source:\n*****\n${pageSource}\n*****\n`;
+        const compactSource = pageSource
+            .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+            .replace(/data:[^"'\s<>]+/g, '[inline data omitted]');
+        outerError.message += `\nBrowser logs:\n*****\n${limitDiagnostic(browserLogText)}\n*****\n`;
+        outerError.message += `\nVisible page text:\n*****\n${limitDiagnostic(visibleText)}\n*****\n`;
+        outerError.message += `\nBrowser page source (without scripts/styles/inline data):\n*****\n` +
+            `${limitDiagnostic(compactSource, 20000)}\n*****\n`;
+        outerError.browserDiagnosticsCaptured = true;
+    } else if (cause && cause.browserDiagnosticsCaptured) {
+        outerError.browserDiagnosticsCaptured = true;
     }
     return outerError;
 };
@@ -116,7 +131,10 @@ class SeleniumHelper {
             spriteTile: '*[starts-with(@class,"react-contextmenu-wrapper")]',
             menuBar: '*[contains(@class,"menu-bar_menu-bar_")]',
             monitors: '*[starts-with(@class,"stage_monitor-wrapper")]',
-            contextMenu: '*[starts-with(@class,"react-contextmenu")]'
+            // The menu adds its visible class before two animation frames position
+            // it and enable pointer events. Clicking sooner scrolls and closes it.
+            contextMenu: '*[contains(@class,"react-contextmenu--visible")' +
+                ' and contains(@style,"pointer-events: auto")]'
         };
     }
 
@@ -129,6 +147,9 @@ class SeleniumHelper {
         const args = [];
         if (USE_HEADLESS) {
             args.push('--headless');
+            // Headless CI has no physical GPU. Explicit software WebGL is required
+            // by recent Chrome versions for the trusted editor under test.
+            args.push('--enable-unsafe-swiftshader');
         }
 
         // Stub getUserMedia to always not allow access
@@ -138,7 +159,7 @@ class SeleniumHelper {
         // This is especially important on Windows, where Selenium directs JS console messages to stdout
         args.push('--autoplay-policy=no-user-gesture-required');
 
-        chromeCapabilities.set('chromeOptions', {args});
+        chromeCapabilities.set('chromeOptions', {args, prefs: {'intl.accept_languages': 'en-US,en'}});
         chromeCapabilities.setLoggingPrefs({
             performance: 'ALL'
         });
@@ -230,9 +251,10 @@ class SeleniumHelper {
     /**
      * Load a URI in the driver.
      * @param {string} uri The URI to load.
+     * @param {object} options Test session configuration; authBundle=null tests signed-out behavior.
      * @returns {Promise} A promise that resolves when the URI is loaded.
      */
-    async loadUri (uri) {
+    async loadUri (uri, {authBundle = editorAuthBundle} = {}) {
         const outerError = new Error(`loadUri failed with arguments:\n\turi: ${uri}`);
         try {
             await this.setTitle(`loadUri ${uri}`);
@@ -247,6 +269,21 @@ class SeleniumHelper {
                 .get(`file://${uri}`);
             await this.driver
                 .executeScript('window.onbeforeunload = undefined;');
+            const sessionChanged = await this.driver.executeScript((bundle => {
+                const next = bundle ? JSON.stringify(bundle) : null;
+                const previous = window.localStorage.getItem('zhimeng-auth');
+                if (next === previous) return false;
+                if (next) {
+                    window.localStorage.setItem('zhimeng-auth', next);
+                } else {
+                    window.localStorage.removeItem('zhimeng-auth');
+                }
+                return true;
+            }), authBundle);
+            if (sessionChanged) {
+                await this.driver.navigate().refresh();
+                await this.driver.executeScript('window.onbeforeunload = undefined;');
+            }
             await this.driver.manage().window()
                 .setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
             await this.driver.wait(
@@ -268,7 +305,7 @@ class SeleniumHelper {
         try {
             await this.setTitle(`clickXpath ${xpath}`);
             const el = await this.findByXpath(xpath);
-            return el.click();
+            await el.click();
         } catch (cause) {
             throw await enhanceError(outerError, cause, this.driver);
         }
@@ -285,7 +322,7 @@ class SeleniumHelper {
         try {
             await this.setTitle(`clickText ${text}`);
             const el = await this.findByText(text, scope);
-            return el.click();
+            await el.click();
         } catch (cause) {
             throw await enhanceError(outerError, cause, this.driver);
         }
@@ -323,7 +360,7 @@ class SeleniumHelper {
         try {
             await this.setTitle(`rightClickText ${text}`);
             const el = await this.findByText(text, scope);
-            return this.driver.actions()
+            await this.driver.actions()
                 .click(el, Button.RIGHT)
                 .perform();
         } catch (cause) {
@@ -369,11 +406,10 @@ class SeleniumHelper {
                 for (const element of whitelist) {
                     if (message.indexOf(element) !== -1) {
                         return false;
-                    } else if (entry.level !== 'SEVERE') { // WARNING: this doesn't do what it looks like it does!
-                        return false;
                     }
                 }
-                return true;
+                const level = entry.level && entry.level.name ? entry.level.name : entry.level;
+                return level === 'SEVERE';
             });
         } catch (cause) {
             throw await enhanceError(outerError, cause);
@@ -382,3 +418,4 @@ class SeleniumHelper {
 }
 
 export default SeleniumHelper;
+export {enhanceError};

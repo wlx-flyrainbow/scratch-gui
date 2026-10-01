@@ -27,13 +27,13 @@ describe('Project state', () => {
     });
 
     test('File->New resets project title', async () => {
-        const defaultProjectTitle = 'Scratch Project';
+        const defaultProjectTitle = '新祥编程作品';
         await loadUri(uri);
         const inputEl = await findByXpath(`//input[@value="${defaultProjectTitle}"]`);
         for (let i = 0; i < defaultProjectTitle.length; i++) {
-            inputEl.sendKeys(Key.BACK_SPACE);
+            await inputEl.sendKeys(Key.BACK_SPACE);
         }
-        inputEl.sendKeys('Changed title of project');
+        await inputEl.sendKeys('Changed title of project');
         await clickText('Costumes'); // just to blur the input
         // verify that project title has changed
         await clickXpath('//input[@value="Changed title of project"]');
