@@ -4,7 +4,7 @@ const PORT = Number(process.env.ZHIMENG_AUTH_PORT || 3001);
 
 createApp()
     .then(app => {
-        app.listen(PORT, () => {
+        app.listen(PORT, process.env.ZHIMENG_AUTH_HOST || '0.0.0.0', () => {
             // eslint-disable-next-line no-console
             console.log(`Zhimeng auth server listening on http://localhost:${PORT}`);
         });
