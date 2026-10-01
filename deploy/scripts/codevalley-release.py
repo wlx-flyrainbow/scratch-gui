@@ -55,6 +55,34 @@ def pm2_config(app):
     return result
 
 
+
+def read_pm2_state():
+    """Read existing RPC state; never launch a daemon as a side effect of a query."""
+    require(command(['systemctl', 'is-active', 'pm2-root']).strip() == 'active', 'PM2 service is not active')
+    pid = int(command(['systemctl', 'show', 'pm2-root', '-p', 'MainPID', '--value']).strip())
+    require(pid > 1 and int(Path('/root/.pm2/pm2.pid').read_text().strip()) == pid,
+            'PM2 daemon does not match the system service')
+    require(Path('/root/.pm2/rpc.sock').is_socket(), 'Existing PM2 RPC socket is not available')
+    node = os.readlink('/proc/%d/exe' % pid)
+    query = """
+const axon = require('/usr/local/lib/node_modules/pm2/modules/pm2-axon');
+const rpc = require('/usr/local/lib/node_modules/pm2/modules/pm2-axon-rpc');
+const socket = axon.socket('req');
+const client = new rpc.Client(socket);
+const timeout = setTimeout(() => process.exit(2), 7000);
+socket.once('error', () => process.exit(2));
+socket.once('connect', () => client.call('getMonitorData', {}, (error, apps) => {
+  if (error || !Array.isArray(apps)) process.exit(2);
+  clearTimeout(timeout);
+  process.stdout.write(JSON.stringify(apps), () => process.exit(0));
+}));
+socket.connect('/root/.pm2/rpc.sock');
+"""
+    result = json.loads(command([node, '-e', query], 10))
+    require(isinstance(result, list), 'Unexpected PM2 RPC response')
+    return result
+
+
 def read_bundle(archive, family):
     members = archive.getmembers()
     require(len(members) <= 30000, 'Too many bundle entries')
@@ -97,7 +125,7 @@ def check_runtime(name, config, port, endpoint):
             if time.monotonic() > deadline:
                 raise RuntimeError('Application health check failed')
             time.sleep(1)
-    app = next(a for a in json.loads(command(['pm2', 'jlist'])) if a['name'] == name)
+    app = next(a for a in read_pm2_state() if a['name'] == name)
     e = app['pm2_env']
     require(e['status'] == 'online' and e['pm_cwd'] == config['cwd'] and
             e['pm_exec_path'] == config['script'], 'PM2 is not running the requested release')
@@ -115,16 +143,19 @@ def main():
     parser.add_argument('app', choices=sorted(SPECS))
     parser.add_argument('--bundle', required=True, type=Path)
     parser.add_argument('--check', action='store_true', help='Validate without creating or switching a release')
+    parser.add_argument('--redis-db', type=int, choices=range(16),
+                        help='Select the Xianglin Redis database in this release and saved startup state')
     args = parser.parse_args()
     os.umask(0o077)
     os.environ['PATH'] = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
     os.environ['PM2_HOME'] = '/root/.pm2'
     require(os.geteuid() == 0, 'Run with sudo')
     family, port, entry, endpoint = SPECS[args.app]
+    require(args.redis_db is None or family == 'xianglin', '--redis-db is only supported for Xianglin')
     STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
     lock = (STATE / 'publish.lock').open('a')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    before = json.loads(command(['pm2', 'jlist']))
+    before = read_pm2_state()
     app = next(a for a in before if a['name'] == args.app)
     previous = pm2_config(app)
     current = Path(previous['cwd']).resolve()
@@ -156,6 +187,12 @@ def main():
         (release / 'node_modules').symlink_to(deps)
         if (current / '.env').is_file():
             shutil.copy2(str(current / '.env'), str(release / '.env'))
+        if args.redis_db is not None:
+            env_file = release / '.env'
+            lines = env_file.read_text().splitlines() if env_file.exists() else []
+            lines = [line for line in lines if not line.startswith('REDIS_DB=')]
+            env_file.write_text('\n'.join(lines + ['REDIS_DB=' + str(args.redis_db)]) + '\n')
+            env_file.chmod(0o600)
         data = current / 'website/data'
         require(not data.exists() or all(p.name == 'teacher-channels.json' and p.is_file() for p in data.iterdir()),
                 'Move live website data to an external configured path before deploying')
@@ -166,6 +203,8 @@ def main():
     rollback_config.write_text(json.dumps({'apps': [previous]}, indent=2))
     desired = dict(previous, cwd=str(release), script=str(release / entry))
     desired['env'] = dict(previous['env'], HOST='127.0.0.1', ZHIMENG_AUTH_HOST='127.0.0.1')
+    if args.redis_db is not None:
+        desired['env']['REDIS_DB'] = str(args.redis_db)
     candidate = tx / 'candidate.json'
     candidate.write_text(json.dumps({'apps': [desired]}, indent=2))
     rollback = tx / 'rollback.py'
@@ -187,7 +226,7 @@ subprocess.run(['pm2','save'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,chec
         # Hold for a second check to catch an immediately crashing application.
         time.sleep(3)
         require(check_runtime(args.app, desired, port, endpoint)['pid'] == running['pid'], 'New app restarted unexpectedly')
-        after = json.loads(command(['pm2', 'jlist']))
+        after = read_pm2_state()
         require({a['name']: a['pid'] for a in before if a['name'] != args.app} ==
                 {a['name']: a['pid'] for a in after if a['name'] != args.app}, 'An unrelated app changed')
         command(['pm2', 'save'])
